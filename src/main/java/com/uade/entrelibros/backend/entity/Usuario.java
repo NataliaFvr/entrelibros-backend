@@ -18,8 +18,7 @@ public class Usuario {
         this.contrasenaHash = contrasenaHash;
         this.nombre = nombre;
         this.apellido = apellido;
-        this.rol = Rol.NO_ADMIN;
-        this.esVendedor = false;
+        this.rol = Rol.COMPRADOR; 
         this.estado = EstadoUsuario.ACTIVO;
         this.fechaRegistro = LocalDate.now();
     }
@@ -40,8 +39,6 @@ public class Usuario {
 
     @Enumerated(EnumType.STRING)
     private Rol rol;
-
-    private boolean esVendedor;
 
     @Enumerated(EnumType.STRING)
     private EstadoUsuario estado;
