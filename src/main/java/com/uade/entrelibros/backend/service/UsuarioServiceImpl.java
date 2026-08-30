@@ -8,13 +8,18 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import com.uade.entrelibros.backend.entity.EstadoPublicacion;
 import com.uade.entrelibros.backend.entity.EstadoUsuario;
+import com.uade.entrelibros.backend.entity.Libro;
 import com.uade.entrelibros.backend.entity.Rol;
 import com.uade.entrelibros.backend.entity.Usuario;
 import com.uade.entrelibros.backend.entity.dto.UsuarioUpdateRequest;
 import com.uade.entrelibros.backend.exceptions.UsuarioDuplicadoException;
 import com.uade.entrelibros.backend.exceptions.UsuarioNoEncontradoException;
+import com.uade.entrelibros.backend.repository.CarritoItemRepository;
+import com.uade.entrelibros.backend.repository.LibroRepository;
 import com.uade.entrelibros.backend.repository.UsuarioRepository;
 
 @Service
@@ -25,6 +30,12 @@ public class UsuarioServiceImpl implements UsuarioService {
 
     @Autowired
     private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private LibroRepository libroRepository;
+
+    @Autowired
+    private CarritoItemRepository carritoItemRepository;
 
     public Page<Usuario> getUsuarios(PageRequest pageable) {
         return usuarioRepository.findAll(pageable);
@@ -85,10 +96,27 @@ public class UsuarioServiceImpl implements UsuarioService {
     }
 
     @Override
+    @Transactional
     public void eliminarUsuario(Long usuarioId) throws UsuarioNoEncontradoException {
         Usuario usuario = usuarioRepository.findById(usuarioId)
                 .orElseThrow(UsuarioNoEncontradoException::new);
+
+        if (usuario.getRol() == Rol.VENDEDOR) {
+            darDeBajaLibrosYCarritos(usuario);
+        }
+
         usuario.setEstado(EstadoUsuario.DADO_DE_BAJA);
         usuarioRepository.save(usuario);
+    }
+
+    private void darDeBajaLibrosYCarritos(Usuario vendedor) {
+        List<Libro> librosDelVendedor = libroRepository.findByVendedorId(vendedor.getId());
+        for (Libro libro : librosDelVendedor) {
+            libro.setEstadoPublicacion(EstadoPublicacion.DADA_DE_BAJA);
+        }
+        libroRepository.saveAll(librosDelVendedor);
+
+        carritoItemRepository.deleteAll(
+                carritoItemRepository.findByVendedorId(vendedor.getId()));
     }
 }

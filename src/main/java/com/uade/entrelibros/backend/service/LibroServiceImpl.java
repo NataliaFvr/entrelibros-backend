@@ -34,7 +34,7 @@ public class LibroServiceImpl implements LibroService {
     private LibroCategoriaRepository libroCategoriaRepository;
 
     public List<Libro> getLibros() {
-        return libroRepository.findAll();
+        return libroRepository.findVisibles();
     }
 
     public Libro getLibroById(Long libroId) throws LibroNoEncontradoException {
