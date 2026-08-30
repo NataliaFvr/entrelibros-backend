@@ -12,7 +12,9 @@ import org.springframework.security.access.prepost.PreAuthorize;
 
 import com.uade.entrelibros.backend.entity.Usuario;
 import com.uade.entrelibros.backend.entity.dto.UsuarioRequest;
+import com.uade.entrelibros.backend.entity.dto.UsuarioUpdateRequest;
 import com.uade.entrelibros.backend.exceptions.UsuarioDuplicadoException;
+import com.uade.entrelibros.backend.exceptions.UsuarioNoEncontradoException;
 import com.uade.entrelibros.backend.service.UsuarioService;
 
 @RestController
@@ -42,6 +44,7 @@ public class UsuariosController {
         return ResponseEntity.noContent().build();
     }
 
+    @PreAuthorize("hasAuthority('ADMIN')")
     @PostMapping
     public ResponseEntity<Object> createUsuario(@RequestBody UsuarioRequest usuarioRequest)
             throws UsuarioDuplicadoException {
@@ -52,5 +55,23 @@ public class UsuariosController {
                 usuarioRequest.getNombre(),
                 usuarioRequest.getApellido());
         return ResponseEntity.created(URI.create("/usuarios/" + result.getId())).body(result);
+    }
+
+    @PreAuthorize("hasAuthority('ADMIN') or #usuarioId == authentication.principal.id")
+    @PatchMapping("/{usuarioId}")
+    public ResponseEntity<Usuario> updateUsuario(
+            @PathVariable Long usuarioId,
+            @RequestBody UsuarioUpdateRequest usuarioUpdateRequest)
+            throws UsuarioDuplicadoException, UsuarioNoEncontradoException {
+        Usuario result = usuarioService.updateUsuario(usuarioId, usuarioUpdateRequest);
+        return ResponseEntity.ok(result);
+    }
+
+    @PreAuthorize("hasAuthority('ADMIN') or #usuarioId == authentication.principal.id")
+    @DeleteMapping("/{usuarioId}")
+    public ResponseEntity<Void> eliminarUsuario(@PathVariable Long usuarioId)
+            throws UsuarioNoEncontradoException {
+        usuarioService.eliminarUsuario(usuarioId);
+        return ResponseEntity.noContent().build();
     }
 }

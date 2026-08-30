@@ -9,9 +9,12 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import com.uade.entrelibros.backend.entity.EstadoUsuario;
 import com.uade.entrelibros.backend.entity.Rol;
 import com.uade.entrelibros.backend.entity.Usuario;
+import com.uade.entrelibros.backend.entity.dto.UsuarioUpdateRequest;
 import com.uade.entrelibros.backend.exceptions.UsuarioDuplicadoException;
+import com.uade.entrelibros.backend.exceptions.UsuarioNoEncontradoException;
 import com.uade.entrelibros.backend.repository.UsuarioRepository;
 
 @Service
@@ -45,5 +48,47 @@ public class UsuarioServiceImpl implements UsuarioService {
         String contrasenaHasheada = passwordEncoder.encode(contrasena);
         return usuarioRepository.save(
                 new Usuario(nombreUsuario, email, contrasenaHasheada, nombre, apellido, rol));
+    }
+
+    @Override
+    public Usuario updateUsuario(Long usuarioId, UsuarioUpdateRequest request)
+            throws UsuarioDuplicadoException, UsuarioNoEncontradoException {
+        Usuario usuario = usuarioRepository.findById(usuarioId)
+                .orElseThrow(UsuarioNoEncontradoException::new);
+
+        boolean cambiaEmail = request.getEmail() != null && !request.getEmail().equals(usuario.getEmail());
+        boolean cambiaNombreUsuario = request.getNombreUsuario() != null
+                && !request.getNombreUsuario().equals(usuario.getNombreUsuario());
+
+        if (cambiaEmail || cambiaNombreUsuario) {
+            List<Usuario> existentes = usuarioRepository.findByEmailOrNombreUsuario(
+                    cambiaEmail ? request.getEmail() : usuario.getEmail(),
+                    cambiaNombreUsuario ? request.getNombreUsuario() : usuario.getNombreUsuario());
+
+            boolean conflicto = existentes.stream().anyMatch(u -> !u.getId().equals(usuarioId));
+            if (conflicto)
+                throw new UsuarioDuplicadoException();
+        }
+
+        if (request.getNombreUsuario() != null)
+            usuario.setNombreUsuario(request.getNombreUsuario());
+        if (request.getEmail() != null)
+            usuario.setEmail(request.getEmail());
+        if (request.getNombre() != null)
+            usuario.setNombre(request.getNombre());
+        if (request.getApellido() != null)
+            usuario.setApellido(request.getApellido());
+        if (request.getContrasena() != null && !request.getContrasena().isBlank())
+            usuario.setContrasenaHash(passwordEncoder.encode(request.getContrasena()));
+
+        return usuarioRepository.save(usuario);
+    }
+
+    @Override
+    public void eliminarUsuario(Long usuarioId) throws UsuarioNoEncontradoException {
+        Usuario usuario = usuarioRepository.findById(usuarioId)
+                .orElseThrow(UsuarioNoEncontradoException::new);
+        usuario.setEstado(EstadoUsuario.DADO_DE_BAJA);
+        usuarioRepository.save(usuario);
     }
 }
