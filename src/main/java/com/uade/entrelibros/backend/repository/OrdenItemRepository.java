@@ -13,4 +13,6 @@ public interface OrdenItemRepository extends JpaRepository<OrdenItem, Long> {
 
     @Query(value = "select oi from OrdenItem oi where oi.orden.id = ?1")
     List<OrdenItem> findByOrdenId(Long idOrden);
+
+    List<OrdenItem> findByOrdenIdAndVendedorId(Long idOrden, Long idVendedor);
 }

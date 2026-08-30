@@ -9,7 +9,6 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import com.uade.entrelibros.backend.entity.EstadoPublicacion;
 import com.uade.entrelibros.backend.entity.EstadoUsuario;
 import com.uade.entrelibros.backend.entity.Libro;
@@ -116,7 +115,7 @@ public class UsuarioServiceImpl implements UsuarioService {
         }
         libroRepository.saveAll(librosDelVendedor);
 
-        carritoItemRepository.deleteAll(
-                carritoItemRepository.findByVendedorId(vendedor.getId()));
+    
+       
     }
 }

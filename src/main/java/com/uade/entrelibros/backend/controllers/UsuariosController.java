@@ -1,7 +1,6 @@
 package com.uade.entrelibros.backend.controllers;
 
 import java.net.URI;
-import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -36,12 +35,11 @@ public class UsuariosController {
 
     @PreAuthorize("hasAuthority('ADMIN') or #usuarioId == authentication.principal.id")
     @GetMapping("/{usuarioId}")
-    public ResponseEntity<Usuario> getUsuarioById(@PathVariable Long usuarioId) {
-        Optional<Usuario> result = usuarioService.getUsuarioById(usuarioId);
-        if (result.isPresent())
-            return ResponseEntity.ok(result.get());
-
-        return ResponseEntity.noContent().build();
+    public ResponseEntity<Usuario> getUsuarioById(@PathVariable Long usuarioId)
+            throws UsuarioNoEncontradoException {
+        Usuario result = usuarioService.getUsuarioById(usuarioId)
+                .orElseThrow(UsuarioNoEncontradoException::new);
+        return ResponseEntity.ok(result);
     }
 
     @PreAuthorize("hasAuthority('ADMIN')")
@@ -53,7 +51,8 @@ public class UsuariosController {
                 usuarioRequest.getEmail(),
                 usuarioRequest.getContrasena(),
                 usuarioRequest.getNombre(),
-                usuarioRequest.getApellido());
+                usuarioRequest.getApellido(),
+                usuarioRequest.getRol());
         return ResponseEntity.created(URI.create("/usuarios/" + result.getId())).body(result);
     }
 
@@ -67,7 +66,7 @@ public class UsuariosController {
         return ResponseEntity.ok(result);
     }
 
-    @PreAuthorize("hasAuthority('ADMIN') or #usuarioId == authentication.principal.id")
+    @PreAuthorize("hasAuthority('ADMIN')")
     @DeleteMapping("/{usuarioId}")
     public ResponseEntity<Void> eliminarUsuario(@PathVariable Long usuarioId)
             throws UsuarioNoEncontradoException {

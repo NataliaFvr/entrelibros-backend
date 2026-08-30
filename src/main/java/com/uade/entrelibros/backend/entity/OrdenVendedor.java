@@ -13,6 +13,7 @@ public class OrdenVendedor {
     public OrdenVendedor(Orden orden, Usuario vendedor) {
         this.orden = orden;
         this.vendedor = vendedor;
+        this.estado = EstadoOrdenVendedor.ACTIVA;
     }
 
     @Id
@@ -26,4 +27,7 @@ public class OrdenVendedor {
     @ManyToOne
     @JoinColumn(name = "id_vendedor")
     private Usuario vendedor;
+
+    @Enumerated(EnumType.STRING)
+    private EstadoOrdenVendedor estado;
 }
