@@ -8,6 +8,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import com.uade.entrelibros.backend.entity.Usuario;
 import com.uade.entrelibros.backend.entity.dto.UsuarioRequest;
@@ -21,6 +22,7 @@ public class UsuariosController {
     @Autowired
     private UsuarioService usuarioService;
 
+    @PreAuthorize("hasAuthority('ADMIN')")
     @GetMapping
     public ResponseEntity<Page<Usuario>> getUsuarios(
             @RequestParam(required = false) Integer page,
@@ -30,6 +32,7 @@ public class UsuariosController {
         return ResponseEntity.ok(usuarioService.getUsuarios(PageRequest.of(page, size)));
     }
 
+    @PreAuthorize("hasAuthority('ADMIN') or #usuarioId == authentication.principal.id")
     @GetMapping("/{usuarioId}")
     public ResponseEntity<Usuario> getUsuarioById(@PathVariable Long usuarioId) {
         Optional<Usuario> result = usuarioService.getUsuarioById(usuarioId);
