@@ -5,6 +5,7 @@ import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import com.uade.entrelibros.backend.entity.Categoria;
@@ -31,6 +32,7 @@ public class CategoriasController {
         return ResponseEntity.ok(categoriaService.getCategoriaById(categoriaId));
     }
 
+    @PreAuthorize("hasAuthority('ADMIN')")
     @PostMapping
     public ResponseEntity<Categoria> createCategoria(@RequestBody CategoriaRequest request)
             throws CategoriaDuplicadaException {

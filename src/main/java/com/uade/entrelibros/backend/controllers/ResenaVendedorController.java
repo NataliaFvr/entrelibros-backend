@@ -4,16 +4,18 @@ import java.net.URI;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import com.uade.entrelibros.backend.entity.ResenaVendedor;
+import com.uade.entrelibros.backend.entity.Usuario;
 import com.uade.entrelibros.backend.entity.dto.ResenaVendedorRequest;
+import com.uade.entrelibros.backend.exceptions.AccionNoPermitidaException;
 import com.uade.entrelibros.backend.exceptions.CalificacionInvalidaException;
 import com.uade.entrelibros.backend.exceptions.EnvioItemNoEncontradoException;
 import com.uade.entrelibros.backend.exceptions.ResenaDuplicadaException;
 import com.uade.entrelibros.backend.exceptions.ResenaVendedorNoEncontradaException;
-import com.uade.entrelibros.backend.exceptions.UsuarioNoEncontradoException;
 import com.uade.entrelibros.backend.service.ResenaVendedorService;
 
 @RestController
@@ -40,12 +42,13 @@ public class ResenaVendedorController {
     }
 
     @PostMapping
-    public ResponseEntity<ResenaVendedor> crearResena(@RequestBody ResenaVendedorRequest request)
-            throws EnvioItemNoEncontradoException, UsuarioNoEncontradoException,
-            CalificacionInvalidaException, ResenaDuplicadaException {
+    public ResponseEntity<ResenaVendedor> crearResena(
+            @AuthenticationPrincipal Usuario comprador,
+            @RequestBody ResenaVendedorRequest request)
+            throws EnvioItemNoEncontradoException, CalificacionInvalidaException, ResenaDuplicadaException,
+            AccionNoPermitidaException {
         ResenaVendedor result = resenaVendedorService.crearResena(
-                request.getIdEnvioItem(), request.getIdComprador(),
-                request.getClasificacion(), request.getComentario());
+                comprador, request.getIdEnvioItem(), request.getClasificacion(), request.getComentario());
         return ResponseEntity.created(URI.create("/resenas-vendedor/" + result.getId())).body(result);
     }
 }

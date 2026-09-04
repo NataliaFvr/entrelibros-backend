@@ -7,6 +7,8 @@ import org.springframework.stereotype.Service;
 
 import com.uade.entrelibros.backend.entity.OrdenItem;
 import com.uade.entrelibros.backend.entity.ResenaLibro;
+import com.uade.entrelibros.backend.entity.Usuario;
+import com.uade.entrelibros.backend.exceptions.AccionNoPermitidaException;
 import com.uade.entrelibros.backend.exceptions.CalificacionInvalidaException;
 import com.uade.entrelibros.backend.exceptions.OrdenItemNoEncontradoException;
 import com.uade.entrelibros.backend.exceptions.ResenaDuplicadaException;
@@ -35,14 +37,35 @@ public class ResenaLibroServiceImpl implements ResenaLibroService {
         return resenaLibroRepository.findByLibroId(idLibro);
     }
 
+    @Override
     public ResenaLibro crearResena(Long idOrdenItem, Integer calificacion, String comentario)
-            throws OrdenItemNoEncontradoException, CalificacionInvalidaException, ResenaDuplicadaException {
+            throws OrdenItemNoEncontradoException, CalificacionInvalidaException, ResenaDuplicadaException,
+            AccionNoPermitidaException {
+        OrdenItem ordenItem = ordenItemRepository.findById(idOrdenItem)
+                .orElseThrow(OrdenItemNoEncontradoException::new);
+
+        if (ordenItem.getOrden() == null || ordenItem.getOrden().getComprador() == null)
+            throw new AccionNoPermitidaException();
+
+        return crearResena(ordenItem.getOrden().getComprador(), idOrdenItem, calificacion, comentario);
+    }
+
+    public ResenaLibro crearResena(Usuario comprador, Long idOrdenItem, Integer calificacion, String comentario)
+            throws OrdenItemNoEncontradoException, CalificacionInvalidaException, ResenaDuplicadaException,
+            AccionNoPermitidaException {
 
         if (calificacion == null || calificacion < 1 || calificacion > 5)
             throw new CalificacionInvalidaException();
 
         OrdenItem ordenItem = ordenItemRepository.findById(idOrdenItem)
                 .orElseThrow(OrdenItemNoEncontradoException::new);
+
+        // Ownership: el que reseña tiene que ser el comprador real de ese item de orden
+        if (ordenItem.getOrden() == null
+                || ordenItem.getOrden().getComprador() == null
+                || !ordenItem.getOrden().getComprador().getId().equals(comprador.getId())) {
+            throw new AccionNoPermitidaException();
+        }
 
         // Un libro comprado se puede resenar una sola vez por item de la orden
         if (!resenaLibroRepository.findByOrdenItemId(idOrdenItem).isEmpty())
