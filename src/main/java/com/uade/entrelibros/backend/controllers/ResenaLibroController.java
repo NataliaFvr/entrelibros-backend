@@ -4,11 +4,14 @@ import java.net.URI;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import com.uade.entrelibros.backend.entity.ResenaLibro;
+import com.uade.entrelibros.backend.entity.Usuario;
 import com.uade.entrelibros.backend.entity.dto.ResenaLibroRequest;
+import com.uade.entrelibros.backend.exceptions.AccionNoPermitidaException;
 import com.uade.entrelibros.backend.exceptions.CalificacionInvalidaException;
 import com.uade.entrelibros.backend.exceptions.OrdenItemNoEncontradoException;
 import com.uade.entrelibros.backend.exceptions.ResenaDuplicadaException;
@@ -39,10 +42,13 @@ public class ResenaLibroController {
     }
 
     @PostMapping
-    public ResponseEntity<ResenaLibro> crearResena(@RequestBody ResenaLibroRequest request)
-            throws OrdenItemNoEncontradoException, CalificacionInvalidaException, ResenaDuplicadaException {
+    public ResponseEntity<ResenaLibro> crearResena(
+            @AuthenticationPrincipal Usuario comprador,
+            @RequestBody ResenaLibroRequest request)
+            throws OrdenItemNoEncontradoException, CalificacionInvalidaException, ResenaDuplicadaException,
+            AccionNoPermitidaException {
         ResenaLibro result = resenaLibroService.crearResena(
-                request.getIdOrdenItem(), request.getCalificacion(), request.getComentario());
+                comprador, request.getIdOrdenItem(), request.getCalificacion(), request.getComentario());
         return ResponseEntity.created(URI.create("/resenas-libro/" + result.getId())).body(result);
     }
 }

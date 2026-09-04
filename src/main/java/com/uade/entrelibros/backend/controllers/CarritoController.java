@@ -12,7 +12,9 @@ import com.uade.entrelibros.backend.entity.Orden;
 import com.uade.entrelibros.backend.entity.Usuario;
 import com.uade.entrelibros.backend.entity.dto.AgregarItemCarritoRequest;
 import com.uade.entrelibros.backend.entity.dto.CheckoutRequest;
+import com.uade.entrelibros.backend.entity.dto.ModificarCantidadCarritoRequest;
 import com.uade.entrelibros.backend.exceptions.AccionNoPermitidaException;
+import com.uade.entrelibros.backend.exceptions.CantidadInvalidaException;
 import com.uade.entrelibros.backend.exceptions.CarritoVacioException;
 import com.uade.entrelibros.backend.exceptions.CompraPropiaException;
 import com.uade.entrelibros.backend.exceptions.ItemCarritoNoEncontradoException;
@@ -41,6 +43,18 @@ public class CarritoController {
             CompraPropiaException {
         CarritoItem result = carritoService.agregarItem(
                 usuario.getId(), request.getIdLibro(), request.getCantidad());
+        return ResponseEntity.ok(result);
+    }
+
+    @PatchMapping("/items/{idItem}")
+    public ResponseEntity<CarritoItem> modificarCantidad(
+            @AuthenticationPrincipal Usuario usuario,
+            @PathVariable Long idItem,
+            @RequestBody ModificarCantidadCarritoRequest request)
+            throws ItemCarritoNoEncontradoException, AccionNoPermitidaException, CantidadInvalidaException,
+            StockInsuficienteException, LibroNoDisponibleException {
+        CarritoItem result = carritoService.modificarCantidad(
+                usuario.getId(), idItem, request.getCantidad());
         return ResponseEntity.ok(result);
     }
 

@@ -37,19 +37,6 @@ public class ResenaLibroServiceImpl implements ResenaLibroService {
         return resenaLibroRepository.findByLibroId(idLibro);
     }
 
-    @Override
-    public ResenaLibro crearResena(Long idOrdenItem, Integer calificacion, String comentario)
-            throws OrdenItemNoEncontradoException, CalificacionInvalidaException, ResenaDuplicadaException,
-            AccionNoPermitidaException {
-        OrdenItem ordenItem = ordenItemRepository.findById(idOrdenItem)
-                .orElseThrow(OrdenItemNoEncontradoException::new);
-
-        if (ordenItem.getOrden() == null || ordenItem.getOrden().getComprador() == null)
-            throw new AccionNoPermitidaException();
-
-        return crearResena(ordenItem.getOrden().getComprador(), idOrdenItem, calificacion, comentario);
-    }
-
     public ResenaLibro crearResena(Usuario comprador, Long idOrdenItem, Integer calificacion, String comentario)
             throws OrdenItemNoEncontradoException, CalificacionInvalidaException, ResenaDuplicadaException,
             AccionNoPermitidaException {

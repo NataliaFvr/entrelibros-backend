@@ -14,6 +14,7 @@ import com.uade.entrelibros.backend.exceptions.AccionNoPermitidaException;
 import com.uade.entrelibros.backend.exceptions.OrdenNoEncontradaException;
 import com.uade.entrelibros.backend.exceptions.OrdenVendedorNoEncontradaException;
 import com.uade.entrelibros.backend.exceptions.RolInvalidoException;
+import com.uade.entrelibros.backend.exceptions.OrdenNoCancelableException;
 import com.uade.entrelibros.backend.service.OrdenService;
 
 @RestController
@@ -54,5 +55,13 @@ public class OrdenController {
             @PathVariable Long idOrdenVendedor)
             throws OrdenVendedorNoEncontradaException, RolInvalidoException, AccionNoPermitidaException {
         return ResponseEntity.ok(ordenService.cancelarOrdenVendedor(idOrdenVendedor, vendedor));
+    }
+
+    @PatchMapping("/{idOrden}/cancelar")
+    public ResponseEntity<Orden> cancelarOrden(
+            @AuthenticationPrincipal Usuario comprador,
+            @PathVariable Long idOrden)
+            throws OrdenNoEncontradaException, AccionNoPermitidaException, OrdenNoCancelableException {
+        return ResponseEntity.ok(ordenService.cancelarOrden(idOrden, comprador));
     }
 }

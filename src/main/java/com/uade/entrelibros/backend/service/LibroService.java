@@ -33,6 +33,6 @@ public interface LibroService {
     void darDeBajaLibro(Long libroId, Usuario vendedor)
             throws LibroNoEncontradoException, RolInvalidoException, AccionNoPermitidaException;
 
-    public Libro moderarLibro(Long libroId, EstadoModeracion estadoModeracion) throws LibroNoEncontradoException;
-
+    Libro moderarLibro(Long libroId, EstadoModeracion estadoModeracion, String comentario, Usuario moderador)
+        throws LibroNoEncontradoException;
 }

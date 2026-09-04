@@ -27,6 +27,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.domain.Pageable;
+import com.uade.entrelibros.backend.entity.HistorialModeracion;
+import com.uade.entrelibros.backend.repository.HistorialModeracionRepository;
 
 @Service
 public class LibroServiceImpl implements LibroService {
@@ -39,6 +41,9 @@ public class LibroServiceImpl implements LibroService {
 
     @Autowired
     private LibroCategoriaRepository libroCategoriaRepository;
+
+    @Autowired
+    private HistorialModeracionRepository historialModeracionRepository;
 
     public Page<Libro> getLibros(PageRequest pageRequest) {
         return libroRepository.findVisibles(pageRequest);
@@ -155,13 +160,24 @@ public class LibroServiceImpl implements LibroService {
         }
     }
 
-    public Libro moderarLibro(Long libroId, EstadoModeracion estadoModeracion) throws LibroNoEncontradoException {
+        // DESPUÉS:
+    @Override
+    public Libro moderarLibro(Long libroId, EstadoModeracion estadoModeracion, String comentario, Usuario moderador)
+            throws LibroNoEncontradoException {
         Libro libro = libroRepository.findById(libroId)
-            .orElseThrow(LibroNoEncontradoException::new);
+                .orElseThrow(LibroNoEncontradoException::new);
+
+        EstadoModeracion estadoAnterior = libro.getEstadoModeracion();
         libro.setEstadoModeracion(estadoModeracion);
-    return libroRepository.save(libro);
+        Libro libroActualizado = libroRepository.save(libro);
+
+        HistorialModeracion registro = new HistorialModeracion(
+                libroActualizado, moderador, estadoAnterior, estadoModeracion, comentario);
+        historialModeracionRepository.save(registro);
+
+        return libroActualizado;
     }
-    
+
 
 
 }

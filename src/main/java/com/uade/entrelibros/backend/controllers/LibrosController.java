@@ -21,6 +21,8 @@ import com.uade.entrelibros.backend.exceptions.LibroNoEncontradoException;
 import com.uade.entrelibros.backend.exceptions.RolInvalidoException;
 import com.uade.entrelibros.backend.service.LibroService;
 import org.springframework.data.domain.Page;
+import com.uade.entrelibros.backend.entity.dto.HistorialModeracionResponse;
+import com.uade.entrelibros.backend.service.HistorialModeracionService;
 
 
 @RestController
@@ -29,6 +31,9 @@ public class LibrosController {
 
     @Autowired
     private LibroService libroService;
+
+    @Autowired
+    private HistorialModeracionService historialModeracionService;
 
     @GetMapping
     public ResponseEntity<Page<Libro>> getLibros(
@@ -66,6 +71,7 @@ public class LibrosController {
         return ResponseEntity.ok(libroService.getLibroById(libroId));
     }
 
+    @PreAuthorize("hasAuthority('VENDEDOR')")
     @PostMapping
     public ResponseEntity<Libro> createLibro(
             @AuthenticationPrincipal Usuario vendedor,
@@ -75,6 +81,7 @@ public class LibrosController {
         return ResponseEntity.created(URI.create("/libros/" + result.getId())).body(result);
     }
 
+    @PreAuthorize("hasAuthority('VENDEDOR')")
     @PatchMapping("/{libroId}")
     public ResponseEntity<Libro> updateLibro(
             @AuthenticationPrincipal Usuario vendedor,
@@ -85,6 +92,7 @@ public class LibrosController {
         return ResponseEntity.ok(libroService.updateLibro(libroId, request, vendedor));
     }
 
+    @PreAuthorize("hasAuthority('VENDEDOR')")
     @DeleteMapping("/{libroId}")
     public ResponseEntity<Void> darDeBajaLibro(
             @AuthenticationPrincipal Usuario vendedor,
@@ -98,9 +106,29 @@ public class LibrosController {
     @PatchMapping("/{libroId}/moderacion")
     public ResponseEntity<Libro> moderarLibro(
             @PathVariable Long libroId,
+            @AuthenticationPrincipal Usuario moderador,
             @RequestBody ModeracionRequest request)
         throws LibroNoEncontradoException {
-        Libro result = libroService.moderarLibro(libroId, request.getEstadoModeracion());
+        Libro result = libroService.moderarLibro(
+                libroId, request.getEstadoModeracion(), request.getComentario(), moderador);
         return ResponseEntity.ok(result);
+    }
+
+    @PreAuthorize("hasAuthority('ADMIN')")
+    @GetMapping("/{libroId}/historial-moderacion")
+    public ResponseEntity<Page<HistorialModeracionResponse>> getHistorialModeracionPorLibro(
+            @PathVariable Long libroId,
+            @RequestParam(defaultValue = "0") Integer page,
+            @RequestParam(defaultValue = "20") Integer size) throws LibroNoEncontradoException {
+        return ResponseEntity.ok(historialModeracionService.getHistorialPorLibro(
+                libroId, PageRequest.of(page, size)));
+    }
+
+    @PreAuthorize("hasAuthority('ADMIN')")
+    @GetMapping("/historial-moderacion")
+    public ResponseEntity<Page<HistorialModeracionResponse>> getHistorialModeracionCompleto(
+            @RequestParam(defaultValue = "0") Integer page,
+            @RequestParam(defaultValue = "20") Integer size) {
+        return ResponseEntity.ok(historialModeracionService.getHistorialCompleto(PageRequest.of(page, size)));
     }
 }

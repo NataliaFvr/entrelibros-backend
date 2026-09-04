@@ -6,4 +6,5 @@ import lombok.Data;
 @Data
 public class ModeracionRequest {
     private EstadoModeracion estadoModeracion;
+    private String comentario;
 }

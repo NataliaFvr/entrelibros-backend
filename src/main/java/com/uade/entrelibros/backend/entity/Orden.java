@@ -17,7 +17,8 @@ public class Orden {
         this.provinciaDestino = provinciaDestino;
         this.subtotal = subtotal;
         this.total = total;
-        this.estadoPago = EstadoPago.SIMULADO_APROBADO;
+        this.estadoPago = EstadoPago.PENDIENTE;
+        this.reservaHasta = LocalDateTime.now().plusHours(1);
     }
 
     @Id
@@ -35,4 +36,6 @@ public class Orden {
 
     @Enumerated(EnumType.STRING)
     private EstadoPago estadoPago;
+
+    private LocalDateTime reservaHasta;
 }

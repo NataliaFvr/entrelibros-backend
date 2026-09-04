@@ -2,18 +2,22 @@ package com.uade.entrelibros.backend.service;
 
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import com.uade.entrelibros.backend.config.JwtService;
 import com.uade.entrelibros.backend.entity.Rol;
 import com.uade.entrelibros.backend.entity.Usuario;
 import com.uade.entrelibros.backend.entity.dto.AuthenticationRequest;
 import com.uade.entrelibros.backend.entity.dto.AuthenticationResponse;
+import com.uade.entrelibros.backend.entity.dto.RefreshTokenRequest;
 import com.uade.entrelibros.backend.entity.dto.UsuarioRequest;
 import com.uade.entrelibros.backend.exceptions.UsuarioDuplicadoException;
 import com.uade.entrelibros.backend.repository.UsuarioRepository;
 
 import lombok.RequiredArgsConstructor;
+import io.jsonwebtoken.JwtException;
 
 @Service
 @RequiredArgsConstructor
@@ -55,9 +59,26 @@ public class AuthenticationService {
         return buildResponse(usuario, jwtToken);
     }
 
+    public AuthenticationResponse refresh(RefreshTokenRequest request) {
+        try {
+            String email = jwtService.extractUsername(request.getRefreshToken());
+            Usuario usuario = usuarioRepository.findByEmail(email)
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Refresh token invalido"));
+
+            if (!jwtService.isRefreshTokenValid(request.getRefreshToken(), usuario)) {
+                throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Refresh token invalido");
+            }
+
+            return buildResponse(usuario, jwtService.generateToken(usuario));
+        } catch (JwtException | IllegalArgumentException exception) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Refresh token invalido");
+        }
+    }
+
     private AuthenticationResponse buildResponse(Usuario usuario, String jwtToken) {
         return AuthenticationResponse.builder()
                 .accessToken(jwtToken)
+                .refreshToken(jwtService.generateRefreshToken(usuario))
                 .usuarioId(usuario.getId())
                 .nombreUsuario(usuario.getNombreUsuario())
                 .rol(usuario.getRol().name())

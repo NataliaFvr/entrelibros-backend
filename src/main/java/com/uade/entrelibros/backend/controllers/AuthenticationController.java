@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.uade.entrelibros.backend.entity.dto.AuthenticationRequest;
 import com.uade.entrelibros.backend.entity.dto.AuthenticationResponse;
+import com.uade.entrelibros.backend.entity.dto.RefreshTokenRequest;
 import com.uade.entrelibros.backend.entity.dto.UsuarioRequest;
 import com.uade.entrelibros.backend.exceptions.UsuarioDuplicadoException;
 import com.uade.entrelibros.backend.service.AuthenticationService;
@@ -31,5 +32,10 @@ public class AuthenticationController {
     @PostMapping("/login")
     public ResponseEntity<AuthenticationResponse> login(@Valid @RequestBody AuthenticationRequest request) {
         return ResponseEntity.ok(authenticationService.authenticate(request));
+    }
+
+    @PostMapping("/refresh")
+    public ResponseEntity<AuthenticationResponse> refresh(@Valid @RequestBody RefreshTokenRequest request) {
+        return ResponseEntity.ok(authenticationService.refresh(request));
     }
 }

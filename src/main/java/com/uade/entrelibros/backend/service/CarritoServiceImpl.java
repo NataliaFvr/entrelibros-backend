@@ -19,6 +19,7 @@ import com.uade.entrelibros.backend.entity.OrdenVendedor;
 import com.uade.entrelibros.backend.entity.Usuario;
 import com.uade.entrelibros.backend.exceptions.CarritoVacioException;
 import com.uade.entrelibros.backend.exceptions.AccionNoPermitidaException;
+import com.uade.entrelibros.backend.exceptions.CantidadInvalidaException;
 import com.uade.entrelibros.backend.exceptions.CompraPropiaException;
 import com.uade.entrelibros.backend.exceptions.ItemCarritoNoEncontradoException;
 import com.uade.entrelibros.backend.exceptions.LibroNoEncontradoException;
@@ -88,6 +89,33 @@ public class CarritoServiceImpl implements CarritoService {
 
         Carrito carrito = getOrCrearCarrito(idUsuario);
         return carritoItemRepository.save(new CarritoItem(carrito, libro, cantidad));
+    }
+        public CarritoItem modificarCantidad(Long idUsuario, Long idItem, Integer cantidad)
+            throws ItemCarritoNoEncontradoException, AccionNoPermitidaException, CantidadInvalidaException,
+            StockInsuficienteException, LibroNoDisponibleException {
+
+        if (cantidad == null || cantidad < 1)
+            throw new CantidadInvalidaException();
+
+        CarritoItem item = carritoItemRepository.findById(idItem)
+                .orElseThrow(ItemCarritoNoEncontradoException::new);
+
+        if (!item.getCarrito().getUsuario().getId().equals(idUsuario)) {
+            throw new AccionNoPermitidaException();
+        }
+
+        Libro libro = item.getLibro();
+
+        if (libro.getEstadoPublicacion() == EstadoPublicacion.DADA_DE_BAJA) {
+            throw new LibroNoDisponibleException();
+        }
+
+        if (libro.getStock() < cantidad) {
+            throw new StockInsuficienteException();
+        }
+
+        item.setCantidad(cantidad);
+        return carritoItemRepository.save(item);
     }
 
     public void quitarItem(Long idUsuario, Long idItem)
