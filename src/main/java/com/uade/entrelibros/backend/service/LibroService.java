@@ -2,6 +2,12 @@ package com.uade.entrelibros.backend.service;
 
 import java.util.List;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+
+import com.uade.entrelibros.backend.entity.dto.LibroFiltroRequest;
+import com.uade.entrelibros.backend.entity.EstadoModeracion;
 import com.uade.entrelibros.backend.entity.Libro;
 import com.uade.entrelibros.backend.entity.Usuario;
 import com.uade.entrelibros.backend.exceptions.AccionNoPermitidaException;
@@ -11,7 +17,9 @@ import com.uade.entrelibros.backend.exceptions.RolInvalidoException;
 import com.uade.entrelibros.backend.entity.dto.LibroRequest;
 
 public interface LibroService {
-    List<Libro> getLibros();
+    Page<Libro> getLibros(PageRequest pageRequest);
+
+    Page<Libro> buscarLibros(LibroFiltroRequest filtro, Pageable pageable);
 
     Libro getLibroById(Long libroId) throws LibroNoEncontradoException;
 
@@ -24,4 +32,7 @@ public interface LibroService {
 
     void darDeBajaLibro(Long libroId, Usuario vendedor)
             throws LibroNoEncontradoException, RolInvalidoException, AccionNoPermitidaException;
+
+    public Libro moderarLibro(Long libroId, EstadoModeracion estadoModeracion) throws LibroNoEncontradoException;
+
 }

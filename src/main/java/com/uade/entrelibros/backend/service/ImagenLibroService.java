@@ -2,15 +2,21 @@ package com.uade.entrelibros.backend.service;
 
 import java.util.List;
 
+import org.springframework.web.multipart.MultipartFile;
+
 import com.uade.entrelibros.backend.entity.ImagenLibro;
+import com.uade.entrelibros.backend.exceptions.ArchivoDemasiadoGrandeException;
 import com.uade.entrelibros.backend.exceptions.ImagenLibroNoEncontradaException;
 import com.uade.entrelibros.backend.exceptions.LibroNoEncontradoException;
+import com.uade.entrelibros.backend.exceptions.TipoArchivoNoPermitidoException;
+import java.io.IOException;
 
 public interface ImagenLibroService {
     List<ImagenLibro> getImagenesByLibroId(Long libroId) throws LibroNoEncontradoException;
 
     ImagenLibro getImagenById(Long imagenId) throws ImagenLibroNoEncontradaException;
 
-    ImagenLibro createImagenLibro(String url, Integer orden, Long idLibro)
-            throws LibroNoEncontradoException;
+    ImagenLibro createImagenLibro(MultipartFile archivo, Integer orden, Long idLibro)
+        throws LibroNoEncontradoException, ArchivoDemasiadoGrandeException,
+        TipoArchivoNoPermitidoException, IOException;
 }

@@ -6,6 +6,7 @@ import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.uade.entrelibros.backend.exceptions.LibroNoDisponibleException;
 import com.uade.entrelibros.backend.entity.Carrito;
@@ -29,6 +30,7 @@ import com.uade.entrelibros.backend.repository.OrdenItemRepository;
 import com.uade.entrelibros.backend.repository.OrdenRepository;
 import com.uade.entrelibros.backend.repository.OrdenVendedorRepository;
 import com.uade.entrelibros.backend.repository.UsuarioRepository;
+
 
 @Service
 public class CarritoServiceImpl implements CarritoService {
@@ -98,9 +100,10 @@ public class CarritoServiceImpl implements CarritoService {
         carritoItemRepository.delete(item);
     }
 
+    @Transactional
     public Orden checkout(Long idUsuario, String provinciaDestino)
             throws CarritoVacioException, StockInsuficienteException, LibroNoDisponibleException,
-            CompraPropiaException {
+            CompraPropiaException, LibroNoEncontradoException {
 
         Carrito carrito = getOrCrearCarrito(idUsuario);
         List<CarritoItem> items = carritoItemRepository.findByCarritoId(carrito.getId());
@@ -109,15 +112,19 @@ public class CarritoServiceImpl implements CarritoService {
             throw new CarritoVacioException();
         }
 
-        // Revalidar stock: pudo haber cambiado desde que se agregó al carrito
+        // Revalidar stock CON CANDADO: acá es donde se traba la carrera entre
+        // dos compras simultáneas del mismo libro
         for (CarritoItem item : items) {
-            if (item.getLibro().getVendedor().getId().equals(idUsuario)) {
+            Libro libro = libroRepository.findByIdConCandado(item.getLibro().getId())
+                    .orElseThrow(LibroNoEncontradoException::new);
+
+            if (libro.getVendedor().getId().equals(idUsuario)) {
                 throw new CompraPropiaException();
             }
-            if (item.getLibro().getEstadoPublicacion() == EstadoPublicacion.DADA_DE_BAJA) {
+            if (libro.getEstadoPublicacion() == EstadoPublicacion.DADA_DE_BAJA) {
                 throw new LibroNoDisponibleException();
             }
-            if (item.getLibro().getStock() < item.getCantidad()) {
+            if (libro.getStock() < item.getCantidad()) {
                 throw new StockInsuficienteException();
             }
         }
@@ -135,7 +142,8 @@ public class CarritoServiceImpl implements CarritoService {
         Map<Long, OrdenVendedor> ordenVendedorPorVendedor = new HashMap<>();
 
         for (CarritoItem item : items) {
-            Libro libro = item.getLibro();
+            Libro libro = libroRepository.findByIdConCandado(item.getLibro().getId())
+                    .orElseThrow(LibroNoEncontradoException::new);
             Usuario vendedor = libro.getVendedor();
 
             OrdenVendedor ordenVendedor = ordenVendedorPorVendedor.get(vendedor.getId());

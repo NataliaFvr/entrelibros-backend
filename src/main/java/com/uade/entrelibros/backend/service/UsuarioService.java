@@ -26,4 +26,8 @@ public interface UsuarioService {
             throws UsuarioDuplicadoException, UsuarioNoEncontradoException;
 
     public void eliminarUsuario(Long usuarioId) throws UsuarioNoEncontradoException;
+
+    public Usuario cambiarRol(Long usuarioId, Rol nuevoRol) throws UsuarioNoEncontradoException;
+
+    public Usuario reactivarUsuario(Long usuarioId) throws UsuarioNoEncontradoException;
 }

@@ -118,4 +118,18 @@ public class UsuarioServiceImpl implements UsuarioService {
     
        
     }
+
+    public Usuario cambiarRol(Long usuarioId, Rol nuevoRol) throws UsuarioNoEncontradoException {
+        Usuario usuario = usuarioRepository.findById(usuarioId)
+            .orElseThrow(UsuarioNoEncontradoException::new);
+        usuario.setRol(nuevoRol);
+        return usuarioRepository.save(usuario);
+    }
+
+    public Usuario reactivarUsuario(Long usuarioId) throws UsuarioNoEncontradoException {
+        Usuario usuario = usuarioRepository.findById(usuarioId)
+            .orElseThrow(UsuarioNoEncontradoException::new);
+        usuario.setEstado(EstadoUsuario.ACTIVO);
+        return usuarioRepository.save(usuario);
+    }
 }

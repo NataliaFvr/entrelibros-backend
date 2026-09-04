@@ -27,5 +27,5 @@ public interface CarritoService {
 
     Orden checkout(Long idUsuario, String provinciaDestino)
             throws CarritoVacioException, StockInsuficienteException, LibroNoDisponibleException,
-            CompraPropiaException;
+            CompraPropiaException, LibroNoEncontradoException;
 }

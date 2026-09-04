@@ -11,6 +11,15 @@ import com.uade.entrelibros.backend.exceptions.ImagenLibroNoEncontradaException;
 import com.uade.entrelibros.backend.exceptions.LibroNoEncontradoException;
 import com.uade.entrelibros.backend.repository.ImagenLibroRepository;
 import com.uade.entrelibros.backend.repository.LibroRepository;
+import org.springframework.beans.factory.annotation.Value;
+import java.io.IOException;
+import java.nio.file.Files;
+import org.springframework.web.multipart.MultipartFile;
+import com.uade.entrelibros.backend.exceptions.ArchivoDemasiadoGrandeException;
+import com.uade.entrelibros.backend.exceptions.TipoArchivoNoPermitidoException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.UUID;
 
 @Service
 public class ImagenLibroServiceImpl implements ImagenLibroService {
@@ -31,10 +40,32 @@ public class ImagenLibroServiceImpl implements ImagenLibroService {
                 .orElseThrow(ImagenLibroNoEncontradaException::new);
     }
 
-    public ImagenLibro createImagenLibro(String url, Integer orden, Long idLibro)
-            throws LibroNoEncontradoException {
+    @Value("${app.upload.dir}")
+    private String uploadDir;
+
+    @Override
+    public ImagenLibro createImagenLibro(MultipartFile archivo, Integer orden, Long idLibro)
+            throws LibroNoEncontradoException, ArchivoDemasiadoGrandeException,
+            TipoArchivoNoPermitidoException, IOException {
+
         Libro libro = libroRepository.findById(idLibro)
                 .orElseThrow(LibroNoEncontradoException::new);
+
+        ImagenValidator.validar(archivo);
+
+        String extension = obtenerExtension(archivo.getOriginalFilename());
+        String nombreArchivo = UUID.randomUUID() + extension;
+
+        Path destino = Paths.get(uploadDir);
+        Files.createDirectories(destino);
+        Files.copy(archivo.getInputStream(), destino.resolve(nombreArchivo));
+
+        String url = "/imagenes/" + nombreArchivo;
         return imagenLibroRepository.save(new ImagenLibro(url, orden, libro));
+    }
+
+    private String obtenerExtension(String nombreOriginal) {
+        if (nombreOriginal == null || !nombreOriginal.contains(".")) return "";
+        return nombreOriginal.substring(nombreOriginal.lastIndexOf("."));
     }
 }

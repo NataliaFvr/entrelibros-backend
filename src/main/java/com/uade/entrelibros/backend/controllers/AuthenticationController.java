@@ -11,6 +11,8 @@ import com.uade.entrelibros.backend.entity.dto.AuthenticationResponse;
 import com.uade.entrelibros.backend.entity.dto.UsuarioRequest;
 import com.uade.entrelibros.backend.exceptions.UsuarioDuplicadoException;
 import com.uade.entrelibros.backend.service.AuthenticationService;
+import jakarta.validation.Valid;
+
 
 import lombok.RequiredArgsConstructor;
 
@@ -22,13 +24,12 @@ public class AuthenticationController {
     private final AuthenticationService authenticationService;
 
     @PostMapping("/register")
-    public ResponseEntity<AuthenticationResponse> register(@RequestBody UsuarioRequest request)
-            throws UsuarioDuplicadoException {
+    public ResponseEntity<AuthenticationResponse> register(@Valid @RequestBody UsuarioRequest request) throws UsuarioDuplicadoException {
         return ResponseEntity.ok(authenticationService.register(request));
     }
 
     @PostMapping("/login")
-    public ResponseEntity<AuthenticationResponse> login(@RequestBody AuthenticationRequest request) {
+    public ResponseEntity<AuthenticationResponse> login(@Valid @RequestBody AuthenticationRequest request) {
         return ResponseEntity.ok(authenticationService.authenticate(request));
     }
 }
