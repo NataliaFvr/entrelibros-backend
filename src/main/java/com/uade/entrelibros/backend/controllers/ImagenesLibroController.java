@@ -5,9 +5,13 @@ import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import com.uade.entrelibros.backend.entity.ImagenLibro;
+import com.uade.entrelibros.backend.entity.Usuario;
+import com.uade.entrelibros.backend.exceptions.AccionNoPermitidaException;
 import com.uade.entrelibros.backend.exceptions.ImagenLibroNoEncontradaException;
 import com.uade.entrelibros.backend.exceptions.LibroNoEncontradoException;
 import com.uade.entrelibros.backend.service.ImagenLibroService;
@@ -37,14 +41,16 @@ public class ImagenesLibroController {
         return ResponseEntity.ok(imagenLibroService.getImagenById(imagenId));
     }
 
+    @PreAuthorize("hasAuthority('VENDEDOR')")
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ImagenLibro> createImagenLibro(
+            @AuthenticationPrincipal Usuario vendedor,
             @RequestParam("archivo") MultipartFile archivo,
             @RequestParam Integer orden,
             @RequestParam Long idLibro)
             throws LibroNoEncontradoException, ArchivoDemasiadoGrandeException,
-            TipoArchivoNoPermitidoException, IOException {
-        ImagenLibro result = imagenLibroService.createImagenLibro(archivo, orden, idLibro);
+            TipoArchivoNoPermitidoException, IOException, AccionNoPermitidaException {
+        ImagenLibro result = imagenLibroService.createImagenLibro(vendedor, archivo, orden, idLibro);
         return ResponseEntity.created(URI.create("/imagenes-libro/" + result.getId())).body(result);
     }
 }

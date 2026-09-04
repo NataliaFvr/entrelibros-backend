@@ -7,6 +7,8 @@ import org.springframework.stereotype.Service;
 
 import com.uade.entrelibros.backend.entity.ImagenLibro;
 import com.uade.entrelibros.backend.entity.Libro;
+import com.uade.entrelibros.backend.entity.Usuario;
+import com.uade.entrelibros.backend.exceptions.AccionNoPermitidaException;
 import com.uade.entrelibros.backend.exceptions.ImagenLibroNoEncontradaException;
 import com.uade.entrelibros.backend.exceptions.LibroNoEncontradoException;
 import com.uade.entrelibros.backend.repository.ImagenLibroRepository;
@@ -44,12 +46,17 @@ public class ImagenLibroServiceImpl implements ImagenLibroService {
     private String uploadDir;
 
     @Override
-    public ImagenLibro createImagenLibro(MultipartFile archivo, Integer orden, Long idLibro)
+    public ImagenLibro createImagenLibro(Usuario vendedor, MultipartFile archivo, Integer orden, Long idLibro)
             throws LibroNoEncontradoException, ArchivoDemasiadoGrandeException,
-            TipoArchivoNoPermitidoException, IOException {
+            TipoArchivoNoPermitidoException, IOException, AccionNoPermitidaException {
 
         Libro libro = libroRepository.findById(idLibro)
                 .orElseThrow(LibroNoEncontradoException::new);
+
+        if (vendedor == null || libro.getVendedor() == null
+                || !libro.getVendedor().getId().equals(vendedor.getId())) {
+            throw new AccionNoPermitidaException();
+        }
 
         ImagenValidator.validar(archivo);
 

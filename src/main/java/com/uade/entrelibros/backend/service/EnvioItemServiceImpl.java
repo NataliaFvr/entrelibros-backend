@@ -8,10 +8,14 @@ import org.springframework.stereotype.Service;
 import com.uade.entrelibros.backend.entity.Envio;
 import com.uade.entrelibros.backend.entity.EnvioItem;
 import com.uade.entrelibros.backend.entity.OrdenVendedor;
+import com.uade.entrelibros.backend.entity.Rol;
+import com.uade.entrelibros.backend.entity.Usuario;
 import com.uade.entrelibros.backend.entity.ZonaEnvio;
 import com.uade.entrelibros.backend.exceptions.EnvioItemNoEncontradoException;
 import com.uade.entrelibros.backend.exceptions.EnvioNoEncontradoException;
 import com.uade.entrelibros.backend.exceptions.OrdenVendedorNoEncontradaException;
+import com.uade.entrelibros.backend.exceptions.AccionNoPermitidaException;
+import com.uade.entrelibros.backend.exceptions.RolInvalidoException;
 import com.uade.entrelibros.backend.repository.EnvioItemRepository;
 import com.uade.entrelibros.backend.repository.EnvioRepository;
 import com.uade.entrelibros.backend.repository.OrdenVendedorRepository;
@@ -39,11 +43,20 @@ public class EnvioItemServiceImpl implements EnvioItemService {
         return envioItemRepository.findByOrdenVendedorId(idOrdenVendedor);
     }
 
-    public EnvioItem crearEnvioItem(Long idOrdenVendedor, ZonaEnvio zona)
-            throws OrdenVendedorNoEncontradaException, EnvioNoEncontradoException {
+    public EnvioItem crearEnvioItem(Usuario vendedor, Long idOrdenVendedor, ZonaEnvio zona)
+            throws OrdenVendedorNoEncontradaException, EnvioNoEncontradoException,
+            AccionNoPermitidaException, RolInvalidoException {
+
+        if (vendedor == null || vendedor.getRol() != Rol.VENDEDOR) {
+            throw new RolInvalidoException();
+        }
 
         OrdenVendedor ordenVendedor = ordenVendedorRepository.findById(idOrdenVendedor)
                 .orElseThrow(OrdenVendedorNoEncontradaException::new);
+
+        if (!ordenVendedor.getVendedor().getId().equals(vendedor.getId())) {
+            throw new AccionNoPermitidaException();
+        }
 
         // La tarifa aplicada sale del catalogo de envios segun la zona de destino
         Envio envio = envioRepository.findByZona(zona);
