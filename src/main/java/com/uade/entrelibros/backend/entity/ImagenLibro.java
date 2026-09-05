@@ -10,8 +10,9 @@ public class ImagenLibro {
     public ImagenLibro() {
     }
 
-    public ImagenLibro(String url, Integer orden, Libro libro) {
-        this.url = url;
+    public ImagenLibro(byte[] imagen, String tipoContenido, Integer orden, Libro libro) {
+        this.imagen = imagen;
+        this.tipoContenido = tipoContenido;
         this.orden = orden;
         this.libro = libro;
     }
@@ -20,7 +21,12 @@ public class ImagenLibro {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String url;
+    @Lob
+    @Column(columnDefinition = "LONGBLOB")
+    private byte[] imagen;
+
+    private String tipoContenido; // "image/jpeg" o "image/png"
+
     private Integer orden;
 
     @ManyToOne
