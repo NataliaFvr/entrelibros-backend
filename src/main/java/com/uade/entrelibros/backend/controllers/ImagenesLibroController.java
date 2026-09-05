@@ -1,26 +1,25 @@
 package com.uade.entrelibros.backend.controllers;
 
+import java.io.IOException;
 import java.net.URI;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.uade.entrelibros.backend.entity.ImagenLibro;
 import com.uade.entrelibros.backend.entity.Usuario;
 import com.uade.entrelibros.backend.exceptions.AccionNoPermitidaException;
+import com.uade.entrelibros.backend.exceptions.ArchivoDemasiadoGrandeException;
 import com.uade.entrelibros.backend.exceptions.ImagenLibroNoEncontradaException;
 import com.uade.entrelibros.backend.exceptions.LibroNoEncontradoException;
-import com.uade.entrelibros.backend.service.ImagenLibroService;
-
-import org.springframework.http.MediaType;
-import org.springframework.web.multipart.MultipartFile;
-import com.uade.entrelibros.backend.exceptions.ArchivoDemasiadoGrandeException;
 import com.uade.entrelibros.backend.exceptions.TipoArchivoNoPermitidoException;
-import java.io.IOException;
+import com.uade.entrelibros.backend.service.ImagenLibroService;
 
 @RestController
 @RequestMapping("imagenes-libro")
@@ -52,5 +51,15 @@ public class ImagenesLibroController {
             TipoArchivoNoPermitidoException, IOException, AccionNoPermitidaException {
         ImagenLibro result = imagenLibroService.createImagenLibro(vendedor, archivo, orden, idLibro);
         return ResponseEntity.created(URI.create("/imagenes-libro/" + result.getId())).body(result);
+    }
+
+    @PreAuthorize("hasAuthority('VENDEDOR')")
+    @DeleteMapping("/{imagenId}")
+    public ResponseEntity<Void> deleteImagenLibro(
+            @AuthenticationPrincipal Usuario vendedor,
+            @PathVariable Long imagenId)
+            throws ImagenLibroNoEncontradaException, AccionNoPermitidaException {
+        imagenLibroService.deleteImagenLibro(vendedor, imagenId);
+        return ResponseEntity.noContent().build();
     }
 }

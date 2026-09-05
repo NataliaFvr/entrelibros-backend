@@ -63,7 +63,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             // si requiere login, Spring Security la va a rechazar mas adelante
             // (401/403) por no haber autenticacion, en vez de romperse aca.
             // sacar linea system
-            System.out.println("### ERROR AL VALIDAR TOKEN: " + ex.getClass().getSimpleName() + " -> " + ex.getMessage());
+        
             SecurityContextHolder.clearContext();
         }
 
