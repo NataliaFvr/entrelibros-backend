@@ -57,14 +57,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 }
             }
         } catch (JwtException | UsernameNotFoundException | IllegalArgumentException ex) {
-            // Token roto, vencido, mal formado, o de un usuario que ya no existe.
-            // No autenticamos a nadie y dejamos que siga la cadena de filtros:
-            // si la ruta es publica (permitAll), va a andar igual;
-            // si requiere login, Spring Security la va a rechazar mas adelante
-            // (401/403) por no haber autenticacion, en vez de romperse aca.
-            // sacar linea system
-        
             SecurityContextHolder.clearContext();
+            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Token invalido o vencido");
+            return;
         }
 
         filterChain.doFilter(request, response);

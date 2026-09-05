@@ -4,5 +4,5 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ResponseStatus;
 
 @ResponseStatus(code = HttpStatus.NOT_FOUND, reason = "No existe una resena de libro con ese id")
-public class ResenaLibroNoEncontradaException extends Exception {
+public class ResenaLibroNoEncontradaException extends RuntimeException {
 }

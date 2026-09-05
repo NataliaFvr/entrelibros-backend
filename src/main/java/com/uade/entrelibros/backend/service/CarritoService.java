@@ -19,17 +19,11 @@ Carrito getOrCrearCarrito(Long idUsuario);
 
     List<CarritoItem> getItemsCarrito(Long idUsuario);
 
-    CarritoItem agregarItem(Long idUsuario, Long idLibro, Integer cantidad)
-            throws LibroNoEncontradoException, StockInsuficienteException, LibroNoDisponibleException,
-            CompraPropiaException;
+    CarritoItem agregarItem(Long idUsuario, Long idLibro, Integer cantidad);
 
-    CarritoItem modificarCantidad(Long idUsuario, Long idItem, Integer cantidad)
-            throws ItemCarritoNoEncontradoException, AccionNoPermitidaException, CantidadInvalidaException,
-            StockInsuficienteException, LibroNoDisponibleException;
+    CarritoItem modificarCantidad(Long idUsuario, Long idItem, Integer cantidad);
 
-    void quitarItem(Long idUsuario, Long idItem) throws ItemCarritoNoEncontradoException, AccionNoPermitidaException;
+    void quitarItem(Long idUsuario, Long idItem);
 
-    Orden checkout(Long idUsuario, String provinciaDestino)
-            throws CarritoVacioException, StockInsuficienteException, LibroNoDisponibleException,
-            CompraPropiaException, LibroNoEncontradoException;
+    Orden checkout(Long idUsuario, String provinciaDestino);
 }

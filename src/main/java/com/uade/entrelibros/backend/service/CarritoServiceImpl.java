@@ -68,9 +68,7 @@ public class CarritoServiceImpl implements CarritoService {
         return carritoItemRepository.findByCarritoId(carrito.getId());
     }
 
-    public CarritoItem agregarItem(Long idUsuario, Long idLibro, Integer cantidad)
-            throws LibroNoEncontradoException, StockInsuficienteException, LibroNoDisponibleException,
-            CompraPropiaException {
+    public CarritoItem agregarItem(Long idUsuario, Long idLibro, Integer cantidad) {
 
         Libro libro = libroRepository.findById(idLibro)
                 .orElseThrow(LibroNoEncontradoException::new);
@@ -90,9 +88,7 @@ public class CarritoServiceImpl implements CarritoService {
         Carrito carrito = getOrCrearCarrito(idUsuario);
         return carritoItemRepository.save(new CarritoItem(carrito, libro, cantidad));
     }
-        public CarritoItem modificarCantidad(Long idUsuario, Long idItem, Integer cantidad)
-            throws ItemCarritoNoEncontradoException, AccionNoPermitidaException, CantidadInvalidaException,
-            StockInsuficienteException, LibroNoDisponibleException {
+        public CarritoItem modificarCantidad(Long idUsuario, Long idItem, Integer cantidad) {
 
         if (cantidad == null || cantidad < 1)
             throw new CantidadInvalidaException();
@@ -118,8 +114,7 @@ public class CarritoServiceImpl implements CarritoService {
         return carritoItemRepository.save(item);
     }
 
-    public void quitarItem(Long idUsuario, Long idItem)
-            throws ItemCarritoNoEncontradoException, AccionNoPermitidaException {
+    public void quitarItem(Long idUsuario, Long idItem) {
         CarritoItem item = carritoItemRepository.findById(idItem)
                 .orElseThrow(ItemCarritoNoEncontradoException::new);
         if (!item.getCarrito().getUsuario().getId().equals(idUsuario)) {
@@ -129,9 +124,7 @@ public class CarritoServiceImpl implements CarritoService {
     }
 
     @Transactional
-    public Orden checkout(Long idUsuario, String provinciaDestino)
-            throws CarritoVacioException, StockInsuficienteException, LibroNoDisponibleException,
-            CompraPropiaException, LibroNoEncontradoException {
+    public Orden checkout(Long idUsuario, String provinciaDestino) {
 
         Carrito carrito = getOrCrearCarrito(idUsuario);
         List<CarritoItem> items = carritoItemRepository.findByCarritoId(carrito.getId());

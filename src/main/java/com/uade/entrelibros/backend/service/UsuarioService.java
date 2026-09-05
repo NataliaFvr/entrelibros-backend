@@ -16,18 +16,16 @@ public interface UsuarioService {
 
     public Optional<Usuario> getUsuarioById(Long usuarioId);
 
-    public Usuario createUsuario(String nombreUsuario, String email, String contrasena, String nombre, String apellido)
-            throws UsuarioDuplicadoException;
+    public Usuario createUsuario(String nombreUsuario, String email, String contrasena, String nombre, String apellido);
 
     public Usuario createUsuario(String nombreUsuario, String email, String contrasena, String nombre,
-            String apellido, Rol rol) throws UsuarioDuplicadoException;
+            String apellido, Rol rol);
 
-    public Usuario updateUsuario(Long usuarioId, UsuarioUpdateRequest request)
-            throws UsuarioDuplicadoException, UsuarioNoEncontradoException;
+    public Usuario updateUsuario(Long usuarioId, UsuarioUpdateRequest request);
 
-    public void eliminarUsuario(Long usuarioId) throws UsuarioNoEncontradoException;
+    public void eliminarUsuario(Long usuarioId);
 
-    public Usuario cambiarRol(Long usuarioId, Rol nuevoRol) throws UsuarioNoEncontradoException;
+    public Usuario cambiarRol(Long usuarioId, Rol nuevoRol);
 
-    public Usuario reactivarUsuario(Long usuarioId) throws UsuarioNoEncontradoException;
+    public Usuario reactivarUsuario(Long usuarioId);
 }

@@ -11,7 +11,7 @@ public interface EnvioService {
 
     List<Envio> getEnvios();
 
-    Envio getEnvioById(Long idEnvio) throws EnvioNoEncontradoException;
+    Envio getEnvioById(Long idEnvio);
 
-    Envio crearEnvio(ZonaEnvio zona, Double costoFijo) throws EnvioDuplicadoException;
+    Envio crearEnvio(ZonaEnvio zona, Double costoFijo);
 }

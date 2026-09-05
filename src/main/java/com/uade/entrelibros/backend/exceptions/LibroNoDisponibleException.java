@@ -4,5 +4,5 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ResponseStatus;
 
 @ResponseStatus(code = HttpStatus.BAD_REQUEST, reason = "Libro no disponible")
-public class LibroNoDisponibleException extends Exception {
+public class LibroNoDisponibleException extends RuntimeException {
 }

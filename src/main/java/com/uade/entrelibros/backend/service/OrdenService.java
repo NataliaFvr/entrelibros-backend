@@ -13,20 +13,17 @@ import com.uade.entrelibros.backend.exceptions.OrdenNoCancelableException;
 
 public interface OrdenService {
 
-    List<Orden> getOrdenes(Usuario usuario) throws AccionNoPermitidaException;
+    List<Orden> getOrdenes(Usuario usuario);
 
-    Orden getOrdenById(Long idOrden, Usuario usuario)
-            throws OrdenNoEncontradaException, AccionNoPermitidaException;
+    Orden getOrdenById(Long idOrden, Usuario usuario);
 
     List<Orden> getOrdenesByComprador(Usuario comprador);
 
-    List<OrdenVendedor> getOrdenesDelVendedor(Usuario vendedor) throws RolInvalidoException;
+    List<OrdenVendedor> getOrdenesDelVendedor(Usuario vendedor);
 
-    OrdenVendedor cancelarOrdenVendedor(Long idOrdenVendedor, Usuario vendedor)
-            throws OrdenVendedorNoEncontradaException, RolInvalidoException, AccionNoPermitidaException;
+    OrdenVendedor cancelarOrdenVendedor(Long idOrdenVendedor, Usuario vendedor);
 
-    Orden cancelarOrden(Long idOrden, Usuario comprador)
-            throws OrdenNoEncontradaException, AccionNoPermitidaException, OrdenNoCancelableException;
+    Orden cancelarOrden(Long idOrden, Usuario comprador);
 
     boolean liberarReservaVencida(Long idOrden);
 

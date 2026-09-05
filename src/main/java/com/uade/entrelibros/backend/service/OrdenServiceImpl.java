@@ -37,15 +37,14 @@ public class OrdenServiceImpl implements OrdenService {
     @Autowired
     private LibroRepository libroRepository;
 
-    public List<Orden> getOrdenes(Usuario usuario) throws AccionNoPermitidaException {
+    public List<Orden> getOrdenes(Usuario usuario) {
         if (usuario.getRol() != Rol.ADMIN) {
             throw new AccionNoPermitidaException();
         }
         return ordenRepository.findAll();
     }
 
-    public Orden getOrdenById(Long idOrden, Usuario usuario)
-            throws OrdenNoEncontradaException, AccionNoPermitidaException {
+    public Orden getOrdenById(Long idOrden, Usuario usuario) {
         Orden orden = ordenRepository.findById(idOrden)
                 .orElseThrow(OrdenNoEncontradaException::new);
 
@@ -64,14 +63,13 @@ public class OrdenServiceImpl implements OrdenService {
         return ordenRepository.findByCompradorId(comprador.getId());
     }
 
-    public List<OrdenVendedor> getOrdenesDelVendedor(Usuario vendedor) throws RolInvalidoException {
+    public List<OrdenVendedor> getOrdenesDelVendedor(Usuario vendedor) {
         validarVendedor(vendedor);
         return ordenVendedorRepository.findByVendedorId(vendedor.getId());
     }
 
     @Transactional
-    public OrdenVendedor cancelarOrdenVendedor(Long idOrdenVendedor, Usuario vendedor)
-            throws OrdenVendedorNoEncontradaException, RolInvalidoException, AccionNoPermitidaException {
+    public OrdenVendedor cancelarOrdenVendedor(Long idOrdenVendedor, Usuario vendedor) {
         validarVendedor(vendedor);
         OrdenVendedor ordenVendedor = ordenVendedorRepository.findById(idOrdenVendedor)
                 .orElseThrow(OrdenVendedorNoEncontradaException::new);
@@ -91,8 +89,7 @@ public class OrdenServiceImpl implements OrdenService {
     }
 
     @Transactional
-    public Orden cancelarOrden(Long idOrden, Usuario comprador)
-            throws OrdenNoEncontradaException, AccionNoPermitidaException, OrdenNoCancelableException {
+    public Orden cancelarOrden(Long idOrden, Usuario comprador) {
         Orden orden = ordenRepository.findByIdConCandado(idOrden)
                 .orElseThrow(OrdenNoEncontradaException::new);
 
@@ -154,7 +151,7 @@ public class OrdenServiceImpl implements OrdenService {
         }
     }
 
-    private void validarVendedor(Usuario vendedor) throws RolInvalidoException {
+    private void validarVendedor(Usuario vendedor) {
         if (vendedor.getRol() != Rol.VENDEDOR) {
             throw new RolInvalidoException();
         }

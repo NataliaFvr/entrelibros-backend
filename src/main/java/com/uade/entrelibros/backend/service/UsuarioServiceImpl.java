@@ -45,12 +45,12 @@ public class UsuarioServiceImpl implements UsuarioService {
     }
 
     public Usuario createUsuario(String nombreUsuario, String email, String contrasena, String nombre,
-            String apellido) throws UsuarioDuplicadoException {
+            String apellido) {
         return createUsuario(nombreUsuario, email, contrasena, nombre, apellido, Rol.COMPRADOR);
     }
 
     public Usuario createUsuario(String nombreUsuario, String email, String contrasena, String nombre,
-            String apellido, Rol rol) throws UsuarioDuplicadoException {
+            String apellido, Rol rol) {
         List<Usuario> existentes = usuarioRepository.findByEmailOrNombreUsuario(email, nombreUsuario);
         if (!existentes.isEmpty())
             throw new UsuarioDuplicadoException();
@@ -61,8 +61,7 @@ public class UsuarioServiceImpl implements UsuarioService {
     }
 
     @Override
-    public Usuario updateUsuario(Long usuarioId, UsuarioUpdateRequest request)
-            throws UsuarioDuplicadoException, UsuarioNoEncontradoException {
+    public Usuario updateUsuario(Long usuarioId, UsuarioUpdateRequest request) {
         Usuario usuario = usuarioRepository.findById(usuarioId)
                 .orElseThrow(UsuarioNoEncontradoException::new);
 
@@ -96,7 +95,7 @@ public class UsuarioServiceImpl implements UsuarioService {
 
     @Override
     @Transactional
-    public void eliminarUsuario(Long usuarioId) throws UsuarioNoEncontradoException {
+    public void eliminarUsuario(Long usuarioId) {
         Usuario usuario = usuarioRepository.findById(usuarioId)
                 .orElseThrow(UsuarioNoEncontradoException::new);
 
@@ -119,14 +118,14 @@ public class UsuarioServiceImpl implements UsuarioService {
        
     }
 
-    public Usuario cambiarRol(Long usuarioId, Rol nuevoRol) throws UsuarioNoEncontradoException {
+    public Usuario cambiarRol(Long usuarioId, Rol nuevoRol) {
         Usuario usuario = usuarioRepository.findById(usuarioId)
             .orElseThrow(UsuarioNoEncontradoException::new);
         usuario.setRol(nuevoRol);
         return usuarioRepository.save(usuario);
     }
 
-    public Usuario reactivarUsuario(Long usuarioId) throws UsuarioNoEncontradoException {
+    public Usuario reactivarUsuario(Long usuarioId) {
         Usuario usuario = usuarioRepository.findById(usuarioId)
             .orElseThrow(UsuarioNoEncontradoException::new);
         usuario.setEstado(EstadoUsuario.ACTIVO);

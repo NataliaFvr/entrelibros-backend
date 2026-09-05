@@ -4,5 +4,5 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ResponseStatus;
 
 @ResponseStatus(code = HttpStatus.NOT_FOUND, reason = "No existe una imagen con ese id")
-public class ImagenLibroNoEncontradaException extends Exception {
+public class ImagenLibroNoEncontradaException extends RuntimeException {
 }

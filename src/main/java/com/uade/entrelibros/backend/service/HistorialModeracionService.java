@@ -8,8 +8,7 @@ import com.uade.entrelibros.backend.exceptions.LibroNoEncontradoException;
 
 public interface HistorialModeracionService {
 
-    Page<HistorialModeracionResponse> getHistorialPorLibro(Long idLibro, Pageable pageable)
-            throws LibroNoEncontradoException;
+    Page<HistorialModeracionResponse> getHistorialPorLibro(Long idLibro, Pageable pageable);
 
     Page<HistorialModeracionResponse> getHistorialCompleto(Pageable pageable);
 }

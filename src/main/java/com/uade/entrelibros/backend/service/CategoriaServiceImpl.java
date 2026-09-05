@@ -20,12 +20,12 @@ public class CategoriaServiceImpl implements CategoriaService {
         return categoriaRepository.findAll();
     }
 
-    public Categoria getCategoriaById(Long categoriaId) throws CategoriaNoEncontradaException {
+    public Categoria getCategoriaById(Long categoriaId) {
         return categoriaRepository.findById(categoriaId)
                 .orElseThrow(CategoriaNoEncontradaException::new);
     }
 
-    public Categoria createCategoria(String nombre) throws CategoriaDuplicadaException {
+    public Categoria createCategoria(String nombre) {
         Categoria existente = categoriaRepository.findByNombre(nombre);
         if (existente != null)
             throw new CategoriaDuplicadaException();

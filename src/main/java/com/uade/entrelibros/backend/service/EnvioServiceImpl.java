@@ -21,12 +21,12 @@ public class EnvioServiceImpl implements EnvioService {
         return envioRepository.findAll();
     }
 
-    public Envio getEnvioById(Long idEnvio) throws EnvioNoEncontradoException {
+    public Envio getEnvioById(Long idEnvio) {
         return envioRepository.findById(idEnvio)
                 .orElseThrow(EnvioNoEncontradoException::new);
     }
 
-    public Envio crearEnvio(ZonaEnvio zona, Double costoFijo) throws EnvioDuplicadoException {
+    public Envio crearEnvio(ZonaEnvio zona, Double costoFijo) {
         Envio existente = envioRepository.findByZona(zona);
         if (existente != null)
             throw new EnvioDuplicadoException();

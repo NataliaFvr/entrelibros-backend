@@ -31,16 +31,14 @@ public class PagoServiceImpl implements PagoService {
         return pagoRepository.findAll();
     }
 
-    public Pago getPagoById(Usuario comprador, Long idPago)
-            throws PagoNoEncontradoException, AccionNoPermitidaException {
+    public Pago getPagoById(Usuario comprador, Long idPago) {
         Pago pago = pagoRepository.findById(idPago)
                 .orElseThrow(PagoNoEncontradoException::new);
         validarComprador(pago.getOrden(), comprador);
         return pago;
     }
 
-    public List<Pago> getPagosByOrden(Usuario comprador, Long idOrden)
-            throws OrdenNoEncontradaException, AccionNoPermitidaException {
+    public List<Pago> getPagosByOrden(Usuario comprador, Long idOrden) {
         Orden orden = ordenRepository.findById(idOrden)
                 .orElseThrow(OrdenNoEncontradaException::new);
         validarComprador(orden, comprador);
@@ -48,8 +46,7 @@ public class PagoServiceImpl implements PagoService {
     }
 
     @Transactional
-    public Pago crearPago(Usuario comprador, Long idOrden, String proveedor)
-            throws OrdenNoEncontradaException, AccionNoPermitidaException, OrdenNoCancelableException {
+    public Pago crearPago(Usuario comprador, Long idOrden, String proveedor) {
         if (ordenService.liberarReservaVencida(idOrden)) {
             throw new OrdenNoCancelableException();
         }
@@ -72,7 +69,7 @@ public class PagoServiceImpl implements PagoService {
         return pago;
     }
 
-    private void validarComprador(Orden orden, Usuario comprador) throws AccionNoPermitidaException {
+    private void validarComprador(Orden orden, Usuario comprador) {
         if (orden == null || orden.getComprador() == null || comprador == null
                 || !orden.getComprador().getId().equals(comprador.getId())) {
             throw new AccionNoPermitidaException();

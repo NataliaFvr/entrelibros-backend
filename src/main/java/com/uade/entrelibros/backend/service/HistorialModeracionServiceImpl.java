@@ -20,8 +20,7 @@ public class HistorialModeracionServiceImpl implements HistorialModeracionServic
     private LibroRepository libroRepository;
 
     @Override
-    public Page<HistorialModeracionResponse> getHistorialPorLibro(Long idLibro, Pageable pageable)
-            throws LibroNoEncontradoException {
+    public Page<HistorialModeracionResponse> getHistorialPorLibro(Long idLibro, Pageable pageable) {
         if (!libroRepository.existsById(idLibro)) {
             throw new LibroNoEncontradoException();
         }

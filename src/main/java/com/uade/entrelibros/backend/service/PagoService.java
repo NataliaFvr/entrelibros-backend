@@ -13,12 +13,9 @@ public interface PagoService {
 
     List<Pago> getPagos();
 
-    Pago getPagoById(Usuario comprador, Long idPago)
-            throws PagoNoEncontradoException, AccionNoPermitidaException;
+    Pago getPagoById(Usuario comprador, Long idPago);
 
-    List<Pago> getPagosByOrden(Usuario comprador, Long idOrden)
-            throws OrdenNoEncontradaException, AccionNoPermitidaException;
+    List<Pago> getPagosByOrden(Usuario comprador, Long idOrden);
 
-    Pago crearPago(Usuario comprador, Long idOrden, String proveedor)
-            throws OrdenNoEncontradaException, AccionNoPermitidaException, OrdenNoCancelableException;
+    Pago crearPago(Usuario comprador, Long idOrden, String proveedor);
 }
