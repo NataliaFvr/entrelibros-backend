@@ -12,6 +12,7 @@ import com.uade.entrelibros.backend.exceptions.LibroNoDisponibleException;
 import com.uade.entrelibros.backend.entity.Carrito;
 import com.uade.entrelibros.backend.entity.CarritoItem;
 import com.uade.entrelibros.backend.entity.EstadoPublicacion;
+import com.uade.entrelibros.backend.entity.EstadoModeracion;
 import com.uade.entrelibros.backend.entity.Libro;
 import com.uade.entrelibros.backend.entity.Orden;
 import com.uade.entrelibros.backend.entity.OrdenItem;
@@ -84,9 +85,7 @@ public class CarritoServiceImpl implements CarritoService {
             throw new CompraPropiaException();
         }
 
-        if (libro.getEstadoPublicacion() == EstadoPublicacion.DADA_DE_BAJA) {
-            throw new LibroNoDisponibleException();
-        }
+        validarLibroDisponible(libro);
 
         if (libro.getStock() < cantidad) {
             throw new StockInsuficienteException();
@@ -109,9 +108,7 @@ public class CarritoServiceImpl implements CarritoService {
 
         Libro libro = item.getLibro();
 
-        if (libro.getEstadoPublicacion() == EstadoPublicacion.DADA_DE_BAJA) {
-            throw new LibroNoDisponibleException();
-        }
+        validarLibroDisponible(libro);
 
         if (libro.getStock() < cantidad) {
             throw new StockInsuficienteException();
@@ -149,9 +146,7 @@ public class CarritoServiceImpl implements CarritoService {
             if (libro.getVendedor().getId().equals(idUsuario)) {
                 throw new CompraPropiaException();
             }
-            if (libro.getEstadoPublicacion() == EstadoPublicacion.DADA_DE_BAJA) {
-                throw new LibroNoDisponibleException();
-            }
+            validarLibroDisponible(libro);
             if (libro.getStock() < item.getCantidad()) {
                 throw new StockInsuficienteException();
             }
@@ -192,6 +187,15 @@ public class CarritoServiceImpl implements CarritoService {
         }
 
         return orden;
+    }
+
+    // Un libro solo se puede agregar al carrito / comprar si esta 100% publicado:
+    // publicacion ACTIVA y moderacion ACEPTADO (aprobado por un admin).
+    private void validarLibroDisponible(Libro libro) {
+        if (libro.getEstadoPublicacion() != EstadoPublicacion.ACTIVA
+                || libro.getEstadoModeracion() != EstadoModeracion.ACEPTADO) {
+            throw new LibroNoDisponibleException();
+        }
     }
 
     private double precioConDescuento(Libro libro) {
