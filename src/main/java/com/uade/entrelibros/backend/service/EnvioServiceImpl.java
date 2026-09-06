@@ -32,4 +32,12 @@ public class EnvioServiceImpl implements EnvioService {
             throw new EnvioDuplicadoException();
         return envioRepository.save(new Envio(zona, costoFijo));
     }
+
+    public Double getCostoPorZona(ZonaEnvio zona) {
+        Envio envio = envioRepository.findByZona(zona);
+        if (envio == null) {
+            throw new EnvioNoEncontradoException();
+        }
+        return envio.getCostoFijo();
+    }
 }

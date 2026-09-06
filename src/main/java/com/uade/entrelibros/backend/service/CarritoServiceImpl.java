@@ -31,7 +31,8 @@ import com.uade.entrelibros.backend.repository.OrdenItemRepository;
 import com.uade.entrelibros.backend.repository.OrdenRepository;
 import com.uade.entrelibros.backend.repository.OrdenVendedorRepository;
 import com.uade.entrelibros.backend.repository.UsuarioRepository;
-
+import com.uade.entrelibros.backend.entity.ZonaEnvio;
+import com.uade.entrelibros.backend.exceptions.EnvioNoEncontradoException;
 
 @Service
 public class CarritoServiceImpl implements CarritoService {
@@ -50,6 +51,8 @@ public class CarritoServiceImpl implements CarritoService {
     private OrdenVendedorRepository ordenVendedorRepository;
     @Autowired
     private OrdenItemRepository ordenItemRepository;
+    @Autowired
+    private EnvioService envioService;
 
     public Carrito getOrCrearCarrito(Long idUsuario) {
         Carrito carrito = carritoRepository.findByUsuarioId(idUsuario);
@@ -155,9 +158,11 @@ public class CarritoServiceImpl implements CarritoService {
             subtotal += precioConDescuento(item.getLibro()) * item.getCantidad();
         }
 
-        // Por ahora total = subtotal (el costo de envío lo agrega Persona 4 con
-        // Envio/EnvioItem)
-        Orden orden = new Orden(carrito.getUsuario(), provinciaDestino, subtotal, subtotal);
+        ZonaEnvio zona = mapearProvinciaAZona(provinciaDestino);
+        double costoEnvio = envioService.getCostoPorZona(zona);
+        double total = subtotal + costoEnvio;
+
+        Orden orden = new Orden(carrito.getUsuario(), provinciaDestino, subtotal, costoEnvio, total);
         orden = ordenRepository.save(orden);
 
         Map<Long, OrdenVendedor> ordenVendedorPorVendedor = new HashMap<>();
@@ -188,5 +193,18 @@ public class CarritoServiceImpl implements CarritoService {
     private double precioConDescuento(Libro libro) {
         double descuento = libro.getDescuentoPct() != null ? libro.getDescuentoPct() : 0.0;
         return libro.getPrecio() * (1 - descuento / 100.0);
+    }
+    private ZonaEnvio mapearProvinciaAZona(String provinciaDestino) {
+        if (provinciaDestino == null) {
+            throw new EnvioNoEncontradoException();
+        }
+        String p = provinciaDestino.trim().toUpperCase();
+        if (p.equals("CABA") || p.equals("CIUDAD AUTONOMA DE BUENOS AIRES")) {
+            return ZonaEnvio.CABA;
+        }
+        if (p.equals("BUENOS AIRES") || p.equals("PROVINCIA DE BUENOS AIRES") || p.equals("PROVINCIA_BA")) {
+            return ZonaEnvio.PROVINCIA_BA;
+        }
+        return ZonaEnvio.RESTO_PAIS;
     }
 }

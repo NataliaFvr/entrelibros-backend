@@ -12,6 +12,7 @@ public class OrdenResponse {
     private LocalDateTime fecha;
     private String provinciaDestino;
     private Double subtotal;
+    private Double costoEnvio;
     private Double total;
     private String estadoPago;
     private Long idComprador;
@@ -23,6 +24,7 @@ public class OrdenResponse {
         r.fecha = orden.getFecha();
         r.provinciaDestino = orden.getProvinciaDestino();
         r.subtotal = orden.getSubtotal();
+        r.costoEnvio = orden.getCostoEnvio();
         r.total = orden.getTotal();
         r.estadoPago = orden.getEstadoPago() != null ? orden.getEstadoPago().name() : null;
         if (orden.getComprador() != null) {
