@@ -12,6 +12,7 @@ import com.uade.entrelibros.backend.entity.Usuario;
 import com.uade.entrelibros.backend.exceptions.AccionNoPermitidaException;
 import com.uade.entrelibros.backend.exceptions.CalificacionInvalidaException;
 import com.uade.entrelibros.backend.exceptions.EnvioItemNoEncontradoException;
+import com.uade.entrelibros.backend.exceptions.ListaVaciaException;
 import com.uade.entrelibros.backend.exceptions.ResenaDuplicadaException;
 import com.uade.entrelibros.backend.exceptions.ResenaVendedorNoEncontradaException;
 import com.uade.entrelibros.backend.repository.EnvioItemRepository;
@@ -26,8 +27,13 @@ public class ResenaVendedorServiceImpl implements ResenaVendedorService {
     private EnvioItemRepository envioItemRepository;
 
     public List<ResenaVendedor> getResenas() {
-        return resenaVendedorRepository.findAll();
+        List<ResenaVendedor> resenas = resenaVendedorRepository.findAll();
+        if (resenas.isEmpty()) {
+            throw new ListaVaciaException("No hay reseñas de vendedores registradas");
+        }
+        return resenas;
     }
+
 
     public ResenaVendedor getResenaById(Long idResena) throws ResenaVendedorNoEncontradaException {
         return resenaVendedorRepository.findById(idResena)
@@ -35,7 +41,11 @@ public class ResenaVendedorServiceImpl implements ResenaVendedorService {
     }
 
     public List<ResenaVendedor> getResenasByVendedor(Long idVendedor) {
-        return resenaVendedorRepository.findByVendedorId(idVendedor);
+        List<ResenaVendedor> resenas = resenaVendedorRepository.findByVendedorId(idVendedor);
+        if (resenas.isEmpty()) {
+            throw new ListaVaciaException("Ese vendedor todavía no tiene reseñas");
+        }
+        return resenas;
     }
 
     public ResenaVendedor crearResena(Usuario comprador, Long idEnvioItem, Integer clasificacion, String comentario)

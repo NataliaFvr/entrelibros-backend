@@ -11,6 +11,7 @@ import com.uade.entrelibros.backend.entity.Orden;
 import com.uade.entrelibros.backend.entity.Pago;
 import com.uade.entrelibros.backend.entity.Usuario;
 import com.uade.entrelibros.backend.exceptions.AccionNoPermitidaException;
+import com.uade.entrelibros.backend.exceptions.ListaVaciaException;
 import com.uade.entrelibros.backend.exceptions.OrdenNoEncontradaException;
 import com.uade.entrelibros.backend.exceptions.PagoNoEncontradoException;
 import com.uade.entrelibros.backend.exceptions.OrdenNoCancelableException;
@@ -28,9 +29,12 @@ public class PagoServiceImpl implements PagoService {
     private OrdenService ordenService;
 
     public List<Pago> getPagos() {
-        return pagoRepository.findAll();
+        List<Pago> pagos = pagoRepository.findAll();
+        if (pagos.isEmpty()) {
+            throw new ListaVaciaException("No hay pagos registrados");
+        }
+        return pagos;
     }
-
     public Pago getPagoById(Usuario comprador, Long idPago) {
         Pago pago = pagoRepository.findById(idPago)
                 .orElseThrow(PagoNoEncontradoException::new);
@@ -42,7 +46,11 @@ public class PagoServiceImpl implements PagoService {
         Orden orden = ordenRepository.findById(idOrden)
                 .orElseThrow(OrdenNoEncontradaException::new);
         validarComprador(orden, comprador);
-        return pagoRepository.findByOrdenId(idOrden);
+        List<Pago> pagos = pagoRepository.findByOrdenId(idOrden);
+        if (pagos.isEmpty()) {
+            throw new ListaVaciaException("Esa orden no tiene pagos registrados");
+        }
+        return pagos;
     }
 
     @Transactional

@@ -14,6 +14,7 @@ import com.uade.entrelibros.backend.exceptions.AccionNoPermitidaException;
 import com.uade.entrelibros.backend.exceptions.ArchivoDemasiadoGrandeException;
 import com.uade.entrelibros.backend.exceptions.ImagenLibroNoEncontradaException;
 import com.uade.entrelibros.backend.exceptions.LibroNoEncontradoException;
+import com.uade.entrelibros.backend.exceptions.ListaVaciaException;
 import com.uade.entrelibros.backend.exceptions.TipoArchivoNoPermitidoException;
 import com.uade.entrelibros.backend.repository.ImagenLibroRepository;
 import com.uade.entrelibros.backend.repository.LibroRepository;
@@ -29,7 +30,11 @@ public class ImagenLibroServiceImpl implements ImagenLibroService {
 
     public List<ImagenLibro> getImagenesByLibroId(Long libroId) throws LibroNoEncontradoException {
         libroRepository.findById(libroId).orElseThrow(LibroNoEncontradoException::new);
-        return imagenLibroRepository.findByLibroId(libroId);
+        List<ImagenLibro> imagenes = imagenLibroRepository.findByLibroId(libroId);
+        if (imagenes.isEmpty()) {
+            throw new ListaVaciaException("Ese libro no tiene imágenes cargadas");
+        }
+        return imagenes;
     }
 
     public ImagenLibro getImagenById(Long imagenId) throws ImagenLibroNoEncontradaException {

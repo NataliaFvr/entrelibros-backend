@@ -12,6 +12,8 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
+import com.uade.entrelibros.backend.exceptions.ListaVaciaException;
+
 @RestControllerAdvice
 public class AuthExceptionHandler {
 
@@ -35,6 +37,12 @@ public class AuthExceptionHandler {
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
                 .body(Map.of("error", "El archivo supera el tamaño máximo permitido (10MB)"));
+    }
+        @ExceptionHandler(ListaVaciaException.class)
+    public ResponseEntity<Map<String, String>> handleListaVacia(ListaVaciaException ex) {
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .body(Map.of("error", ex.getMessage()));
     }
        
 }

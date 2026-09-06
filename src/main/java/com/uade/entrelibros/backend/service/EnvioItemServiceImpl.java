@@ -13,6 +13,7 @@ import com.uade.entrelibros.backend.entity.Usuario;
 import com.uade.entrelibros.backend.entity.ZonaEnvio;
 import com.uade.entrelibros.backend.exceptions.EnvioItemNoEncontradoException;
 import com.uade.entrelibros.backend.exceptions.EnvioNoEncontradoException;
+import com.uade.entrelibros.backend.exceptions.ListaVaciaException;
 import com.uade.entrelibros.backend.exceptions.OrdenVendedorNoEncontradaException;
 import com.uade.entrelibros.backend.exceptions.AccionNoPermitidaException;
 import com.uade.entrelibros.backend.exceptions.RolInvalidoException;
@@ -31,7 +32,11 @@ public class EnvioItemServiceImpl implements EnvioItemService {
     private OrdenVendedorRepository ordenVendedorRepository;
 
     public List<EnvioItem> getEnvioItems() {
-        return envioItemRepository.findAll();
+        List<EnvioItem> items = envioItemRepository.findAll();
+        if (items.isEmpty()) {
+            throw new ListaVaciaException("No hay envíos registrados");
+        }
+        return items;
     }
 
     public EnvioItem getEnvioItemById(Long idEnvioItem) throws EnvioItemNoEncontradoException {
@@ -40,7 +45,11 @@ public class EnvioItemServiceImpl implements EnvioItemService {
     }
 
     public List<EnvioItem> getEnvioItemsByOrdenVendedor(Long idOrdenVendedor) {
-        return envioItemRepository.findByOrdenVendedorId(idOrdenVendedor);
+        List<EnvioItem> items = envioItemRepository.findByOrdenVendedorId(idOrdenVendedor);
+        if (items.isEmpty()) {
+            throw new ListaVaciaException("No hay envíos para esa orden de vendedor");
+        }
+        return items;
     }
 
     public EnvioItem crearEnvioItem(Usuario vendedor, Long idOrdenVendedor, ZonaEnvio zona)

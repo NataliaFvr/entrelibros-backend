@@ -16,6 +16,7 @@ import com.uade.entrelibros.backend.entity.EstadoOrdenVendedor;
 import com.uade.entrelibros.backend.entity.Rol;
 import com.uade.entrelibros.backend.entity.Usuario;
 import com.uade.entrelibros.backend.exceptions.AccionNoPermitidaException;
+import com.uade.entrelibros.backend.exceptions.ListaVaciaException;
 import com.uade.entrelibros.backend.exceptions.OrdenNoEncontradaException;
 import com.uade.entrelibros.backend.exceptions.OrdenVendedorNoEncontradaException;
 import com.uade.entrelibros.backend.exceptions.OrdenNoCancelableException;
@@ -41,9 +42,12 @@ public class OrdenServiceImpl implements OrdenService {
         if (usuario.getRol() != Rol.ADMIN) {
             throw new AccionNoPermitidaException();
         }
-        return ordenRepository.findAll();
+        List<Orden> ordenes = ordenRepository.findAll();
+        if (ordenes.isEmpty()) {
+            throw new ListaVaciaException("No hay órdenes registradas");
+        }
+        return ordenes;
     }
-
     public Orden getOrdenById(Long idOrden, Usuario usuario) {
         Orden orden = ordenRepository.findById(idOrden)
                 .orElseThrow(OrdenNoEncontradaException::new);
@@ -60,12 +64,20 @@ public class OrdenServiceImpl implements OrdenService {
     }
 
     public List<Orden> getOrdenesByComprador(Usuario comprador) {
-        return ordenRepository.findByCompradorId(comprador.getId());
+        List<Orden> ordenes = ordenRepository.findByCompradorId(comprador.getId());
+        if (ordenes.isEmpty()) {
+            throw new ListaVaciaException("No tenés órdenes registradas");
+        }
+        return ordenes;
     }
 
     public List<OrdenVendedor> getOrdenesDelVendedor(Usuario vendedor) {
         validarVendedor(vendedor);
-        return ordenVendedorRepository.findByVendedorId(vendedor.getId());
+        List<OrdenVendedor> ordenes = ordenVendedorRepository.findByVendedorId(vendedor.getId());
+        if (ordenes.isEmpty()) {
+            throw new ListaVaciaException("No tenés órdenes como vendedor");
+        }
+        return ordenes;
     }
 
     @Transactional

@@ -11,6 +11,7 @@ import com.uade.entrelibros.backend.entity.ResenaLibro;
 import com.uade.entrelibros.backend.entity.Usuario;
 import com.uade.entrelibros.backend.exceptions.AccionNoPermitidaException;
 import com.uade.entrelibros.backend.exceptions.CalificacionInvalidaException;
+import com.uade.entrelibros.backend.exceptions.ListaVaciaException;
 import com.uade.entrelibros.backend.exceptions.OrdenItemNoEncontradoException;
 import com.uade.entrelibros.backend.exceptions.ResenaDuplicadaException;
 import com.uade.entrelibros.backend.exceptions.ResenaLibroNoEncontradaException;
@@ -26,7 +27,11 @@ public class ResenaLibroServiceImpl implements ResenaLibroService {
     private OrdenItemRepository ordenItemRepository;
 
     public List<ResenaLibro> getResenas() {
-        return resenaLibroRepository.findAll();
+        List<ResenaLibro> resenas = resenaLibroRepository.findAll();
+        if (resenas.isEmpty()) {
+            throw new ListaVaciaException("No hay reseñas de libros registradas");
+        }
+        return resenas;
     }
 
     public ResenaLibro getResenaById(Long idResena) throws ResenaLibroNoEncontradaException {
@@ -35,7 +40,11 @@ public class ResenaLibroServiceImpl implements ResenaLibroService {
     }
 
     public List<ResenaLibro> getResenasByLibro(Long idLibro) {
-        return resenaLibroRepository.findByLibroId(idLibro);
+        List<ResenaLibro> resenas = resenaLibroRepository.findByLibroId(idLibro);
+        if (resenas.isEmpty()) {
+            throw new ListaVaciaException("Ese libro todavía no tiene reseñas");
+        }
+        return resenas;
     }
 
     public ResenaLibro crearResena(Usuario comprador, Long idOrdenItem, Integer calificacion, String comentario)
