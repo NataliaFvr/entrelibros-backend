@@ -6,11 +6,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.uade.entrelibros.backend.entity.EstadoPago;
 import com.uade.entrelibros.backend.entity.EnvioItem;
 import com.uade.entrelibros.backend.entity.ResenaVendedor;
 import com.uade.entrelibros.backend.entity.Usuario;
 import com.uade.entrelibros.backend.exceptions.AccionNoPermitidaException;
 import com.uade.entrelibros.backend.exceptions.CalificacionInvalidaException;
+import com.uade.entrelibros.backend.exceptions.CompraNoPagadaException;
 import com.uade.entrelibros.backend.exceptions.EnvioItemNoEncontradoException;
 import com.uade.entrelibros.backend.exceptions.ListaVaciaException;
 import com.uade.entrelibros.backend.exceptions.ResenaDuplicadaException;
@@ -64,6 +66,10 @@ public class ResenaVendedorServiceImpl implements ResenaVendedorService {
                 || envioItem.getOrdenVendedor().getOrden().getComprador() == null
                 || !envioItem.getOrdenVendedor().getOrden().getComprador().getId().equals(comprador.getId())) {
             throw new AccionNoPermitidaException();
+        }
+
+        if (envioItem.getOrdenVendedor().getOrden().getEstadoPago() != EstadoPago.SIMULADO_APROBADO) {
+            throw new CompraNoPagadaException();
         }
 
         // El comprador resena una sola vez a ese vendedor por cada envio recibido
