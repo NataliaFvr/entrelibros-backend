@@ -21,4 +21,8 @@ public interface ResenaLibroService {
    ResenaLibro crearResena(Usuario comprador, Long idOrdenItem, Integer calificacion, String comentario)
             throws OrdenItemNoEncontradoException, CalificacionInvalidaException, ResenaDuplicadaException,
             AccionNoPermitidaException;
+
+    ResenaLibro modificarResena(Long idResena, Usuario comprador, Integer calificacion, String comentario);
+
+    void eliminarResena(Long idResena, Usuario comprador);
 }

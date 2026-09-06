@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.uade.entrelibros.backend.entity.EnvioItem;
 import com.uade.entrelibros.backend.entity.ResenaVendedor;
@@ -61,5 +62,42 @@ public class ResenaVendedorServiceImpl implements ResenaVendedorService {
 
         return resenaVendedorRepository.save(
                 new ResenaVendedor(envioItem, comprador, clasificacion, comentario));
+    }
+
+    @Transactional
+    public ResenaVendedor modificarResena(Long idResena, Usuario comprador, Integer clasificacion,
+            String comentario) {
+        ResenaVendedor resena = getResenaById(idResena);
+        validarAutor(resena, comprador);
+
+        if (clasificacion != null) {
+            validarClasificacion(clasificacion);
+            resena.setClasificacion(clasificacion);
+        }
+        if (comentario != null) {
+            resena.setComentario(comentario);
+        }
+
+        return resenaVendedorRepository.save(resena);
+    }
+
+    @Transactional
+    public void eliminarResena(Long idResena, Usuario comprador) {
+        ResenaVendedor resena = getResenaById(idResena);
+        validarAutor(resena, comprador);
+        resenaVendedorRepository.delete(resena);
+    }
+
+    private void validarClasificacion(Integer clasificacion) {
+        if (clasificacion < 1 || clasificacion > 5) {
+            throw new CalificacionInvalidaException();
+        }
+    }
+
+    private void validarAutor(ResenaVendedor resena, Usuario comprador) {
+        if (comprador == null || resena.getComprador() == null
+                || !resena.getComprador().getId().equals(comprador.getId())) {
+            throw new AccionNoPermitidaException();
+        }
     }
 }

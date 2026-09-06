@@ -21,4 +21,8 @@ public interface ResenaVendedorService {
     ResenaVendedor crearResena(Usuario comprador, Long idEnvioItem, Integer clasificacion, String comentario)
             throws EnvioItemNoEncontradoException, CalificacionInvalidaException, ResenaDuplicadaException,
             AccionNoPermitidaException;
+
+    ResenaVendedor modificarResena(Long idResena, Usuario comprador, Integer clasificacion, String comentario);
+
+    void eliminarResena(Long idResena, Usuario comprador);
 }

@@ -51,4 +51,21 @@ public class ResenaLibroController {
                 comprador, request.getIdOrdenItem(), request.getCalificacion(), request.getComentario());
         return ResponseEntity.created(URI.create("/resenas-libro/" + result.getId())).body(result);
     }
+
+    @PatchMapping("/{idResena}")
+    public ResponseEntity<ResenaLibro> modificarResena(
+            @PathVariable Long idResena,
+            @AuthenticationPrincipal Usuario comprador,
+            @RequestBody ResenaLibroRequest request) {
+        return ResponseEntity.ok(resenaLibroService.modificarResena(
+                idResena, comprador, request.getCalificacion(), request.getComentario()));
+    }
+
+    @DeleteMapping("/{idResena}")
+    public ResponseEntity<Void> eliminarResena(
+            @PathVariable Long idResena,
+            @AuthenticationPrincipal Usuario comprador) {
+        resenaLibroService.eliminarResena(idResena, comprador);
+        return ResponseEntity.noContent().build();
+    }
 }

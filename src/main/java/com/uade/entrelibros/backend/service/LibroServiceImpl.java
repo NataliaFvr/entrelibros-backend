@@ -5,6 +5,7 @@ import java.util.function.Consumer;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.uade.entrelibros.backend.entity.Categoria;
 import com.uade.entrelibros.backend.entity.EstadoLibro;
@@ -162,6 +163,7 @@ public class LibroServiceImpl implements LibroService {
 
         // DESPUÉS:
     @Override
+    @Transactional
     public Libro moderarLibro(Long libroId, EstadoModeracion estadoModeracion, String comentario, Usuario moderador)
             throws LibroNoEncontradoException {
         Libro libro = libroRepository.findById(libroId)
