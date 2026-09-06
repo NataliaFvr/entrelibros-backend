@@ -14,6 +14,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.uade.entrelibros.backend.entity.ImagenLibro;
 import com.uade.entrelibros.backend.entity.Usuario;
+import com.uade.entrelibros.backend.entity.dto.ImagenLibroResponse;
 import com.uade.entrelibros.backend.exceptions.AccionNoPermitidaException;
 import com.uade.entrelibros.backend.exceptions.ArchivoDemasiadoGrandeException;
 import com.uade.entrelibros.backend.exceptions.ImagenLibroNoEncontradaException;
@@ -29,20 +30,35 @@ public class ImagenesLibroController {
     private ImagenLibroService imagenLibroService;
 
     @GetMapping("/libro/{libroId}")
-    public ResponseEntity<List<ImagenLibro>> getImagenesByLibroId(@PathVariable Long libroId)
+    public ResponseEntity<List<ImagenLibroResponse>> getImagenesByLibroId(@PathVariable Long libroId)
             throws LibroNoEncontradoException {
-        return ResponseEntity.ok(imagenLibroService.getImagenesByLibroId(libroId));
+        List<ImagenLibroResponse> resultado = imagenLibroService.getImagenesByLibroId(libroId).stream()
+                .map(ImagenLibroResponse::from)
+                .toList();
+        return ResponseEntity.ok(resultado);
     }
 
     @GetMapping("/{imagenId}")
-    public ResponseEntity<ImagenLibro> getImagenById(@PathVariable Long imagenId)
+    public ResponseEntity<ImagenLibroResponse> getImagenById(@PathVariable Long imagenId)
             throws ImagenLibroNoEncontradaException {
-        return ResponseEntity.ok(imagenLibroService.getImagenById(imagenId));
+        ImagenLibro imagen = imagenLibroService.getImagenById(imagenId);
+        return ResponseEntity.ok(ImagenLibroResponse.from(imagen));
+    }
+
+    // Sirve el contenido binario de la imagen (los bytes) por separado, para no
+    // devolverlos dentro del JSON. El front usa esta URL como src de la imagen.
+    @GetMapping("/{imagenId}/contenido")
+    public ResponseEntity<byte[]> getContenidoImagen(@PathVariable Long imagenId)
+            throws ImagenLibroNoEncontradaException {
+        ImagenLibro imagen = imagenLibroService.getImagenById(imagenId);
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(imagen.getTipoContenido()))
+                .body(imagen.getImagen());
     }
 
     @PreAuthorize("hasAuthority('VENDEDOR')")
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<ImagenLibro> createImagenLibro(
+    public ResponseEntity<ImagenLibroResponse> createImagenLibro(
             @AuthenticationPrincipal Usuario vendedor,
             @RequestParam("archivo") MultipartFile archivo,
             @RequestParam Integer orden,
@@ -50,7 +66,8 @@ public class ImagenesLibroController {
             throws LibroNoEncontradoException, ArchivoDemasiadoGrandeException,
             TipoArchivoNoPermitidoException, IOException, AccionNoPermitidaException {
         ImagenLibro result = imagenLibroService.createImagenLibro(vendedor, archivo, orden, idLibro);
-        return ResponseEntity.created(URI.create("/imagenes-libro/" + result.getId())).body(result);
+        return ResponseEntity.created(URI.create("/imagenes-libro/" + result.getId()))
+                .body(ImagenLibroResponse.from(result));
     }
 
     @PreAuthorize("hasAuthority('VENDEDOR')")

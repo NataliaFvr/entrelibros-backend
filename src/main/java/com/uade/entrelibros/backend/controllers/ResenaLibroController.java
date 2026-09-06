@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.*;
 import com.uade.entrelibros.backend.entity.ResenaLibro;
 import com.uade.entrelibros.backend.entity.Usuario;
 import com.uade.entrelibros.backend.entity.dto.ResenaLibroRequest;
+import com.uade.entrelibros.backend.entity.dto.ResenaLibroResponse;
 import com.uade.entrelibros.backend.exceptions.AccionNoPermitidaException;
 import com.uade.entrelibros.backend.exceptions.CalificacionInvalidaException;
 import com.uade.entrelibros.backend.exceptions.OrdenItemNoEncontradoException;
@@ -26,39 +27,48 @@ public class ResenaLibroController {
     private ResenaLibroService resenaLibroService;
 
     @GetMapping
-    public ResponseEntity<List<ResenaLibro>> getResenas() {
-        return ResponseEntity.ok(resenaLibroService.getResenas());
+    public ResponseEntity<List<ResenaLibroResponse>> getResenas() {
+        List<ResenaLibroResponse> resultado = resenaLibroService.getResenas().stream()
+                .map(ResenaLibroResponse::from)
+                .toList();
+        return ResponseEntity.ok(resultado);
     }
 
     @GetMapping("/{idResena}")
-    public ResponseEntity<ResenaLibro> getResenaById(@PathVariable Long idResena)
+    public ResponseEntity<ResenaLibroResponse> getResenaById(@PathVariable Long idResena)
             throws ResenaLibroNoEncontradaException {
-        return ResponseEntity.ok(resenaLibroService.getResenaById(idResena));
+        ResenaLibro resena = resenaLibroService.getResenaById(idResena);
+        return ResponseEntity.ok(ResenaLibroResponse.from(resena));
     }
 
     @GetMapping("/libro/{idLibro}")
-    public ResponseEntity<List<ResenaLibro>> getResenasByLibro(@PathVariable Long idLibro) {
-        return ResponseEntity.ok(resenaLibroService.getResenasByLibro(idLibro));
+    public ResponseEntity<List<ResenaLibroResponse>> getResenasByLibro(@PathVariable Long idLibro) {
+        List<ResenaLibroResponse> resultado = resenaLibroService.getResenasByLibro(idLibro).stream()
+                .map(ResenaLibroResponse::from)
+                .toList();
+        return ResponseEntity.ok(resultado);
     }
 
     @PostMapping
-    public ResponseEntity<ResenaLibro> crearResena(
+    public ResponseEntity<ResenaLibroResponse> crearResena(
             @AuthenticationPrincipal Usuario comprador,
             @RequestBody ResenaLibroRequest request)
             throws OrdenItemNoEncontradoException, CalificacionInvalidaException, ResenaDuplicadaException,
             AccionNoPermitidaException {
         ResenaLibro result = resenaLibroService.crearResena(
                 comprador, request.getIdOrdenItem(), request.getCalificacion(), request.getComentario());
-        return ResponseEntity.created(URI.create("/resenas-libro/" + result.getId())).body(result);
+        return ResponseEntity.created(URI.create("/resenas-libro/" + result.getId()))
+                .body(ResenaLibroResponse.from(result));
     }
 
     @PatchMapping("/{idResena}")
-    public ResponseEntity<ResenaLibro> modificarResena(
+    public ResponseEntity<ResenaLibroResponse> modificarResena(
             @PathVariable Long idResena,
             @AuthenticationPrincipal Usuario comprador,
             @RequestBody ResenaLibroRequest request) {
-        return ResponseEntity.ok(resenaLibroService.modificarResena(
-                idResena, comprador, request.getCalificacion(), request.getComentario()));
+        ResenaLibro result = resenaLibroService.modificarResena(
+                idResena, comprador, request.getCalificacion(), request.getComentario());
+        return ResponseEntity.ok(ResenaLibroResponse.from(result));
     }
 
     @DeleteMapping("/{idResena}")

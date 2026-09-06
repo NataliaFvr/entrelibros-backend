@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.*;
 import com.uade.entrelibros.backend.entity.ResenaVendedor;
 import com.uade.entrelibros.backend.entity.Usuario;
 import com.uade.entrelibros.backend.entity.dto.ResenaVendedorRequest;
+import com.uade.entrelibros.backend.entity.dto.ResenaVendedorResponse;
 import com.uade.entrelibros.backend.exceptions.AccionNoPermitidaException;
 import com.uade.entrelibros.backend.exceptions.CalificacionInvalidaException;
 import com.uade.entrelibros.backend.exceptions.EnvioItemNoEncontradoException;
@@ -26,39 +27,48 @@ public class ResenaVendedorController {
     private ResenaVendedorService resenaVendedorService;
 
     @GetMapping
-    public ResponseEntity<List<ResenaVendedor>> getResenas() {
-        return ResponseEntity.ok(resenaVendedorService.getResenas());
+    public ResponseEntity<List<ResenaVendedorResponse>> getResenas() {
+        List<ResenaVendedorResponse> resultado = resenaVendedorService.getResenas().stream()
+                .map(ResenaVendedorResponse::from)
+                .toList();
+        return ResponseEntity.ok(resultado);
     }
 
     @GetMapping("/{idResena}")
-    public ResponseEntity<ResenaVendedor> getResenaById(@PathVariable Long idResena)
+    public ResponseEntity<ResenaVendedorResponse> getResenaById(@PathVariable Long idResena)
             throws ResenaVendedorNoEncontradaException {
-        return ResponseEntity.ok(resenaVendedorService.getResenaById(idResena));
+        ResenaVendedor resena = resenaVendedorService.getResenaById(idResena);
+        return ResponseEntity.ok(ResenaVendedorResponse.from(resena));
     }
 
     @GetMapping("/vendedor/{idVendedor}")
-    public ResponseEntity<List<ResenaVendedor>> getResenasByVendedor(@PathVariable Long idVendedor) {
-        return ResponseEntity.ok(resenaVendedorService.getResenasByVendedor(idVendedor));
+    public ResponseEntity<List<ResenaVendedorResponse>> getResenasByVendedor(@PathVariable Long idVendedor) {
+        List<ResenaVendedorResponse> resultado = resenaVendedorService.getResenasByVendedor(idVendedor).stream()
+                .map(ResenaVendedorResponse::from)
+                .toList();
+        return ResponseEntity.ok(resultado);
     }
 
     @PostMapping
-    public ResponseEntity<ResenaVendedor> crearResena(
+    public ResponseEntity<ResenaVendedorResponse> crearResena(
             @AuthenticationPrincipal Usuario comprador,
             @RequestBody ResenaVendedorRequest request)
             throws EnvioItemNoEncontradoException, CalificacionInvalidaException, ResenaDuplicadaException,
             AccionNoPermitidaException {
         ResenaVendedor result = resenaVendedorService.crearResena(
                 comprador, request.getIdEnvioItem(), request.getClasificacion(), request.getComentario());
-        return ResponseEntity.created(URI.create("/resenas-vendedor/" + result.getId())).body(result);
+        return ResponseEntity.created(URI.create("/resenas-vendedor/" + result.getId()))
+                .body(ResenaVendedorResponse.from(result));
     }
 
     @PatchMapping("/{idResena}")
-    public ResponseEntity<ResenaVendedor> modificarResena(
+    public ResponseEntity<ResenaVendedorResponse> modificarResena(
             @PathVariable Long idResena,
             @AuthenticationPrincipal Usuario comprador,
             @RequestBody ResenaVendedorRequest request) {
-        return ResponseEntity.ok(resenaVendedorService.modificarResena(
-                idResena, comprador, request.getClasificacion(), request.getComentario()));
+        ResenaVendedor result = resenaVendedorService.modificarResena(
+                idResena, comprador, request.getClasificacion(), request.getComentario());
+        return ResponseEntity.ok(ResenaVendedorResponse.from(result));
     }
 
     @DeleteMapping("/{idResena}")

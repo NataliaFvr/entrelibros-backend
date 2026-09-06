@@ -7,9 +7,9 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import com.uade.entrelibros.backend.entity.Orden;
-import com.uade.entrelibros.backend.entity.OrdenVendedor;
 import com.uade.entrelibros.backend.entity.Usuario;
+import com.uade.entrelibros.backend.entity.dto.OrdenResponse;
+import com.uade.entrelibros.backend.entity.dto.OrdenVendedorResponse;
 import com.uade.entrelibros.backend.exceptions.AccionNoPermitidaException;
 import com.uade.entrelibros.backend.exceptions.OrdenNoEncontradaException;
 import com.uade.entrelibros.backend.exceptions.OrdenVendedorNoEncontradaException;
@@ -25,43 +25,53 @@ public class OrdenController {
     private OrdenService ordenService;
 
     @GetMapping
-    public ResponseEntity<List<Orden>> getOrdenes(@AuthenticationPrincipal Usuario usuario)
+    public ResponseEntity<List<OrdenResponse>> getOrdenes(@AuthenticationPrincipal Usuario usuario)
             throws AccionNoPermitidaException {
-        return ResponseEntity.ok(ordenService.getOrdenes(usuario));
+        List<OrdenResponse> resultado = ordenService.getOrdenes(usuario).stream()
+                .map(OrdenResponse::from)
+                .toList();
+        return ResponseEntity.ok(resultado);
     }
 
     @GetMapping("/{idOrden}")
-    public ResponseEntity<Orden> getOrdenById(
+    public ResponseEntity<OrdenResponse> getOrdenById(
             @AuthenticationPrincipal Usuario usuario,
             @PathVariable Long idOrden)
             throws OrdenNoEncontradaException, AccionNoPermitidaException {
-        return ResponseEntity.ok(ordenService.getOrdenById(idOrden, usuario));
+        return ResponseEntity.ok(OrdenResponse.from(ordenService.getOrdenById(idOrden, usuario)));
     }
 
     @GetMapping("/comprador")
-    public ResponseEntity<List<Orden>> getOrdenesByComprador(@AuthenticationPrincipal Usuario comprador) {
-        return ResponseEntity.ok(ordenService.getOrdenesByComprador(comprador));
+    public ResponseEntity<List<OrdenResponse>> getOrdenesByComprador(@AuthenticationPrincipal Usuario comprador) {
+        List<OrdenResponse> resultado = ordenService.getOrdenesByComprador(comprador).stream()
+                .map(OrdenResponse::from)
+                .toList();
+        return ResponseEntity.ok(resultado);
     }
 
     @GetMapping("/vendedor")
-    public ResponseEntity<List<OrdenVendedor>> getOrdenesDelVendedor(@AuthenticationPrincipal Usuario vendedor)
+    public ResponseEntity<List<OrdenVendedorResponse>> getOrdenesDelVendedor(@AuthenticationPrincipal Usuario vendedor)
             throws RolInvalidoException {
-        return ResponseEntity.ok(ordenService.getOrdenesDelVendedor(vendedor));
+        List<OrdenVendedorResponse> resultado = ordenService.getOrdenesDelVendedor(vendedor).stream()
+                .map(OrdenVendedorResponse::from)
+                .toList();
+        return ResponseEntity.ok(resultado);
     }
 
     @PatchMapping("/vendedor/{idOrdenVendedor}/cancelar")
-    public ResponseEntity<OrdenVendedor> cancelarOrdenVendedor(
+    public ResponseEntity<OrdenVendedorResponse> cancelarOrdenVendedor(
             @AuthenticationPrincipal Usuario vendedor,
             @PathVariable Long idOrdenVendedor)
             throws OrdenVendedorNoEncontradaException, RolInvalidoException, AccionNoPermitidaException {
-        return ResponseEntity.ok(ordenService.cancelarOrdenVendedor(idOrdenVendedor, vendedor));
+        return ResponseEntity.ok(
+                OrdenVendedorResponse.from(ordenService.cancelarOrdenVendedor(idOrdenVendedor, vendedor)));
     }
 
     @PatchMapping("/{idOrden}/cancelar")
-    public ResponseEntity<Orden> cancelarOrden(
+    public ResponseEntity<OrdenResponse> cancelarOrden(
             @AuthenticationPrincipal Usuario comprador,
             @PathVariable Long idOrden)
             throws OrdenNoEncontradaException, AccionNoPermitidaException, OrdenNoCancelableException {
-        return ResponseEntity.ok(ordenService.cancelarOrden(idOrden, comprador));
+        return ResponseEntity.ok(OrdenResponse.from(ordenService.cancelarOrden(idOrden, comprador)));
     }
 }

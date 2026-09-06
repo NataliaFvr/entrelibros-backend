@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.*;
 
 import com.uade.entrelibros.backend.entity.Envio;
 import com.uade.entrelibros.backend.entity.dto.EnvioRequest;
+import com.uade.entrelibros.backend.entity.dto.EnvioResponse;
 import com.uade.entrelibros.backend.exceptions.EnvioDuplicadoException;
 import com.uade.entrelibros.backend.exceptions.EnvioNoEncontradoException;
 import com.uade.entrelibros.backend.service.EnvioService;
@@ -22,21 +23,26 @@ public class EnvioController {
     private EnvioService envioService;
 
     @GetMapping
-    public ResponseEntity<List<Envio>> getEnvios() {
-        return ResponseEntity.ok(envioService.getEnvios());
+    public ResponseEntity<List<EnvioResponse>> getEnvios() {
+        List<EnvioResponse> resultado = envioService.getEnvios().stream()
+                .map(EnvioResponse::from)
+                .toList();
+        return ResponseEntity.ok(resultado);
     }
 
     @GetMapping("/{idEnvio}")
-    public ResponseEntity<Envio> getEnvioById(@PathVariable Long idEnvio)
+    public ResponseEntity<EnvioResponse> getEnvioById(@PathVariable Long idEnvio)
             throws EnvioNoEncontradoException {
-        return ResponseEntity.ok(envioService.getEnvioById(idEnvio));
+        Envio envio = envioService.getEnvioById(idEnvio);
+        return ResponseEntity.ok(EnvioResponse.from(envio));
     }
 
     @PreAuthorize("hasAuthority('ADMIN')")
     @PostMapping
-    public ResponseEntity<Envio> crearEnvio(@RequestBody EnvioRequest request)
+    public ResponseEntity<EnvioResponse> crearEnvio(@RequestBody EnvioRequest request)
             throws EnvioDuplicadoException {
         Envio result = envioService.crearEnvio(request.getZona(), request.getCostoFijo());
-        return ResponseEntity.created(URI.create("/envios/" + result.getId())).body(result);
+        return ResponseEntity.created(URI.create("/envios/" + result.getId()))
+                .body(EnvioResponse.from(result));
     }
 }

@@ -14,6 +14,7 @@ import com.uade.entrelibros.backend.entity.Libro;
 import com.uade.entrelibros.backend.entity.Usuario;
 import com.uade.entrelibros.backend.entity.dto.LibroFiltroRequest;
 import com.uade.entrelibros.backend.entity.dto.LibroRequest;
+import com.uade.entrelibros.backend.entity.dto.LibroResponse;
 import com.uade.entrelibros.backend.entity.dto.ModeracionRequest;
 import com.uade.entrelibros.backend.exceptions.AccionNoPermitidaException;
 import com.uade.entrelibros.backend.exceptions.CategoriaNoEncontradaException;
@@ -36,7 +37,7 @@ public class LibrosController {
     private HistorialModeracionService historialModeracionService;
 
     @GetMapping
-    public ResponseEntity<Page<Libro>> getLibros(
+    public ResponseEntity<Page<LibroResponse>> getLibros(
             @RequestParam(required = false) String texto,
             @RequestParam(required = false) List<Long> idCategorias,
             @RequestParam(required = false) Double precioMin,
@@ -62,34 +63,38 @@ public class LibrosController {
         filtro.setSoloConDescuento(soloConDescuento);
         filtro.setIdVendedores(idVendedores);
 
-        return ResponseEntity.ok(libroService.buscarLibros(filtro, PageRequest.of(page, size)));
+        Page<Libro> libros = libroService.buscarLibros(filtro, PageRequest.of(page, size));
+        return ResponseEntity.ok(libros.map(LibroResponse::from));
     }
 
     @GetMapping("/{libroId}")
-    public ResponseEntity<Libro> getLibroById(@PathVariable Long libroId)
+    public ResponseEntity<LibroResponse> getLibroById(@PathVariable Long libroId)
             throws LibroNoEncontradoException {
-        return ResponseEntity.ok(libroService.getLibroById(libroId));
+        Libro libro = libroService.getLibroById(libroId);
+        return ResponseEntity.ok(LibroResponse.from(libro));
     }
 
     @PreAuthorize("hasAuthority('VENDEDOR')")
     @PostMapping
-    public ResponseEntity<Libro> createLibro(
+    public ResponseEntity<LibroResponse> createLibro(
             @AuthenticationPrincipal Usuario vendedor,
             @RequestBody LibroRequest request)
             throws CategoriaNoEncontradaException, RolInvalidoException {
         Libro result = libroService.createLibro(request, vendedor);
-        return ResponseEntity.created(URI.create("/libros/" + result.getId())).body(result);
+        return ResponseEntity.created(URI.create("/libros/" + result.getId()))
+                .body(LibroResponse.from(result));
     }
 
     @PreAuthorize("hasAuthority('VENDEDOR')")
     @PatchMapping("/{libroId}")
-    public ResponseEntity<Libro> updateLibro(
+    public ResponseEntity<LibroResponse> updateLibro(
             @AuthenticationPrincipal Usuario vendedor,
             @PathVariable Long libroId,
             @RequestBody LibroRequest request)
             throws LibroNoEncontradoException, CategoriaNoEncontradaException, RolInvalidoException,
             AccionNoPermitidaException {
-        return ResponseEntity.ok(libroService.updateLibro(libroId, request, vendedor));
+        Libro result = libroService.updateLibro(libroId, request, vendedor);
+        return ResponseEntity.ok(LibroResponse.from(result));
     }
 
     @PreAuthorize("hasAuthority('VENDEDOR')")
@@ -104,14 +109,14 @@ public class LibrosController {
 
     @PreAuthorize("hasAuthority('ADMIN')")
     @PatchMapping("/{libroId}/moderacion")
-    public ResponseEntity<Libro> moderarLibro(
+    public ResponseEntity<LibroResponse> moderarLibro(
             @PathVariable Long libroId,
             @AuthenticationPrincipal Usuario moderador,
             @RequestBody ModeracionRequest request)
         throws LibroNoEncontradoException {
         Libro result = libroService.moderarLibro(
                 libroId, request.getEstadoModeracion(), request.getComentario(), moderador);
-        return ResponseEntity.ok(result);
+        return ResponseEntity.ok(LibroResponse.from(result));
     }
 
     @PreAuthorize("hasAuthority('ADMIN')")

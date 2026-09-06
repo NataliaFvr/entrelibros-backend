@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.*;
 import com.uade.entrelibros.backend.entity.Pago;
 import com.uade.entrelibros.backend.entity.Usuario;
 import com.uade.entrelibros.backend.entity.dto.PagoRequest;
+import com.uade.entrelibros.backend.entity.dto.PagoResponse;
 import com.uade.entrelibros.backend.exceptions.AccionNoPermitidaException;
 import com.uade.entrelibros.backend.exceptions.OrdenNoEncontradaException;
 import com.uade.entrelibros.backend.exceptions.OrdenNoCancelableException;
@@ -27,31 +28,39 @@ public class PagoController {
 
     @PreAuthorize("hasAuthority('ADMIN')")
     @GetMapping
-    public ResponseEntity<List<Pago>> getPagos() {
-        return ResponseEntity.ok(pagoService.getPagos());
+    public ResponseEntity<List<PagoResponse>> getPagos() {
+        List<PagoResponse> resultado = pagoService.getPagos().stream()
+                .map(PagoResponse::from)
+                .toList();
+        return ResponseEntity.ok(resultado);
     }
 
     @GetMapping("/{idPago}")
-    public ResponseEntity<Pago> getPagoById(
+    public ResponseEntity<PagoResponse> getPagoById(
             @AuthenticationPrincipal Usuario comprador,
             @PathVariable Long idPago)
             throws PagoNoEncontradoException, AccionNoPermitidaException {
-        return ResponseEntity.ok(pagoService.getPagoById(comprador, idPago));
+        Pago pago = pagoService.getPagoById(comprador, idPago);
+        return ResponseEntity.ok(PagoResponse.from(pago));
     }
 
     @GetMapping("/orden/{idOrden}")
-    public ResponseEntity<List<Pago>> getPagosByOrden(
+    public ResponseEntity<List<PagoResponse>> getPagosByOrden(
             @AuthenticationPrincipal Usuario comprador,
             @PathVariable Long idOrden) throws OrdenNoEncontradaException, AccionNoPermitidaException {
-        return ResponseEntity.ok(pagoService.getPagosByOrden(comprador, idOrden));
+        List<PagoResponse> resultado = pagoService.getPagosByOrden(comprador, idOrden).stream()
+                .map(PagoResponse::from)
+                .toList();
+        return ResponseEntity.ok(resultado);
     }
 
     @PostMapping
-    public ResponseEntity<Pago> crearPago(
+    public ResponseEntity<PagoResponse> crearPago(
             @AuthenticationPrincipal Usuario comprador,
             @RequestBody PagoRequest request)
             throws OrdenNoEncontradaException, AccionNoPermitidaException, OrdenNoCancelableException {
         Pago result = pagoService.crearPago(comprador, request.getIdOrden(), request.getProveedor());
-        return ResponseEntity.created(URI.create("/pagos/" + result.getId())).body(result);
+        return ResponseEntity.created(URI.create("/pagos/" + result.getId()))
+                .body(PagoResponse.from(result));
     }
 }

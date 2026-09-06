@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.*;
 import com.uade.entrelibros.backend.entity.EnvioItem;
 import com.uade.entrelibros.backend.entity.Usuario;
 import com.uade.entrelibros.backend.entity.dto.EnvioItemRequest;
+import com.uade.entrelibros.backend.entity.dto.EnvioItemResponse;
 import com.uade.entrelibros.backend.exceptions.AccionNoPermitidaException;
 import com.uade.entrelibros.backend.exceptions.EnvioItemNoEncontradoException;
 import com.uade.entrelibros.backend.exceptions.EnvioNoEncontradoException;
@@ -27,29 +28,37 @@ public class EnvioItemController {
     private EnvioItemService envioItemService;
 
     @GetMapping
-    public ResponseEntity<List<EnvioItem>> getEnvioItems() {
-        return ResponseEntity.ok(envioItemService.getEnvioItems());
+    public ResponseEntity<List<EnvioItemResponse>> getEnvioItems() {
+        List<EnvioItemResponse> resultado = envioItemService.getEnvioItems().stream()
+                .map(EnvioItemResponse::from)
+                .toList();
+        return ResponseEntity.ok(resultado);
     }
 
     @GetMapping("/{idEnvioItem}")
-    public ResponseEntity<EnvioItem> getEnvioItemById(@PathVariable Long idEnvioItem)
+    public ResponseEntity<EnvioItemResponse> getEnvioItemById(@PathVariable Long idEnvioItem)
             throws EnvioItemNoEncontradoException {
-        return ResponseEntity.ok(envioItemService.getEnvioItemById(idEnvioItem));
+        EnvioItem envioItem = envioItemService.getEnvioItemById(idEnvioItem);
+        return ResponseEntity.ok(EnvioItemResponse.from(envioItem));
     }
 
     @GetMapping("/orden-vendedor/{idOrdenVendedor}")
-    public ResponseEntity<List<EnvioItem>> getEnvioItemsByOrdenVendedor(@PathVariable Long idOrdenVendedor) {
-        return ResponseEntity.ok(envioItemService.getEnvioItemsByOrdenVendedor(idOrdenVendedor));
+    public ResponseEntity<List<EnvioItemResponse>> getEnvioItemsByOrdenVendedor(@PathVariable Long idOrdenVendedor) {
+        List<EnvioItemResponse> resultado = envioItemService.getEnvioItemsByOrdenVendedor(idOrdenVendedor).stream()
+                .map(EnvioItemResponse::from)
+                .toList();
+        return ResponseEntity.ok(resultado);
     }
 
     @PreAuthorize("hasAuthority('VENDEDOR')")
     @PostMapping
-    public ResponseEntity<EnvioItem> crearEnvioItem(
+    public ResponseEntity<EnvioItemResponse> crearEnvioItem(
             @AuthenticationPrincipal Usuario vendedor,
             @RequestBody EnvioItemRequest request)
             throws OrdenVendedorNoEncontradaException, EnvioNoEncontradoException,
             AccionNoPermitidaException, RolInvalidoException {
         EnvioItem result = envioItemService.crearEnvioItem(vendedor, request.getIdOrdenVendedor(), request.getZona());
-        return ResponseEntity.created(URI.create("/envio-items/" + result.getId())).body(result);
+        return ResponseEntity.created(URI.create("/envio-items/" + result.getId()))
+                .body(EnvioItemResponse.from(result));
     }
 }
