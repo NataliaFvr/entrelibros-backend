@@ -20,6 +20,7 @@ import com.uade.entrelibros.backend.entity.dto.LibroRequest;
 import com.uade.entrelibros.backend.exceptions.AccionNoPermitidaException;
 import com.uade.entrelibros.backend.exceptions.CategoriaNoEncontradaException;
 import com.uade.entrelibros.backend.exceptions.LibroNoEncontradoException;
+import com.uade.entrelibros.backend.exceptions.ListaVaciaException;
 import com.uade.entrelibros.backend.exceptions.RolInvalidoException;
 import com.uade.entrelibros.backend.repository.CategoriaRepository;
 import com.uade.entrelibros.backend.repository.LibroCategoriaRepository;
@@ -47,7 +48,11 @@ public class LibroServiceImpl implements LibroService {
     private HistorialModeracionRepository historialModeracionRepository;
 
     public Page<Libro> getLibros(PageRequest pageRequest) {
-        return libroRepository.findVisibles(pageRequest);
+        Page<Libro> libros = libroRepository.findVisibles(pageRequest);
+        if (libros.isEmpty()) {
+            throw new ListaVaciaException("No hay libros disponibles");
+        }
+        return libros;
     }
 
     @Override

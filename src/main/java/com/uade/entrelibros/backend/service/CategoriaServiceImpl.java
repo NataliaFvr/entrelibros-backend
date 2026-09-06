@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import com.uade.entrelibros.backend.entity.Categoria;
 import com.uade.entrelibros.backend.exceptions.CategoriaDuplicadaException;
 import com.uade.entrelibros.backend.exceptions.CategoriaNoEncontradaException;
+import com.uade.entrelibros.backend.exceptions.ListaVaciaException;
 import com.uade.entrelibros.backend.repository.CategoriaRepository;
 
 @Service
@@ -17,7 +18,11 @@ public class CategoriaServiceImpl implements CategoriaService {
     private CategoriaRepository categoriaRepository;
 
     public List<Categoria> getCategorias() {
-        return categoriaRepository.findAll();
+        List<Categoria> categorias = categoriaRepository.findAll();
+        if (categorias.isEmpty()) {
+            throw new ListaVaciaException("No hay categorías registradas");
+        }
+        return categorias;
     }
 
     public Categoria getCategoriaById(Long categoriaId) {

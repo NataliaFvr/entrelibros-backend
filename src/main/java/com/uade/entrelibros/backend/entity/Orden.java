@@ -11,11 +11,12 @@ public class Orden {
     public Orden() {
     }
 
-    public Orden(Usuario comprador, String provinciaDestino, Double subtotal, Double total) {
+    public Orden(Usuario comprador, String provinciaDestino, Double subtotal, Double costoEnvio, Double total) {
         this.comprador = comprador;
         this.fecha = LocalDateTime.now();
         this.provinciaDestino = provinciaDestino;
         this.subtotal = subtotal;
+        this.costoEnvio = costoEnvio;
         this.total = total;
         this.estadoPago = EstadoPago.PENDIENTE;
         this.reservaHasta = LocalDateTime.now().plusHours(1);
@@ -32,6 +33,7 @@ public class Orden {
     private LocalDateTime fecha;
     private String provinciaDestino;
     private Double subtotal;
+    private Double costoEnvio;
     private Double total;
 
     @Enumerated(EnumType.STRING)
