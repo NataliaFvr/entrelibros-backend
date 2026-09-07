@@ -10,9 +10,9 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import com.uade.entrelibros.backend.entity.Pago;
+import com.uade.entrelibros.backend.entity.dto.PagoResponse;
 import com.uade.entrelibros.backend.entity.Usuario;
 import com.uade.entrelibros.backend.entity.dto.PagoRequest;
-import com.uade.entrelibros.backend.entity.dto.PagoResponse;
 import com.uade.entrelibros.backend.exceptions.AccionNoPermitidaException;
 import com.uade.entrelibros.backend.exceptions.OrdenNoEncontradaException;
 import com.uade.entrelibros.backend.exceptions.OrdenNoPagableException;
@@ -30,7 +30,7 @@ public class PagoController {
     @GetMapping
     public ResponseEntity<List<PagoResponse>> getPagos() {
         List<PagoResponse> resultado = pagoService.getPagos().stream()
-                .map(PagoResponse::from)
+                .map(this::toResponse)
                 .toList();
         return ResponseEntity.ok(resultado);
     }
@@ -41,7 +41,7 @@ public class PagoController {
             @PathVariable Long idPago)
             throws PagoNoEncontradoException, AccionNoPermitidaException {
         Pago pago = pagoService.getPagoById(comprador, idPago);
-        return ResponseEntity.ok(PagoResponse.from(pago));
+        return ResponseEntity.ok(toResponse(pago));
     }
 
     @GetMapping("/orden/{idOrden}")
@@ -49,7 +49,7 @@ public class PagoController {
             @AuthenticationPrincipal Usuario comprador,
             @PathVariable Long idOrden) throws OrdenNoEncontradaException, AccionNoPermitidaException {
         List<PagoResponse> resultado = pagoService.getPagosByOrden(comprador, idOrden).stream()
-                .map(PagoResponse::from)
+                .map(this::toResponse)
                 .toList();
         return ResponseEntity.ok(resultado);
     }
@@ -61,6 +61,10 @@ public class PagoController {
             throws OrdenNoEncontradaException, AccionNoPermitidaException, OrdenNoPagableException {
         Pago result = pagoService.crearPago(comprador, request.getIdOrden(), request.getProveedor());
         return ResponseEntity.created(URI.create("/pagos/" + result.getId()))
-                .body(PagoResponse.from(result));
+                .body(toResponse(result));
+    }
+
+    private PagoResponse toResponse(Pago pago) {
+        return PagoResponse.from(pago, pagoService.getItemsDeOrdenPagada(pago.getOrden().getId()));
     }
 }
