@@ -15,7 +15,7 @@ import com.uade.entrelibros.backend.entity.dto.PagoRequest;
 import com.uade.entrelibros.backend.entity.dto.PagoResponse;
 import com.uade.entrelibros.backend.exceptions.AccionNoPermitidaException;
 import com.uade.entrelibros.backend.exceptions.OrdenNoEncontradaException;
-import com.uade.entrelibros.backend.exceptions.OrdenNoCancelableException;
+import com.uade.entrelibros.backend.exceptions.OrdenNoPagableException;
 import com.uade.entrelibros.backend.exceptions.PagoNoEncontradoException;
 import com.uade.entrelibros.backend.service.PagoService;
 
@@ -58,7 +58,7 @@ public class PagoController {
     public ResponseEntity<PagoResponse> crearPago(
             @AuthenticationPrincipal Usuario comprador,
             @RequestBody PagoRequest request)
-            throws OrdenNoEncontradaException, AccionNoPermitidaException, OrdenNoCancelableException {
+            throws OrdenNoEncontradaException, AccionNoPermitidaException, OrdenNoPagableException {
         Pago result = pagoService.crearPago(comprador, request.getIdOrden(), request.getProveedor());
         return ResponseEntity.created(URI.create("/pagos/" + result.getId()))
                 .body(PagoResponse.from(result));

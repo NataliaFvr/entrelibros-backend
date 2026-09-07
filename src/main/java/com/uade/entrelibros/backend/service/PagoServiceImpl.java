@@ -14,7 +14,7 @@ import com.uade.entrelibros.backend.exceptions.AccionNoPermitidaException;
 import com.uade.entrelibros.backend.exceptions.ListaVaciaException;
 import com.uade.entrelibros.backend.exceptions.OrdenNoEncontradaException;
 import com.uade.entrelibros.backend.exceptions.PagoNoEncontradoException;
-import com.uade.entrelibros.backend.exceptions.OrdenNoCancelableException;
+import com.uade.entrelibros.backend.exceptions.OrdenNoPagableException;
 import com.uade.entrelibros.backend.repository.OrdenRepository;
 import com.uade.entrelibros.backend.repository.PagoRepository;
 
@@ -56,7 +56,7 @@ public class PagoServiceImpl implements PagoService {
     @Transactional
     public Pago crearPago(Usuario comprador, Long idOrden, String proveedor) {
         if (ordenService.liberarReservaVencida(idOrden)) {
-            throw new OrdenNoCancelableException();
+            throw new OrdenNoPagableException();
         }
 
         Orden orden = ordenRepository.findByIdConCandado(idOrden)
@@ -64,7 +64,7 @@ public class PagoServiceImpl implements PagoService {
 
         validarComprador(orden, comprador);
         if (orden.getEstadoPago() != EstadoPago.PENDIENTE) {
-            throw new OrdenNoCancelableException();
+            throw new OrdenNoPagableException();
         }
 
         // Pago simulado: se aprueba automaticamente y se refleja el estado en la orden

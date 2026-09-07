@@ -5,7 +5,7 @@ import java.util.List;
 import com.uade.entrelibros.backend.entity.Pago;
 import com.uade.entrelibros.backend.entity.Usuario;
 import com.uade.entrelibros.backend.exceptions.AccionNoPermitidaException;
-import com.uade.entrelibros.backend.exceptions.OrdenNoCancelableException;
+import com.uade.entrelibros.backend.exceptions.OrdenNoPagableException;
 import com.uade.entrelibros.backend.exceptions.OrdenNoEncontradaException;
 import com.uade.entrelibros.backend.exceptions.PagoNoEncontradoException;
 
