@@ -81,7 +81,8 @@ public class PagoServiceImpl implements PagoService {
         return pago;
     }
 
-    // Items de libros comprados en la orden (para armar reseñas de libro)
+    // Nuevo: trae los OrdenItem de la orden pagada, para que el controller arme
+    // el PagoResponse con los idOrdenItem y el frontend sepa qué puede reseñar.
     public List<OrdenItem> getItemsDeOrdenPagada(Long idOrden) {
         return ordenItemRepository.findByOrdenId(idOrden);
     }

@@ -18,7 +18,7 @@ public interface ResenaVendedorService {
 
     List<ResenaVendedor> getResenasByVendedor(Long idVendedor);
 
-    ResenaVendedor crearResena(Usuario comprador, Long idPago, Long idVendedor, Integer clasificacion, String comentario)
+    ResenaVendedor crearResena(Usuario comprador, Long idPago, Integer clasificacion, String comentario)
             throws PagoNoEncontradoException, CalificacionInvalidaException, ResenaDuplicadaException,
             AccionNoPermitidaException;
 

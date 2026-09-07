@@ -1,10 +1,10 @@
 package com.uade.entrelibros.backend.entity.dto;
 
-import java.util.List;
-
 import com.uade.entrelibros.backend.entity.OrdenItem;
 import com.uade.entrelibros.backend.entity.Pago;
 import lombok.Data;
+
+import java.util.List;
 
 @Data
 public class PagoResponse {
@@ -26,9 +26,9 @@ public class PagoResponse {
         return r;
     }
 
-    public static PagoResponse from(Pago pago, List<OrdenItem> ordenItems) {
+    public static PagoResponse from(Pago pago, List<OrdenItem> items) {
         PagoResponse r = from(pago);
-        r.idsOrdenItem = ordenItems.stream().map(OrdenItem::getId).toList();
+        r.idsOrdenItem = items.stream().map(OrdenItem::getId).toList();
         return r;
     }
 }
