@@ -62,15 +62,9 @@ public class PagoController {
             @RequestBody PagoRequest request)
             throws OrdenNoEncontradaException, AccionNoPermitidaException, OrdenNoPagableException {
         Pago result = pagoService.crearPago(comprador, request.getIdOrden(), request.getProveedor());
-<<<<<<< HEAD
-        List<OrdenItem> items = pagoService.getItemsDeOrdenPagada(request.getIdOrden());
-        return ResponseEntity.created(URI.create("/pagos/" + result.getId()))
-                .body(PagoResponse.from(result, items));
-=======
         List<OrdenItem> ordenItems = pagoService.getItemsDeOrdenPagada(request.getIdOrden());
         List<EnvioItem> envioItems = pagoService.getEnvioItemsDeOrdenPagada(request.getIdOrden());
         return ResponseEntity.created(URI.create("/pagos/" + result.getId()))
                 .body(PagoResponse.from(result, ordenItems, envioItems));
->>>>>>> 2265f6276d9c8b01ecdf2c1c0825b9275fd72f2f
     }
 }

@@ -22,10 +22,5 @@ public interface PagoService {
     Pago crearPago(Usuario comprador, Long idOrden, String proveedor);
 
     List<OrdenItem> getItemsDeOrdenPagada(Long idOrden);
-<<<<<<< HEAD
-}
-=======
-
     List<EnvioItem> getEnvioItemsDeOrdenPagada(Long idOrden);
 }
->>>>>>> 2265f6276d9c8b01ecdf2c1c0825b9275fd72f2f
