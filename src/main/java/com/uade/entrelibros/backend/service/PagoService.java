@@ -2,6 +2,7 @@ package com.uade.entrelibros.backend.service;
 
 import java.util.List;
 
+import com.uade.entrelibros.backend.entity.EnvioItem;
 import com.uade.entrelibros.backend.entity.OrdenItem;
 import com.uade.entrelibros.backend.entity.Pago;
 import com.uade.entrelibros.backend.entity.Usuario;
@@ -21,4 +22,6 @@ public interface PagoService {
     Pago crearPago(Usuario comprador, Long idOrden, String proveedor);
 
     List<OrdenItem> getItemsDeOrdenPagada(Long idOrden);
+
+    List<EnvioItem> getEnvioItemsDeOrdenPagada(Long idOrden);
 }

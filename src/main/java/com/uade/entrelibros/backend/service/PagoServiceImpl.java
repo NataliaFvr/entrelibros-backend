@@ -6,9 +6,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.uade.entrelibros.backend.entity.EnvioItem;
 import com.uade.entrelibros.backend.entity.EstadoPago;
 import com.uade.entrelibros.backend.entity.Orden;
 import com.uade.entrelibros.backend.entity.OrdenItem;
+import com.uade.entrelibros.backend.entity.OrdenVendedor;
 import com.uade.entrelibros.backend.entity.Pago;
 import com.uade.entrelibros.backend.entity.Usuario;
 import com.uade.entrelibros.backend.exceptions.AccionNoPermitidaException;
@@ -16,8 +18,10 @@ import com.uade.entrelibros.backend.exceptions.ListaVaciaException;
 import com.uade.entrelibros.backend.exceptions.OrdenNoEncontradaException;
 import com.uade.entrelibros.backend.exceptions.PagoNoEncontradoException;
 import com.uade.entrelibros.backend.exceptions.OrdenNoPagableException;
+import com.uade.entrelibros.backend.repository.EnvioItemRepository;
 import com.uade.entrelibros.backend.repository.OrdenItemRepository;
 import com.uade.entrelibros.backend.repository.OrdenRepository;
+import com.uade.entrelibros.backend.repository.OrdenVendedorRepository;
 import com.uade.entrelibros.backend.repository.PagoRepository;
 
 @Service
@@ -29,6 +33,10 @@ public class PagoServiceImpl implements PagoService {
     private OrdenRepository ordenRepository;
     @Autowired
     private OrdenItemRepository ordenItemRepository;
+    @Autowired
+    private OrdenVendedorRepository ordenVendedorRepository;
+    @Autowired
+    private EnvioItemRepository envioItemRepository;
     @Autowired
     private OrdenService ordenService;
 
@@ -81,10 +89,18 @@ public class PagoServiceImpl implements PagoService {
         return pago;
     }
 
-    // Nuevo: trae los OrdenItem de la orden pagada, para que el controller arme
-    // el PagoResponse con los idOrdenItem y el frontend sepa qué puede reseñar.
+    // Items de libros comprados en la orden (para armar reseñas de libro)
     public List<OrdenItem> getItemsDeOrdenPagada(Long idOrden) {
         return ordenItemRepository.findByOrdenId(idOrden);
+    }
+
+    // Items de envío de la orden, navegando Orden -> OrdenVendedor -> EnvioItem
+    // (para armar reseñas de vendedor)
+    public List<EnvioItem> getEnvioItemsDeOrdenPagada(Long idOrden) {
+        List<OrdenVendedor> ordenVendedores = ordenVendedorRepository.findByOrdenId(idOrden);
+        return ordenVendedores.stream()
+                .flatMap(ov -> envioItemRepository.findByOrdenVendedorId(ov.getId()).stream())
+                .toList();
     }
 
     private void validarComprador(Orden orden, Usuario comprador) {
