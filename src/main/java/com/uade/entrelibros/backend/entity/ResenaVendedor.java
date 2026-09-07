@@ -11,8 +11,9 @@ public class ResenaVendedor {
     public ResenaVendedor() {
     }
 
-    public ResenaVendedor(EnvioItem envioItem, Usuario comprador, Integer clasificacion, String comentario) {
-        this.envioItem = envioItem;
+    public ResenaVendedor(Pago pago, Usuario vendedor, Usuario comprador, Integer clasificacion, String comentario) {
+        this.pago = pago;
+        this.vendedor = vendedor;
         this.comprador = comprador;
         this.clasificacion = clasificacion;
         this.comentario = comentario;
@@ -24,8 +25,12 @@ public class ResenaVendedor {
     private Long id;
 
     @ManyToOne
-    @JoinColumn(name = "id_envio_item")
-    private EnvioItem envioItem;
+    @JoinColumn(name = "id_pago")
+    private Pago pago;
+
+    @ManyToOne
+    @JoinColumn(name = "id_vendedor")
+    private Usuario vendedor;
 
     @ManyToOne
     @JoinColumn(name = "id_comprador")

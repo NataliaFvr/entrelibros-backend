@@ -7,17 +7,18 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.uade.entrelibros.backend.entity.EstadoPago;
-import com.uade.entrelibros.backend.entity.EnvioItem;
+import com.uade.entrelibros.backend.entity.Pago;
 import com.uade.entrelibros.backend.entity.ResenaVendedor;
 import com.uade.entrelibros.backend.entity.Usuario;
 import com.uade.entrelibros.backend.exceptions.AccionNoPermitidaException;
 import com.uade.entrelibros.backend.exceptions.CalificacionInvalidaException;
 import com.uade.entrelibros.backend.exceptions.CompraNoPagadaException;
-import com.uade.entrelibros.backend.exceptions.EnvioItemNoEncontradoException;
 import com.uade.entrelibros.backend.exceptions.ListaVaciaException;
 import com.uade.entrelibros.backend.exceptions.ResenaDuplicadaException;
 import com.uade.entrelibros.backend.exceptions.ResenaVendedorNoEncontradaException;
-import com.uade.entrelibros.backend.repository.EnvioItemRepository;
+import com.uade.entrelibros.backend.exceptions.PagoNoEncontradoException;
+import com.uade.entrelibros.backend.repository.PagoRepository;
+import com.uade.entrelibros.backend.repository.OrdenVendedorRepository;
 import com.uade.entrelibros.backend.repository.ResenaVendedorRepository;
 
 @Service
@@ -26,7 +27,9 @@ public class ResenaVendedorServiceImpl implements ResenaVendedorService {
     @Autowired
     private ResenaVendedorRepository resenaVendedorRepository;
     @Autowired
-    private EnvioItemRepository envioItemRepository;
+    private PagoRepository pagoRepository;
+    @Autowired
+    private OrdenVendedorRepository ordenVendedorRepository;
 
     public List<ResenaVendedor> getResenas() {
         List<ResenaVendedor> resenas = resenaVendedorRepository.findAll();
@@ -50,34 +53,38 @@ public class ResenaVendedorServiceImpl implements ResenaVendedorService {
         return resenas;
     }
 
-    public ResenaVendedor crearResena(Usuario comprador, Long idEnvioItem, Integer clasificacion, String comentario)
-            throws EnvioItemNoEncontradoException, CalificacionInvalidaException, ResenaDuplicadaException,
+    public ResenaVendedor crearResena(Usuario comprador, Long idPago, Long idVendedor, Integer clasificacion, String comentario)
+            throws PagoNoEncontradoException, CalificacionInvalidaException, ResenaDuplicadaException,
             AccionNoPermitidaException {
 
         if (clasificacion == null || clasificacion < 1 || clasificacion > 5)
             throw new CalificacionInvalidaException();
 
-        EnvioItem envioItem = envioItemRepository.findById(idEnvioItem)
-                .orElseThrow(EnvioItemNoEncontradoException::new);
+        Pago pago = pagoRepository.findById(idPago)
+                .orElseThrow(PagoNoEncontradoException::new);
 
-        // Ownership: el que reseña tiene que ser el comprador real de esa orden/envio
-        if (envioItem.getOrdenVendedor() == null
-                || envioItem.getOrdenVendedor().getOrden() == null
-                || envioItem.getOrdenVendedor().getOrden().getComprador() == null
-                || !envioItem.getOrdenVendedor().getOrden().getComprador().getId().equals(comprador.getId())) {
+        // El pago debe corresponder al comprador autenticado.
+        if (pago.getOrden() == null
+                || pago.getOrden().getComprador() == null
+                || !pago.getOrden().getComprador().getId().equals(comprador.getId())) {
             throw new AccionNoPermitidaException();
         }
 
-        if (envioItem.getOrdenVendedor().getOrden().getEstadoPago() != EstadoPago.SIMULADO_APROBADO) {
+        if (pago.getResultado() != EstadoPago.SIMULADO_APROBADO) {
             throw new CompraNoPagadaException();
         }
 
-        // El comprador resena una sola vez a ese vendedor por cada envio recibido
-        if (!resenaVendedorRepository.findByEnvioItemIdAndCompradorId(idEnvioItem, comprador.getId()).isEmpty())
+        Usuario vendedor = ordenVendedorRepository.findByOrdenIdAndVendedorId(pago.getOrden().getId(), idVendedor)
+                .map(ordenVendedor -> ordenVendedor.getVendedor())
+                .orElseThrow(AccionNoPermitidaException::new);
+
+        // El comprador puede reseñar una vez a cada vendedor incluido en el pago.
+        if (!resenaVendedorRepository
+                .findByPagoIdAndVendedorIdAndCompradorId(idPago, idVendedor, comprador.getId()).isEmpty())
             throw new ResenaDuplicadaException();
 
         return resenaVendedorRepository.save(
-                new ResenaVendedor(envioItem, comprador, clasificacion, comentario));
+                new ResenaVendedor(pago, vendedor, comprador, clasificacion, comentario));
     }
 
     @Transactional

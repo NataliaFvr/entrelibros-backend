@@ -14,7 +14,7 @@ import com.uade.entrelibros.backend.entity.dto.ResenaVendedorRequest;
 import com.uade.entrelibros.backend.entity.dto.ResenaVendedorResponse;
 import com.uade.entrelibros.backend.exceptions.AccionNoPermitidaException;
 import com.uade.entrelibros.backend.exceptions.CalificacionInvalidaException;
-import com.uade.entrelibros.backend.exceptions.EnvioItemNoEncontradoException;
+import com.uade.entrelibros.backend.exceptions.PagoNoEncontradoException;
 import com.uade.entrelibros.backend.exceptions.ResenaDuplicadaException;
 import com.uade.entrelibros.backend.exceptions.ResenaVendedorNoEncontradaException;
 import com.uade.entrelibros.backend.service.ResenaVendedorService;
@@ -53,10 +53,10 @@ public class ResenaVendedorController {
     public ResponseEntity<ResenaVendedorResponse> crearResena(
             @AuthenticationPrincipal Usuario comprador,
             @RequestBody ResenaVendedorRequest request)
-            throws EnvioItemNoEncontradoException, CalificacionInvalidaException, ResenaDuplicadaException,
+            throws PagoNoEncontradoException, CalificacionInvalidaException, ResenaDuplicadaException,
             AccionNoPermitidaException {
         ResenaVendedor result = resenaVendedorService.crearResena(
-                comprador, request.getIdEnvioItem(), request.getClasificacion(), request.getComentario());
+                comprador, request.getIdPago(), request.getIdVendedor(), request.getClasificacion(), request.getComentario());
         return ResponseEntity.created(URI.create("/resenas-vendedor/" + result.getId()))
                 .body(ResenaVendedorResponse.from(result));
     }

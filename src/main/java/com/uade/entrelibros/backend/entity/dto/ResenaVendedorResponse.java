@@ -12,6 +12,7 @@ public class ResenaVendedorResponse {
     private Integer clasificacion;
     private String comentario;
     private LocalDate fecha;
+    private Long idPago;
     private Long idVendedor;
     private String nombreComprador;
 
@@ -21,7 +22,8 @@ public class ResenaVendedorResponse {
         r.clasificacion = resena.getClasificacion();
         r.comentario = resena.getComentario();
         r.fecha = resena.getFecha();
-        r.idVendedor = resena.getEnvioItem().getOrdenVendedor().getVendedor().getId();
+        r.idPago = resena.getPago().getId();
+        r.idVendedor = resena.getVendedor().getId();
         r.nombreComprador = resena.getComprador().getNombre();
         return r;
     }

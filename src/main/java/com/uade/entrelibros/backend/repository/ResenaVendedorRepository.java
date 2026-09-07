@@ -11,9 +11,9 @@ import com.uade.entrelibros.backend.entity.ResenaVendedor;
 @Repository
 public interface ResenaVendedorRepository extends JpaRepository<ResenaVendedor, Long> {
 
-    @Query(value = "select r from ResenaVendedor r where r.envioItem.id = ?1 and r.comprador.id = ?2")
-    List<ResenaVendedor> findByEnvioItemIdAndCompradorId(Long idEnvioItem, Long idComprador);
+    @Query(value = "select r from ResenaVendedor r where r.pago.id = ?1 and r.vendedor.id = ?2 and r.comprador.id = ?3")
+    List<ResenaVendedor> findByPagoIdAndVendedorIdAndCompradorId(Long idPago, Long idVendedor, Long idComprador);
 
-    @Query(value = "select r from ResenaVendedor r where r.envioItem.ordenVendedor.vendedor.id = ?1")
+    @Query(value = "select r from ResenaVendedor r where r.vendedor.id = ?1")
     List<ResenaVendedor> findByVendedorId(Long idVendedor);
 }
