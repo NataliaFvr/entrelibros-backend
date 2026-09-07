@@ -72,6 +72,16 @@ public class LibroServiceImpl implements LibroService {
         return libroRepository.findAll(spec, pageable);
     }
 
+    @Override
+    public Page<Libro> getLibrosPorEstadoModeracion(EstadoModeracion estado, PageRequest pageRequest) {
+        Page<Libro> libros = libroRepository.findByEstadoModeracionAndEstadoPublicacion(
+                estado, EstadoPublicacion.ACTIVA, pageRequest);
+        if (libros.isEmpty()) {
+            throw new ListaVaciaException("No hay libros en ese estado de moderacion");
+        }
+        return libros;
+    }
+
     public Libro getLibroById(Long libroId, Usuario usuario) throws LibroNoEncontradoException {
         Libro libro = libroRepository.findById(libroId)
                 .orElseThrow(LibroNoEncontradoException::new);

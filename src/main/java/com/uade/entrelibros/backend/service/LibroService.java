@@ -35,4 +35,6 @@ public interface LibroService {
 
     Libro moderarLibro(Long libroId, EstadoModeracion estadoModeracion, String comentario, Usuario moderador)
         throws LibroNoEncontradoException;
+
+    Page<Libro> getLibrosPorEstadoModeracion(EstadoModeracion estado, PageRequest pageRequest);
 }

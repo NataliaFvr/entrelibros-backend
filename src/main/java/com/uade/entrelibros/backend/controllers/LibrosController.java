@@ -15,6 +15,7 @@ import com.uade.entrelibros.backend.entity.Usuario;
 import com.uade.entrelibros.backend.entity.dto.LibroFiltroRequest;
 import com.uade.entrelibros.backend.entity.dto.LibroRequest;
 import com.uade.entrelibros.backend.entity.dto.LibroResponse;
+import com.uade.entrelibros.backend.entity.EstadoModeracion;
 import com.uade.entrelibros.backend.entity.dto.ModeracionRequest;
 import com.uade.entrelibros.backend.exceptions.AccionNoPermitidaException;
 import com.uade.entrelibros.backend.exceptions.CategoriaNoEncontradaException;
@@ -119,6 +120,19 @@ public class LibrosController {
         Libro result = libroService.moderarLibro(
                 libroId, request.getEstadoModeracion(), request.getComentario(), moderador);
         return ResponseEntity.ok(LibroResponse.from(result));
+    }
+
+    // Listado de moderacion SOLO para el admin. No toca el catalogo (visibles()):
+    //   GET /libros/moderacion?estado=EN_REVISION  -> los pendientes de revisar
+    //   GET /libros/moderacion?estado=ACEPTADO     -> los ya aprobados/activos
+    @PreAuthorize("hasAuthority('ADMIN')")
+    @GetMapping("/moderacion")
+    public ResponseEntity<Page<LibroResponse>> getLibrosPorModeracion(
+            @RequestParam EstadoModeracion estado,
+            @RequestParam(defaultValue = "0") Integer page,
+            @RequestParam(defaultValue = "20") Integer size) {
+        Page<Libro> libros = libroService.getLibrosPorEstadoModeracion(estado, PageRequest.of(page, size));
+        return ResponseEntity.ok(libros.map(LibroResponse::from));
     }
 
     @PreAuthorize("hasAuthority('ADMIN')")
