@@ -8,6 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.uade.entrelibros.backend.entity.EstadoPago;
 import com.uade.entrelibros.backend.entity.Orden;
+import com.uade.entrelibros.backend.entity.OrdenItem;
 import com.uade.entrelibros.backend.entity.Pago;
 import com.uade.entrelibros.backend.entity.Usuario;
 import com.uade.entrelibros.backend.exceptions.AccionNoPermitidaException;
@@ -15,6 +16,7 @@ import com.uade.entrelibros.backend.exceptions.ListaVaciaException;
 import com.uade.entrelibros.backend.exceptions.OrdenNoEncontradaException;
 import com.uade.entrelibros.backend.exceptions.PagoNoEncontradoException;
 import com.uade.entrelibros.backend.exceptions.OrdenNoPagableException;
+import com.uade.entrelibros.backend.repository.OrdenItemRepository;
 import com.uade.entrelibros.backend.repository.OrdenRepository;
 import com.uade.entrelibros.backend.repository.PagoRepository;
 
@@ -25,6 +27,8 @@ public class PagoServiceImpl implements PagoService {
     private PagoRepository pagoRepository;
     @Autowired
     private OrdenRepository ordenRepository;
+    @Autowired
+    private OrdenItemRepository ordenItemRepository;
     @Autowired
     private OrdenService ordenService;
 
@@ -75,6 +79,12 @@ public class PagoServiceImpl implements PagoService {
         ordenRepository.save(orden);
 
         return pago;
+    }
+
+    // Nuevo: trae los OrdenItem de la orden pagada, para que el controller arme
+    // el PagoResponse con los idOrdenItem y el frontend sepa qué puede reseñar.
+    public List<OrdenItem> getItemsDeOrdenPagada(Long idOrden) {
+        return ordenItemRepository.findByOrdenId(idOrden);
     }
 
     private void validarComprador(Orden orden, Usuario comprador) {

@@ -9,6 +9,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import com.uade.entrelibros.backend.entity.OrdenItem;
 import com.uade.entrelibros.backend.entity.Pago;
 import com.uade.entrelibros.backend.entity.Usuario;
 import com.uade.entrelibros.backend.entity.dto.PagoRequest;
@@ -56,11 +57,12 @@ public class PagoController {
 
     @PostMapping
     public ResponseEntity<PagoResponse> crearPago(
-            @AuthenticationPrincipal Usuario comprador,
-            @RequestBody PagoRequest request)
-            throws OrdenNoEncontradaException, AccionNoPermitidaException, OrdenNoPagableException {
-        Pago result = pagoService.crearPago(comprador, request.getIdOrden(), request.getProveedor());
-        return ResponseEntity.created(URI.create("/pagos/" + result.getId()))
-                .body(PagoResponse.from(result));
-    }
+        @AuthenticationPrincipal Usuario comprador,
+        @RequestBody PagoRequest request)
+        throws OrdenNoEncontradaException, AccionNoPermitidaException, OrdenNoPagableException {
+    Pago result = pagoService.crearPago(comprador, request.getIdOrden(), request.getProveedor());
+    List<OrdenItem> items = pagoService.getItemsDeOrdenPagada(request.getIdOrden());
+    return ResponseEntity.created(URI.create("/pagos/" + result.getId()))
+            .body(PagoResponse.from(result, items));
+}
 }
