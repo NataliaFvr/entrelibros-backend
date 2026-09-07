@@ -72,9 +72,21 @@ public class LibroServiceImpl implements LibroService {
         return libroRepository.findAll(spec, pageable);
     }
 
-    public Libro getLibroById(Long libroId) throws LibroNoEncontradoException {
-        return libroRepository.findById(libroId)
+    public Libro getLibroById(Long libroId, Usuario usuario) throws LibroNoEncontradoException {
+        Libro libro = libroRepository.findById(libroId)
                 .orElseThrow(LibroNoEncontradoException::new);
+
+        boolean esVisible = libro.getEstadoPublicacion() == EstadoPublicacion.ACTIVA
+                && libro.getEstadoModeracion() == EstadoModeracion.ACEPTADO;
+        boolean esDuenio = usuario != null && libro.getVendedor().getId().equals(usuario.getId());
+        boolean esAdmin = usuario != null && usuario.getRol() == Rol.ADMIN;
+
+        if (!esVisible && !esDuenio && !esAdmin) {
+            // 404 en vez de 403 para no confirmar que el id existe a alguien sin permiso
+            throw new LibroNoEncontradoException();
+        }
+
+        return libro;
     }
 
     public Libro createLibro(LibroRequest request, Usuario vendedor)
@@ -166,7 +178,6 @@ public class LibroServiceImpl implements LibroService {
         }
     }
 
-        // DESPUÉS:
     @Override
     @Transactional
     public Libro moderarLibro(Long libroId, EstadoModeracion estadoModeracion, String comentario, Usuario moderador)
@@ -184,7 +195,5 @@ public class LibroServiceImpl implements LibroService {
 
         return libroActualizado;
     }
-
-
 
 }

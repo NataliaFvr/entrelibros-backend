@@ -68,9 +68,11 @@ public class LibrosController {
     }
 
     @GetMapping("/{libroId}")
-    public ResponseEntity<LibroResponse> getLibroById(@PathVariable Long libroId)
+    public ResponseEntity<LibroResponse> getLibroById(
+            @AuthenticationPrincipal(errorOnInvalidType = false) Usuario usuario,
+            @PathVariable Long libroId)
             throws LibroNoEncontradoException {
-        Libro libro = libroService.getLibroById(libroId);
+        Libro libro = libroService.getLibroById(libroId, usuario);
         return ResponseEntity.ok(LibroResponse.from(libro));
     }
 

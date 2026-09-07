@@ -21,7 +21,7 @@ public interface LibroService {
 
     Page<Libro> buscarLibros(LibroFiltroRequest filtro, Pageable pageable);
 
-    Libro getLibroById(Long libroId) throws LibroNoEncontradoException;
+    Libro getLibroById(Long libroId, Usuario usuario) throws LibroNoEncontradoException;
 
     Libro createLibro(LibroRequest request, Usuario vendedor)
             throws CategoriaNoEncontradaException, RolInvalidoException;
