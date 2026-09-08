@@ -4,6 +4,7 @@ import java.util.List;
 
 import com.uade.entrelibros.backend.entity.OrdenVendedor;
 import com.uade.entrelibros.backend.entity.Orden;
+import com.uade.entrelibros.backend.entity.OrdenItem;
 import com.uade.entrelibros.backend.entity.Usuario;
 import com.uade.entrelibros.backend.exceptions.AccionNoPermitidaException;
 import com.uade.entrelibros.backend.exceptions.OrdenNoEncontradaException;
@@ -16,6 +17,8 @@ public interface OrdenService {
     List<Orden> getOrdenes(Usuario usuario);
 
     Orden getOrdenById(Long idOrden, Usuario usuario);
+
+    List<OrdenItem> getItemsDeOrden(Long idOrden);
 
     List<Orden> getOrdenesByComprador(Usuario comprador);
 

@@ -1,8 +1,10 @@
 package com.uade.entrelibros.backend.entity.dto;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 import com.uade.entrelibros.backend.entity.Orden;
+import com.uade.entrelibros.backend.entity.OrdenItem;
 import lombok.Data;
 
 @Data
@@ -17,6 +19,13 @@ public class OrdenResponse {
     private String estadoPago;
     private Long idComprador;
     private String nombreComprador;
+    private List<OrdenItemResponse> items;
+
+    public static OrdenResponse from(Orden orden, List<OrdenItem> ordenItems) {
+        OrdenResponse r = from(orden);
+        r.items = ordenItems.stream().map(OrdenItemResponse::from).toList();
+        return r;
+    }
 
     public static OrdenResponse from(Orden orden) {
         OrdenResponse r = new OrdenResponse();

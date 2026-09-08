@@ -56,7 +56,8 @@ public class ResenaVendedorController {
             throws PagoNoEncontradoException, CalificacionInvalidaException, ResenaDuplicadaException,
             AccionNoPermitidaException {
         ResenaVendedor result = resenaVendedorService.crearResena(
-                comprador, request.getIdPago(), request.getClasificacion(), request.getComentario());
+                comprador, request.getIdPago(), request.getIdVendedor(),
+                request.getClasificacion(), request.getComentario());
         return ResponseEntity.created(URI.create("/resenas-vendedor/" + result.getId()))
                 .body(ResenaVendedorResponse.from(result));
     }

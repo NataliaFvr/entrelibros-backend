@@ -54,7 +54,8 @@ public class ResenaVendedorServiceImpl implements ResenaVendedorService {
         return resenas;
     }
 
-    public ResenaVendedor crearResena(Usuario comprador, Long idPago, Integer clasificacion, String comentario)
+    public ResenaVendedor crearResena(Usuario comprador, Long idPago, Long idVendedor, Integer clasificacion,
+            String comentario)
             throws PagoNoEncontradoException, CalificacionInvalidaException, ResenaDuplicadaException,
             AccionNoPermitidaException {
 
@@ -76,10 +77,11 @@ public class ResenaVendedorServiceImpl implements ResenaVendedorService {
         }
 
         List<OrdenVendedor> ordenesVendedor = ordenVendedorRepository.findByOrdenId(pago.getOrden().getId());
-        if (ordenesVendedor.size() != 1) {
-            throw new AccionNoPermitidaException();
-        }
-        Usuario vendedor = ordenesVendedor.getFirst().getVendedor();
+        Usuario vendedor = ordenesVendedor.stream()
+                .map(OrdenVendedor::getVendedor)
+                .filter(v -> v != null && v.getId().equals(idVendedor))
+                .findFirst()
+                .orElseThrow(AccionNoPermitidaException::new);
 
         // El comprador puede reseñar una vez a cada vendedor incluido en el pago.
         if (!resenaVendedorRepository

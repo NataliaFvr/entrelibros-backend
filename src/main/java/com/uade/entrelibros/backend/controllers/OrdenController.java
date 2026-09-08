@@ -38,7 +38,8 @@ public class OrdenController {
             @AuthenticationPrincipal Usuario usuario,
             @PathVariable Long idOrden)
             throws OrdenNoEncontradaException, AccionNoPermitidaException {
-        return ResponseEntity.ok(OrdenResponse.from(ordenService.getOrdenById(idOrden, usuario)));
+        var orden = ordenService.getOrdenById(idOrden, usuario);
+        return ResponseEntity.ok(OrdenResponse.from(orden, ordenService.getItemsDeOrden(idOrden)));
     }
 
     @GetMapping("/comprador")

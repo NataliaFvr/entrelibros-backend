@@ -63,6 +63,10 @@ public class OrdenServiceImpl implements OrdenService {
         return orden;
     }
 
+    public List<OrdenItem> getItemsDeOrden(Long idOrden) {
+        return ordenItemRepository.findByOrdenId(idOrden);
+    }
+
     public List<Orden> getOrdenesByComprador(Usuario comprador) {
         List<Orden> ordenes = ordenRepository.findByCompradorId(comprador.getId());
         if (ordenes.isEmpty()) {
