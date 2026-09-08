@@ -2,7 +2,6 @@ package com.uade.entrelibros.backend.service;
 
 import java.util.List;
 
-import com.uade.entrelibros.backend.entity.OrdenItem;
 import com.uade.entrelibros.backend.entity.Pago;
 import com.uade.entrelibros.backend.entity.Usuario;
 import com.uade.entrelibros.backend.exceptions.AccionNoPermitidaException;
@@ -19,6 +18,4 @@ public interface PagoService {
     List<Pago> getPagosByOrden(Usuario comprador, Long idOrden);
 
     Pago crearPago(Usuario comprador, Long idOrden, String proveedor);
-
-    List<OrdenItem> getItemsDeOrdenPagada(Long idOrden);
 }
