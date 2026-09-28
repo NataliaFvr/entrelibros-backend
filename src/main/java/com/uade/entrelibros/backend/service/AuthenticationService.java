@@ -28,22 +28,19 @@ public class AuthenticationService {
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
 
-    public AuthenticationResponse register(UsuarioRequest request) throws UsuarioDuplicadoException {
+    public void register(UsuarioRequest request) throws UsuarioDuplicadoException {
     Rol rolSolicitado = request.getRol();
     Rol rolFinal = (rolSolicitado == null || rolSolicitado == Rol.ADMIN)
             ? Rol.COMPRADOR
             : rolSolicitado;
 
-    Usuario usuario = usuarioService.createUsuario(
+    usuarioService.createUsuario(
             request.getNombreUsuario(),
             request.getEmail(),
             request.getContrasena(),
             request.getNombre(),
             request.getApellido(),
-            rolFinal);      
-
-    String jwtToken = jwtService.generateToken(usuario);
-    return buildResponse(usuario, jwtToken);
+            rolFinal);
 }
 
     public AuthenticationResponse authenticate(AuthenticationRequest request) {

@@ -15,17 +15,15 @@ public interface UsuarioService {
     public Page<Usuario> getUsuarios(PageRequest pageRequest);
 
     public Optional<Usuario> getUsuarioById(Long usuarioId);
-
     public Usuario createUsuario(String nombreUsuario, String email, String contrasena, String nombre, String apellido);
-
     public Usuario createUsuario(String nombreUsuario, String email, String contrasena, String nombre,
             String apellido, Rol rol);
-
     public Usuario updateUsuario(Long usuarioId, UsuarioUpdateRequest request);
-
     public void eliminarUsuario(Long usuarioId);
-
     public Usuario cambiarRol(Long usuarioId, Rol nuevoRol);
-
     public Usuario reactivarUsuario(Long usuarioId);
+    public Usuario verificarEmail(String email, String codigo);
+    public Usuario reenviarCodigoVerificacion(String email);
+    public Usuario solicitarResetPassword(String email);
+    public Usuario cambiarContrasenia(String email, String codigo, String nuevaContrasenia);
 }
