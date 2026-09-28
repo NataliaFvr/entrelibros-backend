@@ -101,13 +101,23 @@ public class LibrosController {
     }
 
     @PreAuthorize("hasAuthority('VENDEDOR')")
-    @DeleteMapping("/{libroId}")
-    public ResponseEntity<Void> darDeBajaLibro(
+    @PatchMapping("/{libroId}/baja")
+    public ResponseEntity<LibroResponse> darDeBajaLibro(
             @AuthenticationPrincipal Usuario vendedor,
             @PathVariable Long libroId)
             throws LibroNoEncontradoException, RolInvalidoException, AccionNoPermitidaException {
-        libroService.darDeBajaLibro(libroId, vendedor);
-        return ResponseEntity.noContent().build();
+        Libro result = libroService.darDeBajaLibro(libroId, vendedor);
+        return ResponseEntity.ok(LibroResponse.from(result));
+    }
+
+    @PreAuthorize("hasAuthority('VENDEDOR')")
+    @PatchMapping("/{libroId}/reactivar")
+    public ResponseEntity<LibroResponse> reactivarLibro(
+            @AuthenticationPrincipal Usuario vendedor,
+            @PathVariable Long libroId)
+            throws LibroNoEncontradoException, RolInvalidoException, AccionNoPermitidaException {
+        Libro result = libroService.reactivarLibro(libroId, vendedor);
+        return ResponseEntity.ok(LibroResponse.from(result));
     }
 
     @PreAuthorize("hasAuthority('ADMIN')")

@@ -2,6 +2,7 @@ package com.uade.entrelibros.backend.controllers;
 
 import java.net.URI;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -72,10 +73,10 @@ public class ResenaLibroController {
     }
 
     @DeleteMapping("/{idResena}")
-    public ResponseEntity<Void> eliminarResena(
+    public ResponseEntity<Map<String, String>> eliminarResena(
             @PathVariable Long idResena,
             @AuthenticationPrincipal Usuario comprador) {
         resenaLibroService.eliminarResena(idResena, comprador);
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.ok(Map.of("mensaje", "Reseña eliminada correctamente"));
     }
 }

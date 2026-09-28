@@ -75,11 +75,11 @@ public class UsuariosController {
     }
 
     @PreAuthorize("hasAuthority('ADMIN')")
-    @DeleteMapping("/{usuarioId}")
-    public ResponseEntity<Void> eliminarUsuario(@PathVariable Long usuarioId)
+    @PatchMapping("/{usuarioId}/baja")
+    public ResponseEntity<UsuarioResponse> darDeBajaUsuario(@PathVariable Long usuarioId)
             throws UsuarioNoEncontradoException {
-        usuarioService.eliminarUsuario(usuarioId);
-        return ResponseEntity.noContent().build();
+        Usuario result = usuarioService.darDeBajaUsuario(usuarioId);
+        return ResponseEntity.ok(UsuarioResponse.from(result));
     }
 
     @PreAuthorize("hasAuthority('ADMIN')")

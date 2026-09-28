@@ -19,7 +19,7 @@ public interface UsuarioService {
     public Usuario createUsuario(String nombreUsuario, String email, String contrasena, String nombre,
             String apellido, Rol rol);
     public Usuario updateUsuario(Long usuarioId, UsuarioUpdateRequest request);
-    public void eliminarUsuario(Long usuarioId);
+    public Usuario darDeBajaUsuario(Long usuarioId);
     public Usuario cambiarRol(Long usuarioId, Rol nuevoRol);
     public Usuario reactivarUsuario(Long usuarioId);
     public Usuario verificarEmail(String email, String codigo);

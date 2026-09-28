@@ -154,14 +154,24 @@ public class LibroServiceImpl implements LibroService {
     }
 }
 
-    public void darDeBajaLibro(Long libroId, Usuario vendedor)
+    // Baja logica: el libro no se borra, solo cambia su estado de publicacion
+    public Libro darDeBajaLibro(Long libroId, Usuario vendedor)
             throws LibroNoEncontradoException, RolInvalidoException, AccionNoPermitidaException {
+        return cambiarEstadoPublicacion(libroId, vendedor, EstadoPublicacion.DADA_DE_BAJA);
+    }
+
+    public Libro reactivarLibro(Long libroId, Usuario vendedor)
+            throws LibroNoEncontradoException, RolInvalidoException, AccionNoPermitidaException {
+        return cambiarEstadoPublicacion(libroId, vendedor, EstadoPublicacion.ACTIVA);
+    }
+
+    private Libro cambiarEstadoPublicacion(Long libroId, Usuario vendedor, EstadoPublicacion estado) {
         validarVendedor(vendedor);
         Libro libro = libroRepository.findById(libroId)
                 .orElseThrow(LibroNoEncontradoException::new);
         validarDuenio(libro, vendedor);
-        libro.setEstadoPublicacion(EstadoPublicacion.DADA_DE_BAJA);
-        libroRepository.save(libro);
+        libro.setEstadoPublicacion(estado);
+        return libroRepository.save(libro);
     }
 
     private void guardarCategorias(Libro libro, List<Long> idCategorias) throws CategoriaNoEncontradaException {

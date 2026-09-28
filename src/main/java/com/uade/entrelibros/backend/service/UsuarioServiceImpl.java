@@ -113,7 +113,7 @@ public class UsuarioServiceImpl implements UsuarioService {
 
     @Override
     @Transactional
-    public void eliminarUsuario(Long usuarioId) {
+    public Usuario darDeBajaUsuario(Long usuarioId) {
         Usuario usuario = usuarioRepository.findById(usuarioId)
                 .orElseThrow(UsuarioNoEncontradoException::new);
 
@@ -122,7 +122,7 @@ public class UsuarioServiceImpl implements UsuarioService {
         }
 
         usuario.setEstado(EstadoUsuario.DADO_DE_BAJA);
-        usuarioRepository.save(usuario);
+        return usuarioRepository.save(usuario);
     }
 
     private void darDeBajaLibrosYCarritos(Usuario vendedor) {
