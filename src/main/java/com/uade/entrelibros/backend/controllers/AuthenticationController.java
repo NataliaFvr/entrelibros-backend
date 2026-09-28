@@ -42,9 +42,8 @@ public class AuthenticationController {
     }
 
     @PostMapping("/verificar-email")
-    public ResponseEntity<Map<String, String>> verificarEmail(@Valid @RequestBody VerificarEmailRequest request) {
-        usuarioService.verificarEmail(request.getEmail(), request.getCodigo());
-        return ResponseEntity.ok(Map.of("mensaje", "Email verificado correctamente"));
+    public ResponseEntity<AuthenticationResponse> verificarEmail(@Valid @RequestBody VerificarEmailRequest request) {
+        return ResponseEntity.ok(authenticationService.verificarEmail(request));
     }
 
     @PostMapping("/reenviar-codigo-verificacion")
@@ -73,4 +72,5 @@ public class AuthenticationController {
         usuarioService.cambiarContrasenia(request.getEmail(), request.getCodigo(), request.getNuevaContrasenia());
         return ResponseEntity.ok(Map.of("mensaje", "Contraseña actualizada correctamente"));
     }
+    
 }

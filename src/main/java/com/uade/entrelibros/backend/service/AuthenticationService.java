@@ -13,11 +13,13 @@ import com.uade.entrelibros.backend.entity.dto.AuthenticationRequest;
 import com.uade.entrelibros.backend.entity.dto.AuthenticationResponse;
 import com.uade.entrelibros.backend.entity.dto.RefreshTokenRequest;
 import com.uade.entrelibros.backend.entity.dto.UsuarioRequest;
+import com.uade.entrelibros.backend.entity.dto.VerificarEmailRequest;
 import com.uade.entrelibros.backend.exceptions.UsuarioDuplicadoException;
 import com.uade.entrelibros.backend.repository.UsuarioRepository;
 
 import lombok.RequiredArgsConstructor;
 import io.jsonwebtoken.JwtException;
+import com.uade.entrelibros.backend.entity.dto.VerificarEmailRequest;
 
 @Service
 @RequiredArgsConstructor
@@ -81,4 +83,9 @@ public class AuthenticationService {
                 .rol(usuario.getRol().name())
                 .build();
     }
+    public AuthenticationResponse verificarEmail(VerificarEmailRequest request) {
+    Usuario usuario = usuarioService.verificarEmail(request.getEmail(), request.getCodigo());
+    String jwtToken = jwtService.generateToken(usuario);
+    return buildResponse(usuario, jwtToken);
+}
 }
