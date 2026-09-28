@@ -2,9 +2,7 @@ package com.uade.entrelibros.backend.service;
 
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
 
 import com.uade.entrelibros.backend.config.JwtService;
 import com.uade.entrelibros.backend.entity.Rol;
@@ -14,12 +12,13 @@ import com.uade.entrelibros.backend.entity.dto.AuthenticationResponse;
 import com.uade.entrelibros.backend.entity.dto.RefreshTokenRequest;
 import com.uade.entrelibros.backend.entity.dto.UsuarioRequest;
 import com.uade.entrelibros.backend.entity.dto.VerificarEmailRequest;
+import com.uade.entrelibros.backend.exceptions.RefreshTokenInvalidoException;
 import com.uade.entrelibros.backend.exceptions.UsuarioDuplicadoException;
+import com.uade.entrelibros.backend.exceptions.UsuarioNoEncontradoException;
 import com.uade.entrelibros.backend.repository.UsuarioRepository;
 
 import lombok.RequiredArgsConstructor;
 import io.jsonwebtoken.JwtException;
-import com.uade.entrelibros.backend.entity.dto.VerificarEmailRequest;
 
 @Service
 @RequiredArgsConstructor
@@ -52,7 +51,7 @@ public class AuthenticationService {
                         request.getContrasena()));
 
         Usuario usuario = usuarioRepository.findByEmail(request.getEmail())
-                .orElseThrow();
+                .orElseThrow(UsuarioNoEncontradoException::new);
 
         String jwtToken = jwtService.generateToken(usuario);
         return buildResponse(usuario, jwtToken);
@@ -62,15 +61,15 @@ public class AuthenticationService {
         try {
             String email = jwtService.extractUsername(request.getRefreshToken());
             Usuario usuario = usuarioRepository.findByEmail(email)
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Refresh token invalido"));
+                    .orElseThrow(RefreshTokenInvalidoException::new);
 
             if (!jwtService.isRefreshTokenValid(request.getRefreshToken(), usuario)) {
-                throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Refresh token invalido");
+                throw new RefreshTokenInvalidoException();
             }
 
             return buildResponse(usuario, jwtService.generateToken(usuario));
         } catch (JwtException | IllegalArgumentException exception) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Refresh token invalido");
+            throw new RefreshTokenInvalidoException();
         }
     }
 

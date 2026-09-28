@@ -24,8 +24,6 @@ import com.uade.entrelibros.backend.exceptions.UsuarioNoEncontradoException;
 import com.uade.entrelibros.backend.repository.CarritoItemRepository;
 import com.uade.entrelibros.backend.repository.LibroRepository;
 import com.uade.entrelibros.backend.repository.UsuarioRepository;
-import org.springframework.web.server.ResponseStatusException;
-import org.springframework.http.HttpStatus;
 
 @Service
 public class UsuarioServiceImpl implements UsuarioService {
@@ -200,7 +198,7 @@ public class UsuarioServiceImpl implements UsuarioService {
     @Override
 public Usuario solicitarResetPassword(String email) {
     Usuario usuario = usuarioRepository.findByEmail(email)
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "No existe un usuario con ese email"));
+            .orElseThrow(UsuarioNoEncontradoException::new);
 
     String codigo = generarCodigo();
     usuario.setCodigoResetPassword(codigo);
@@ -215,7 +213,7 @@ public Usuario solicitarResetPassword(String email) {
 @Override
 public Usuario cambiarContrasenia(String email, String codigo, String nuevaContrasenia) {
     Usuario usuario = usuarioRepository.findByEmail(email)
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "No existe un usuario con ese email"));
+            .orElseThrow(UsuarioNoEncontradoException::new);
 
     boolean codigoValido = codigo != null
             && codigo.equals(usuario.getCodigoResetPassword())

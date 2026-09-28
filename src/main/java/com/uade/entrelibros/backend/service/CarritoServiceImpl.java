@@ -26,6 +26,7 @@ import com.uade.entrelibros.backend.exceptions.ItemCarritoNoEncontradoException;
 import com.uade.entrelibros.backend.exceptions.LibroNoEncontradoException;
 import com.uade.entrelibros.backend.exceptions.ListaVaciaException;
 import com.uade.entrelibros.backend.exceptions.StockInsuficienteException;
+import com.uade.entrelibros.backend.exceptions.UsuarioNoEncontradoException;
 import com.uade.entrelibros.backend.repository.CarritoItemRepository;
 import com.uade.entrelibros.backend.repository.CarritoRepository;
 import com.uade.entrelibros.backend.repository.LibroRepository;
@@ -61,10 +62,8 @@ public class CarritoServiceImpl implements CarritoService {
         if (carrito != null) {
             return carrito;
         }
-        // Nota: si el id de usuario no existe, esto tira un error genérico por ahora.
-        // Cuando Persona 1 tenga una UsuarioNoEncontradoException, conviene usarla acá.
         Usuario usuario = usuarioRepository.findById(idUsuario)
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+                .orElseThrow(UsuarioNoEncontradoException::new);
         return carritoRepository.save(new Carrito(usuario));
     }
 
