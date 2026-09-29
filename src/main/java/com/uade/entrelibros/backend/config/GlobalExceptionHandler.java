@@ -17,11 +17,9 @@ import org.springframework.security.authentication.DisabledException;
 import com.uade.entrelibros.backend.exceptions.EntreLibrosException;
 import com.uade.entrelibros.backend.exceptions.ListaVaciaException;
 
-// Todas las respuestas de error de la API salen con el mismo formato: {"error": "mensaje"}
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    // Excepciones propias: el codigo y el mensaje salen del @ResponseStatus de cada una
     @ExceptionHandler(EntreLibrosException.class)
     public ResponseEntity<Map<String, String>> handleEntreLibrosException(EntreLibrosException ex) {
         ResponseStatus anotacion = AnnotatedElementUtils.findMergedAnnotation(ex.getClass(), ResponseStatus.class);

@@ -125,6 +125,11 @@ public class LibroServiceImpl implements LibroService {
 
         aplicarCambios(libro, request);
 
+        // Si se edita, vuelve a revision del admin
+        if (libro.getEstadoModeracion() != EstadoModeracion.EN_REVISION) {
+            libro.setEstadoModeracion(EstadoModeracion.EN_REVISION);
+        }
+
         Libro actualizado = libroRepository.save(libro);
 
         if (request.getIdCategorias() != null) {
