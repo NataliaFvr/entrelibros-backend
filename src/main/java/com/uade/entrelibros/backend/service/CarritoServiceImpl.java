@@ -180,6 +180,10 @@ public class CarritoServiceImpl implements CarritoService {
             ordenItemRepository.save(new OrdenItem(orden, libro, vendedor, item.getCantidad(), precioUnitario));
 
             libro.setStock(libro.getStock() - item.getCantidad());
+            // Contador de "vendidos" para el ranking de bestsellers (sort=bestsellers en /libros).
+            // Se descuenta en OrdenServiceImpl.devolverStock si la venta se cancela o vence despues.
+            int vendidosActuales = libro.getVendidos() != null ? libro.getVendidos() : 0;
+            libro.setVendidos(vendidosActuales + item.getCantidad());
             libroRepository.save(libro);
 
             carritoItemRepository.delete(item);

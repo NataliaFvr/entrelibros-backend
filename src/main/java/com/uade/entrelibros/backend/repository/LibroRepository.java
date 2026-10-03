@@ -10,6 +10,7 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import java.util.List;
 
 import com.uade.entrelibros.backend.entity.Libro;
+import com.uade.entrelibros.backend.entity.Usuario;
 
 @Repository
 public interface LibroRepository extends JpaRepository<Libro, Long>, JpaSpecificationExecutor<Libro> {
@@ -31,4 +32,19 @@ public interface LibroRepository extends JpaRepository<Libro, Long>, JpaSpecific
     @Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
     @Query("select l from Libro l where l.id = :id")
     java.util.Optional<Libro> findByIdConCandado(Long id);
+
+    // Valores únicos entre libros visibles, para poblar los <select> de filtro del catálogo.
+    // Siempre sobre libros ACTIVA + ACEPTADO: no tiene sentido ofrecer como filtro un valor
+    // que solo existe en libros que el catálogo público no va a mostrar de todos modos.
+    @Query("select distinct l.editorial from Libro l where l.estadoPublicacion = com.uade.entrelibros.backend.entity.EstadoPublicacion.ACTIVA and l.estadoModeracion = com.uade.entrelibros.backend.entity.EstadoModeracion.ACEPTADO order by l.editorial")
+    List<String> findEditorialesDistintas();
+
+    @Query("select distinct l.autor from Libro l where l.estadoPublicacion = com.uade.entrelibros.backend.entity.EstadoPublicacion.ACTIVA and l.estadoModeracion = com.uade.entrelibros.backend.entity.EstadoModeracion.ACEPTADO order by l.autor")
+    List<String> findAutoresDistintos();
+
+    @Query("select distinct l.idioma from Libro l where l.estadoPublicacion = com.uade.entrelibros.backend.entity.EstadoPublicacion.ACTIVA and l.estadoModeracion = com.uade.entrelibros.backend.entity.EstadoModeracion.ACEPTADO order by l.idioma")
+    List<String> findIdiomasDistintos();
+
+    @Query("select distinct l.vendedor from Libro l where l.estadoPublicacion = com.uade.entrelibros.backend.entity.EstadoPublicacion.ACTIVA and l.estadoModeracion = com.uade.entrelibros.backend.entity.EstadoModeracion.ACEPTADO")
+    List<Usuario> findVendedoresConLibrosVisibles();
 }

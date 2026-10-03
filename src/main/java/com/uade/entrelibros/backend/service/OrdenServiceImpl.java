@@ -162,6 +162,10 @@ public class OrdenServiceImpl implements OrdenService {
         for (OrdenItem item : items) {
             libroRepository.findByIdConCandado(item.getLibro().getId()).ifPresent(libro -> {
                 libro.setStock(libro.getStock() + item.getCantidad());
+                // Espejo del incremento en CarritoServiceImpl.checkout: si la venta se cancela o
+                // vence, esas unidades dejan de contar como "vendidas" para el ranking de bestsellers.
+                int vendidosActuales = libro.getVendidos() != null ? libro.getVendidos() : 0;
+                libro.setVendidos(Math.max(0, vendidosActuales - item.getCantidad()));
                 libroRepository.save(libro);
             });
         }

@@ -1,9 +1,11 @@
 package com.uade.entrelibros.backend.service;
  
 import java.util.List;
+import jakarta.persistence.criteria.Path;
 import jakarta.persistence.criteria.Subquery;
 import org.springframework.data.jpa.domain.Specification;
  
+import com.uade.entrelibros.backend.entity.EstadoLibro;
 import com.uade.entrelibros.backend.entity.EstadoModeracion;
 import com.uade.entrelibros.backend.entity.EstadoPublicacion;
 import com.uade.entrelibros.backend.entity.Libro;
@@ -78,5 +80,29 @@ public class LibroSpecification {
     public static Specification<Libro> deVendedores(List<Long> idVendedores) {
         return (root, query, cb) -> (idVendedores == null || idVendedores.isEmpty())
                 ? cb.conjunction() : root.get("vendedor").get("id").in(idVendedores);
+    }
+
+    // Filtro nuevo/usado: recibe los nombres del enum EstadoLibro como String
+    public static Specification<Libro> enEstadosLibro(List<String> estadosLibro) {
+        return (root, query, cb) -> {
+            if (estadosLibro == null || estadosLibro.isEmpty()) return cb.conjunction();
+            List<EstadoLibro> valores = estadosLibro.stream().map(EstadoLibro::valueOf).toList();
+            return root.get("estadoLibro").in(valores);
+        };
+    }
+
+    // Filtro de envío local: compara la provincia del vendedor contra la provincia del comprador.
+    // Si falta alguno de los dos datos (provincia del vendedor sin cargar, o no se mandó provinciaComprador),
+    // no se aplica el filtro para no esconder libros por falta de dato, en vez de dar un falso negativo.
+    public static Specification<Libro> envioLocal(String provinciaComprador, Boolean envioLocal) {
+        return (root, query, cb) -> {
+            if (envioLocal == null || provinciaComprador == null || provinciaComprador.isBlank()) {
+                return cb.conjunction();
+            }
+            Path<String> provinciaVendedor = root.get("vendedor").get("provincia");
+            return Boolean.TRUE.equals(envioLocal)
+                    ? cb.equal(cb.upper(provinciaVendedor), provinciaComprador.toUpperCase())
+                    : cb.notEqual(cb.upper(provinciaVendedor), provinciaComprador.toUpperCase());
+        };
     }
 }

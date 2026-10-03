@@ -1,19 +1,24 @@
 package com.uade.entrelibros.backend.controllers;
 
 import java.net.URI;
+import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.security.access.prepost.PreAuthorize;
 
 import com.uade.entrelibros.backend.entity.Usuario;
 import com.uade.entrelibros.backend.entity.dto.RolUpdateRequest;
+import com.uade.entrelibros.backend.entity.dto.SolicitudVendedorRequest;
 import com.uade.entrelibros.backend.entity.dto.UsuarioRequest;
 import com.uade.entrelibros.backend.entity.dto.UsuarioResponse;
 import com.uade.entrelibros.backend.entity.dto.UsuarioUpdateRequest;
+import com.uade.entrelibros.backend.exceptions.RolInvalidoException;
+import com.uade.entrelibros.backend.exceptions.SolicitudVendedorInvalidaException;
 import com.uade.entrelibros.backend.exceptions.UsuarioDuplicadoException;
 import com.uade.entrelibros.backend.exceptions.UsuarioNoEncontradoException;
 import com.uade.entrelibros.backend.service.UsuarioService;
@@ -97,6 +102,38 @@ public class UsuariosController {
     public ResponseEntity<UsuarioResponse> reactivarUsuario(@PathVariable Long usuarioId)
             throws UsuarioNoEncontradoException {
         Usuario result = usuarioService.reactivarUsuario(usuarioId);
+        return ResponseEntity.ok(UsuarioResponse.from(result));
+    }
+
+    // Un comprador pide pasar a vendedor, indicando el nombre de su tienda
+    @PreAuthorize("hasAuthority('COMPRADOR')")
+    @PostMapping("/solicitud-vendedor")
+    public ResponseEntity<UsuarioResponse> solicitarVendedor(
+            @AuthenticationPrincipal Usuario usuario,
+            @Valid @RequestBody SolicitudVendedorRequest request)
+            throws RolInvalidoException, SolicitudVendedorInvalidaException {
+        Usuario result = usuarioService.solicitarVendedor(usuario, request.getNombreTienda());
+        return ResponseEntity.ok(UsuarioResponse.from(result));
+    }
+
+    // El admin ve la cola de solicitudes pendientes
+    @PreAuthorize("hasAuthority('ADMIN')")
+    @GetMapping("/solicitudes-vendedor")
+    public ResponseEntity<List<UsuarioResponse>> getSolicitudesVendedor() {
+        List<UsuarioResponse> resultado = usuarioService.getSolicitudesVendedorPendientes().stream()
+                .map(UsuarioResponse::from)
+                .toList();
+        return ResponseEntity.ok(resultado);
+    }
+
+    // El admin aprueba (pasa a VENDEDOR) o rechaza (vuelve a NINGUNO) una solicitud puntual
+    @PreAuthorize("hasAuthority('ADMIN')")
+    @PatchMapping("/{usuarioId}/solicitud-vendedor")
+    public ResponseEntity<UsuarioResponse> resolverSolicitudVendedor(
+            @PathVariable Long usuarioId,
+            @RequestParam boolean aprobar)
+            throws UsuarioNoEncontradoException, SolicitudVendedorInvalidaException {
+        Usuario result = usuarioService.resolverSolicitudVendedor(usuarioId, aprobar);
         return ResponseEntity.ok(UsuarioResponse.from(result));
     }
 }

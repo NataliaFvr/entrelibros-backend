@@ -12,6 +12,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.uade.entrelibros.backend.entity.EstadoPublicacion;
+import com.uade.entrelibros.backend.entity.EstadoSolicitudVendedor;
 import com.uade.entrelibros.backend.entity.EstadoUsuario;
 import com.uade.entrelibros.backend.entity.Libro;
 import com.uade.entrelibros.backend.entity.Rol;
@@ -19,6 +20,9 @@ import com.uade.entrelibros.backend.entity.Usuario;
 import com.uade.entrelibros.backend.entity.dto.UsuarioUpdateRequest;
 import com.uade.entrelibros.backend.exceptions.CodigoVerificacionInvalidoException;
 import com.uade.entrelibros.backend.exceptions.EmailYaVerificadoException;
+import com.uade.entrelibros.backend.exceptions.ListaVaciaException;
+import com.uade.entrelibros.backend.exceptions.RolInvalidoException;
+import com.uade.entrelibros.backend.exceptions.SolicitudVendedorInvalidaException;
 import com.uade.entrelibros.backend.exceptions.UsuarioDuplicadoException;
 import com.uade.entrelibros.backend.exceptions.UsuarioNoEncontradoException;
 import com.uade.entrelibros.backend.repository.CarritoItemRepository;
@@ -105,6 +109,8 @@ public class UsuarioServiceImpl implements UsuarioService {
             usuario.setApellido(request.getApellido());
         if (request.getContrasena() != null && !request.getContrasena().isBlank())
             usuario.setContrasenaHash(passwordEncoder.encode(request.getContrasena()));
+        if (request.getProvincia() != null)
+            usuario.setProvincia(request.getProvincia());
 
         return usuarioRepository.save(usuario);
     }
@@ -230,4 +236,49 @@ public Usuario cambiarContrasenia(String email, String codigo, String nuevaContr
 
     return usuarioRepository.save(usuario);
 }
+
+    @Override
+    public Usuario solicitarVendedor(Usuario usuario, String nombreTienda) {
+        if (usuario.getRol() != Rol.COMPRADOR) {
+            // Un vendedor o admin no tiene sentido que "solicite" pasar a vendedor
+            throw new RolInvalidoException();
+        }
+        if (usuario.getEstadoSolicitudVendedor() == EstadoSolicitudVendedor.PENDIENTE) {
+            throw new SolicitudVendedorInvalidaException();
+        }
+
+        usuario.setNombreTienda(nombreTienda);
+        usuario.setEstadoSolicitudVendedor(EstadoSolicitudVendedor.PENDIENTE);
+        return usuarioRepository.save(usuario);
+    }
+
+    @Override
+    public List<Usuario> getSolicitudesVendedorPendientes() {
+        List<Usuario> solicitudes = usuarioRepository.findByEstadoSolicitudVendedor(EstadoSolicitudVendedor.PENDIENTE);
+        if (solicitudes.isEmpty()) {
+            throw new ListaVaciaException("No hay solicitudes de vendedor pendientes");
+        }
+        return solicitudes;
+    }
+
+    @Override
+    public Usuario resolverSolicitudVendedor(Long usuarioId, boolean aprobar) {
+        Usuario usuario = usuarioRepository.findById(usuarioId)
+                .orElseThrow(UsuarioNoEncontradoException::new);
+
+        if (usuario.getEstadoSolicitudVendedor() != EstadoSolicitudVendedor.PENDIENTE) {
+            throw new SolicitudVendedorInvalidaException();
+        }
+
+        if (aprobar) {
+            usuario.setEstadoSolicitudVendedor(EstadoSolicitudVendedor.APROBADO);
+            usuario.setRol(Rol.VENDEDOR);
+        } else {
+            // Rechazo: vuelve a NINGUNO, puede volver a solicitarlo mas adelante
+            usuario.setEstadoSolicitudVendedor(EstadoSolicitudVendedor.NINGUNO);
+            usuario.setNombreTienda(null);
+        }
+
+        return usuarioRepository.save(usuario);
+    }
 }

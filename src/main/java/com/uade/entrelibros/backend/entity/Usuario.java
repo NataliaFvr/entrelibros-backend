@@ -63,6 +63,15 @@ public class Usuario implements UserDetails {
     private String codigoResetPassword;
     private LocalDateTime codigoResetPasswordExpira;
 
+    // Ubicación del usuario (se usa en el filtro de catálogo "envío local" comparando contra la provincia del comprador)
+    private String provincia;
+
+    // Alta de vendedor vía solicitud: un COMPRADOR pide pasar a VENDEDOR y un admin la aprueba/rechaza
+    private String nombreTienda;
+
+    @Enumerated(EnumType.STRING)
+    private EstadoSolicitudVendedor estadoSolicitudVendedor = EstadoSolicitudVendedor.NINGUNO;
+
     public Long getId() {
         return id;
     }

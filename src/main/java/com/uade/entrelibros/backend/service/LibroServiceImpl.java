@@ -17,6 +17,8 @@ import com.uade.entrelibros.backend.entity.Rol;
 import com.uade.entrelibros.backend.entity.Usuario;
 import com.uade.entrelibros.backend.entity.dto.LibroFiltroRequest;
 import com.uade.entrelibros.backend.entity.dto.LibroRequest;
+import com.uade.entrelibros.backend.entity.dto.FiltrosDisponiblesResponse;
+import com.uade.entrelibros.backend.entity.dto.VendedorOptionResponse;
 import com.uade.entrelibros.backend.exceptions.AccionNoPermitidaException;
 import com.uade.entrelibros.backend.exceptions.CategoriaNoEncontradaException;
 import com.uade.entrelibros.backend.exceptions.LibroNoEncontradoException;
@@ -27,6 +29,7 @@ import com.uade.entrelibros.backend.repository.LibroCategoriaRepository;
 import com.uade.entrelibros.backend.repository.LibroRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.domain.Pageable;
 import com.uade.entrelibros.backend.entity.HistorialModeracion;
@@ -67,9 +70,28 @@ public class LibroServiceImpl implements LibroService {
             .and(LibroSpecification.enIdiomas(filtro.getIdiomas()))
             .and(LibroSpecification.enAnios(filtro.getAnios()))
             .and(LibroSpecification.conDescuento(filtro.getSoloConDescuento()))
-            .and(LibroSpecification.deVendedores(filtro.getIdVendedores()));
+            .and(LibroSpecification.deVendedores(filtro.getIdVendedores()))
+            .and(LibroSpecification.enEstadosLibro(filtro.getEstadosLibro()))
+            .and(LibroSpecification.envioLocal(filtro.getProvinciaComprador(), filtro.getEnvioLocal()));
 
-        return libroRepository.findAll(spec, pageable);
+        return libroRepository.findAll(spec, aplicarSort(pageable, filtro.getSort()));
+    }
+
+    // Traduce el parametro sort (String, mas simple de pasar por query param) a un Sort real de Spring Data,
+    // preservando la pagina/tamanio que ya traia el Pageable original.
+    private Pageable aplicarSort(Pageable pageable, String sort) {
+        if (sort == null || sort.isBlank()) {
+            return pageable;
+        }
+        Sort ordenamiento = switch (sort) {
+            case "precioAsc" -> Sort.by("precio").ascending();
+            case "precioDesc" -> Sort.by("precio").descending();
+            case "descuento" -> Sort.by("descuentoPct").descending();
+            case "nuevo" -> Sort.by("fechaPublicacion").descending();
+            case "bestsellers" -> Sort.by("vendidos").descending();
+            default -> Sort.unsorted();
+        };
+        return PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), ordenamiento);
     }
 
     @Override
@@ -219,6 +241,23 @@ public class LibroServiceImpl implements LibroService {
         historialModeracionRepository.save(registro);
 
         return libroActualizado;
+    }
+
+    @Override
+    public FiltrosDisponiblesResponse getFiltrosDisponibles() {
+        FiltrosDisponiblesResponse r = new FiltrosDisponiblesResponse();
+        r.setEditoriales(libroRepository.findEditorialesDistintas());
+        r.setAutores(libroRepository.findAutoresDistintos());
+        r.setIdiomas(libroRepository.findIdiomasDistintos());
+        r.setEstadosLibro(java.util.Arrays.stream(EstadoLibro.values()).map(Enum::name).toList());
+        r.setVendedores(libroRepository.findVendedoresConLibrosVisibles().stream()
+                .map(v -> new VendedorOptionResponse(
+                        v.getId(),
+                        v.getNombreTienda() != null && !v.getNombreTienda().isBlank()
+                                ? v.getNombreTienda()
+                                : v.getNombre() + " " + v.getApellido()))
+                .toList());
+        return r;
     }
 
 }

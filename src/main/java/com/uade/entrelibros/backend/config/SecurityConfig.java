@@ -44,6 +44,7 @@ public class SecurityConfig {
                                 "/imagenes-libro/**", "/resenas-libro/**", "/resenas-vendedor/**")
                         .permitAll()
                         .requestMatchers(HttpMethod.POST, "/usuarios").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/contacto").permitAll()
                         .anyRequest().authenticated())
                 .sessionManagement(session -> session.sessionCreationPolicy(STATELESS))
                 .exceptionHandling(exceptions -> exceptions
