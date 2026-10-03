@@ -105,7 +105,6 @@ public class UsuariosController {
         return ResponseEntity.ok(UsuarioResponse.from(result));
     }
 
-    // Un comprador pide pasar a vendedor, indicando el nombre de su tienda
     @PreAuthorize("hasAuthority('COMPRADOR')")
     @PostMapping("/solicitud-vendedor")
     public ResponseEntity<UsuarioResponse> solicitarVendedor(
@@ -116,7 +115,6 @@ public class UsuariosController {
         return ResponseEntity.ok(UsuarioResponse.from(result));
     }
 
-    // El admin ve la cola de solicitudes pendientes
     @PreAuthorize("hasAuthority('ADMIN')")
     @GetMapping("/solicitudes-vendedor")
     public ResponseEntity<List<UsuarioResponse>> getSolicitudesVendedor() {
@@ -126,7 +124,6 @@ public class UsuariosController {
         return ResponseEntity.ok(resultado);
     }
 
-    // El admin aprueba (pasa a VENDEDOR) o rechaza (vuelve a NINGUNO) una solicitud puntual
     @PreAuthorize("hasAuthority('ADMIN')")
     @PatchMapping("/{usuarioId}/solicitud-vendedor")
     public ResponseEntity<UsuarioResponse> resolverSolicitudVendedor(

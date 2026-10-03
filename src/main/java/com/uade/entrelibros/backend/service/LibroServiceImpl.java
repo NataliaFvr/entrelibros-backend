@@ -14,6 +14,7 @@ import com.uade.entrelibros.backend.entity.EstadoPublicacion;
 import com.uade.entrelibros.backend.entity.Libro;
 import com.uade.entrelibros.backend.entity.LibroCategoria;
 import com.uade.entrelibros.backend.entity.Rol;
+import com.uade.entrelibros.backend.entity.TipoNotificacion;
 import com.uade.entrelibros.backend.entity.Usuario;
 import com.uade.entrelibros.backend.entity.dto.LibroFiltroRequest;
 import com.uade.entrelibros.backend.entity.dto.LibroRequest;
@@ -49,6 +50,9 @@ public class LibroServiceImpl implements LibroService {
 
     @Autowired
     private HistorialModeracionRepository historialModeracionRepository;
+
+    @Autowired
+    private NotificacionService notificacionService;
 
     public Page<Libro> getLibros(PageRequest pageRequest) {
         Page<Libro> libros = libroRepository.findVisibles(pageRequest);
@@ -121,6 +125,9 @@ public class LibroServiceImpl implements LibroService {
         return libro;
     }
 
+    // @Transactional: libro + categorias + notificacion a los admins se guardan juntos
+    // o no se guarda nada (ej: si una categoria no existe, no queda el libro a medias)
+    @Transactional
     public Libro createLibro(LibroRequest request, Usuario vendedor)
             throws CategoriaNoEncontradaException, RolInvalidoException {
 
@@ -133,22 +140,26 @@ public class LibroServiceImpl implements LibroService {
 
         guardarCategorias(libro, request.getIdCategorias());
 
+        notificarEnvioARevision(libro, vendedor, false);
+
         return libro;
     }
 
-   public Libro updateLibro(Long libroId, LibroRequest request, Usuario vendedor)
-        throws LibroNoEncontradoException, CategoriaNoEncontradaException, RolInvalidoException,
-        AccionNoPermitidaException {
+    @Transactional
+    public Libro updateLibro(Long libroId, LibroRequest request, Usuario vendedor)
+            throws LibroNoEncontradoException, CategoriaNoEncontradaException, RolInvalidoException,
+            AccionNoPermitidaException {
 
         validarVendedor(vendedor);
         Libro libro = libroRepository.findById(libroId)
-            .orElseThrow(LibroNoEncontradoException::new);
+                .orElseThrow(LibroNoEncontradoException::new);
         validarDuenio(libro, vendedor);
 
         aplicarCambios(libro, request);
 
         // Si se edita, vuelve a revision del admin
-        if (libro.getEstadoModeracion() != EstadoModeracion.EN_REVISION) {
+        boolean vuelveARevision = libro.getEstadoModeracion() != EstadoModeracion.EN_REVISION;
+        if (vuelveARevision) {
             libro.setEstadoModeracion(EstadoModeracion.EN_REVISION);
         }
 
@@ -157,9 +168,14 @@ public class LibroServiceImpl implements LibroService {
         if (request.getIdCategorias() != null) {
             libroCategoriaRepository.deleteAll(libroCategoriaRepository.findByLibroId(libroId));
             guardarCategorias(actualizado, request.getIdCategorias());
-    }
+        }
 
-    return actualizado;
+        // Si ya estaba EN_REVISION los admins ya tienen su notificacion: no se duplica
+        if (vuelveARevision) {
+            notificarEnvioARevision(actualizado, vendedor, true);
+        }
+
+        return actualizado;
     }
 
     private void aplicarCambios(Libro libro, LibroRequest request) {
@@ -178,8 +194,8 @@ public class LibroServiceImpl implements LibroService {
     private <T> void setIfPresent(T value, Consumer<T> setter) {
         if (value != null) {
             setter.accept(value);
+        }
     }
-}
 
     // Baja logica: el libro no se borra, solo cambia su estado de publicacion
     public Libro darDeBajaLibro(Long libroId, Usuario vendedor)
@@ -240,6 +256,11 @@ public class LibroServiceImpl implements LibroService {
                 libroActualizado, moderador, estadoAnterior, estadoModeracion, comentario);
         historialModeracionRepository.save(registro);
 
+
+        if (estadoAnterior != estadoModeracion) {
+            notificarModeracion(libroActualizado, estadoModeracion, comentario);
+        }
+
         return libroActualizado;
     }
 
@@ -258,6 +279,24 @@ public class LibroServiceImpl implements LibroService {
                                 : v.getNombre() + " " + v.getApellido()))
                 .toList());
         return r;
+    }
+
+    private void notificarEnvioARevision(Libro libro, Usuario vendedor, boolean esEdicion) {
+        String accion = esEdicion ? "modifico y reenvio" : "envio";
+        String mensaje = vendedor.getNombre() + " " + vendedor.getApellido() + " " + accion
+                + " el libro \"" + libro.getTitulo() + "\" para su revision";
+        notificacionService.notificarAdmins(TipoNotificacion.LIBRO_PENDIENTE_REVISION, mensaje, libro);
+    }
+
+    private void notificarModeracion(Libro libro, EstadoModeracion estado, String comentario) {
+        if (estado == EstadoModeracion.ACEPTADO) {
+            notificacionService.crear(libro.getVendedor(), TipoNotificacion.LIBRO_ACEPTADO,
+                    "Tu libro \"" + libro.getTitulo() + "\" fue aprobado y ya esta publicado", libro);
+        } else if (estado == EstadoModeracion.RECHAZADO) {
+            String motivo = comentario != null && !comentario.isBlank() ? " Motivo: " + comentario : "";
+            notificacionService.crear(libro.getVendedor(), TipoNotificacion.LIBRO_RECHAZADO,
+                    "Tu libro \"" + libro.getTitulo() + "\" fue rechazado." + motivo, libro);
+        }
     }
 
 }

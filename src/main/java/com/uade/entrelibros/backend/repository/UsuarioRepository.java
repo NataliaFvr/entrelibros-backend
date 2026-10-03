@@ -8,6 +8,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import com.uade.entrelibros.backend.entity.EstadoSolicitudVendedor;
+import com.uade.entrelibros.backend.entity.EstadoUsuario;
+import com.uade.entrelibros.backend.entity.Rol;
 import com.uade.entrelibros.backend.entity.Usuario;
 
 @Repository
@@ -17,6 +19,8 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
     List<Usuario> findByEmailOrNombreUsuario(String email, String nombreUsuario);
 
     Optional<Usuario> findByEmail(String email);
+
+    List<Usuario> findByRolAndEstado(Rol rol, EstadoUsuario estado);
 
     List<Usuario> findByEstadoSolicitudVendedor(EstadoSolicitudVendedor estado);
 }

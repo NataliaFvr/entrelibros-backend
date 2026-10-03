@@ -138,10 +138,13 @@ public class UsuarioServiceImpl implements UsuarioService {
 
 
     }
-
+    @Override
     public Usuario cambiarRol(Long usuarioId, Rol nuevoRol) {
+        if (nuevoRol == null) {
+            throw new RolInvalidoException();
+        }
         Usuario usuario = usuarioRepository.findById(usuarioId)
-            .orElseThrow(UsuarioNoEncontradoException::new);
+                .orElseThrow(UsuarioNoEncontradoException::new);
         usuario.setRol(nuevoRol);
         return usuarioRepository.save(usuario);
     }
@@ -274,7 +277,6 @@ public Usuario cambiarContrasenia(String email, String codigo, String nuevaContr
             usuario.setEstadoSolicitudVendedor(EstadoSolicitudVendedor.APROBADO);
             usuario.setRol(Rol.VENDEDOR);
         } else {
-            // Rechazo: vuelve a NINGUNO, puede volver a solicitarlo mas adelante
             usuario.setEstadoSolicitudVendedor(EstadoSolicitudVendedor.NINGUNO);
             usuario.setNombreTienda(null);
         }
