@@ -3,7 +3,10 @@ package com.uade.entrelibros.backend.repository;
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
@@ -22,5 +25,10 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
 
     List<Usuario> findByRolAndEstado(Rol rol, EstadoUsuario estado);
 
-    List<Usuario> findByEstadoSolicitudVendedor(EstadoSolicitudVendedor estado);
+    Page<Usuario> findByEstadoSolicitudVendedor(EstadoSolicitudVendedor estado, Pageable pageable);
+
+    // Lock pesimista: evita que dos admins resuelvan la misma solicitud en simultaneo
+    @Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+    @Query("select u from Usuario u where u.id = :id")
+    Optional<Usuario> findByIdConCandado(Long id);
 }

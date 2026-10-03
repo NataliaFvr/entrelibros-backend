@@ -1,7 +1,6 @@
 package com.uade.entrelibros.backend.controllers;
 
 import java.net.URI;
-import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -18,9 +17,11 @@ import com.uade.entrelibros.backend.entity.dto.UsuarioRequest;
 import com.uade.entrelibros.backend.entity.dto.UsuarioResponse;
 import com.uade.entrelibros.backend.entity.dto.UsuarioUpdateRequest;
 import com.uade.entrelibros.backend.exceptions.RolInvalidoException;
-import com.uade.entrelibros.backend.exceptions.SolicitudVendedorInvalidaException;
+import com.uade.entrelibros.backend.exceptions.SolicitudPendienteExistenteException;
+import com.uade.entrelibros.backend.exceptions.SolicitudVendedorNoEncontradaException;
 import com.uade.entrelibros.backend.exceptions.UsuarioDuplicadoException;
 import com.uade.entrelibros.backend.exceptions.UsuarioNoEncontradoException;
+import com.uade.entrelibros.backend.exceptions.YaEsVendedorException;
 import com.uade.entrelibros.backend.service.UsuarioService;
 
 import jakarta.validation.Valid;
@@ -110,17 +111,19 @@ public class UsuariosController {
     public ResponseEntity<UsuarioResponse> solicitarVendedor(
             @AuthenticationPrincipal Usuario usuario,
             @Valid @RequestBody SolicitudVendedorRequest request)
-            throws RolInvalidoException, SolicitudVendedorInvalidaException {
+            throws RolInvalidoException, YaEsVendedorException, SolicitudPendienteExistenteException {
         Usuario result = usuarioService.solicitarVendedor(usuario, request.getNombreTienda());
         return ResponseEntity.ok(UsuarioResponse.from(result));
     }
 
     @PreAuthorize("hasAuthority('ADMIN')")
     @GetMapping("/solicitudes-vendedor")
-    public ResponseEntity<List<UsuarioResponse>> getSolicitudesVendedor() {
-        List<UsuarioResponse> resultado = usuarioService.getSolicitudesVendedorPendientes().stream()
-                .map(UsuarioResponse::from)
-                .toList();
+    public ResponseEntity<Page<UsuarioResponse>> getSolicitudesVendedor(
+            @RequestParam(defaultValue = "0") Integer page,
+            @RequestParam(defaultValue = "20") Integer size) {
+        Page<UsuarioResponse> resultado = usuarioService
+                .getSolicitudesVendedorPendientes(PageRequest.of(page, size))
+                .map(UsuarioResponse::from);
         return ResponseEntity.ok(resultado);
     }
 
@@ -128,9 +131,10 @@ public class UsuariosController {
     @PatchMapping("/{usuarioId}/solicitud-vendedor")
     public ResponseEntity<UsuarioResponse> resolverSolicitudVendedor(
             @PathVariable Long usuarioId,
-            @RequestParam boolean aprobar)
-            throws UsuarioNoEncontradoException, SolicitudVendedorInvalidaException {
-        Usuario result = usuarioService.resolverSolicitudVendedor(usuarioId, aprobar);
+            @RequestParam boolean aprobar,
+            @RequestParam(required = false) String comentario)
+            throws UsuarioNoEncontradoException, YaEsVendedorException, SolicitudVendedorNoEncontradaException {
+        Usuario result = usuarioService.resolverSolicitudVendedor(usuarioId, aprobar, comentario);
         return ResponseEntity.ok(UsuarioResponse.from(result));
     }
 }

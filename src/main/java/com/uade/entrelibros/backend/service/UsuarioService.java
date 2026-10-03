@@ -1,6 +1,5 @@
 package com.uade.entrelibros.backend.service;
 
-import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.domain.Page;
@@ -29,6 +28,6 @@ public interface UsuarioService {
     public Usuario cambiarContrasenia(String email, String codigo, String nuevaContrasenia);
 
     public Usuario solicitarVendedor(Usuario usuario, String nombreTienda);
-    public List<Usuario> getSolicitudesVendedorPendientes();
-    public Usuario resolverSolicitudVendedor(Long usuarioId, boolean aprobar);
+    public Page<Usuario> getSolicitudesVendedorPendientes(PageRequest pageRequest);
+    public Usuario resolverSolicitudVendedor(Long usuarioId, boolean aprobar, String comentario);
 }

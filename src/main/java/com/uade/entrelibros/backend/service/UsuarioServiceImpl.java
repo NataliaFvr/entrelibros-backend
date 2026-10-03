@@ -18,13 +18,16 @@ import com.uade.entrelibros.backend.entity.Libro;
 import com.uade.entrelibros.backend.entity.Rol;
 import com.uade.entrelibros.backend.entity.Usuario;
 import com.uade.entrelibros.backend.entity.dto.UsuarioUpdateRequest;
+import com.uade.entrelibros.backend.entity.TipoNotificacion;
 import com.uade.entrelibros.backend.exceptions.CodigoVerificacionInvalidoException;
 import com.uade.entrelibros.backend.exceptions.EmailYaVerificadoException;
 import com.uade.entrelibros.backend.exceptions.ListaVaciaException;
 import com.uade.entrelibros.backend.exceptions.RolInvalidoException;
-import com.uade.entrelibros.backend.exceptions.SolicitudVendedorInvalidaException;
+import com.uade.entrelibros.backend.exceptions.SolicitudPendienteExistenteException;
+import com.uade.entrelibros.backend.exceptions.SolicitudVendedorNoEncontradaException;
 import com.uade.entrelibros.backend.exceptions.UsuarioDuplicadoException;
 import com.uade.entrelibros.backend.exceptions.UsuarioNoEncontradoException;
+import com.uade.entrelibros.backend.exceptions.YaEsVendedorException;
 import com.uade.entrelibros.backend.repository.CarritoItemRepository;
 import com.uade.entrelibros.backend.repository.LibroRepository;
 import com.uade.entrelibros.backend.repository.UsuarioRepository;
@@ -37,6 +40,9 @@ public class UsuarioServiceImpl implements UsuarioService {
 
     @Autowired
     private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private NotificacionService notificacionService;
 
     @Autowired
     private LibroRepository libroRepository;
@@ -242,22 +248,33 @@ public Usuario cambiarContrasenia(String email, String codigo, String nuevaContr
 
     @Override
     public Usuario solicitarVendedor(Usuario usuario, String nombreTienda) {
+        if (usuario.getRol() == Rol.VENDEDOR) {
+            // Caso especifico: distinto de "rol invalido" generico, el mensaje le sirve mas al usuario
+            throw new YaEsVendedorException();
+        }
         if (usuario.getRol() != Rol.COMPRADOR) {
-            // Un vendedor o admin no tiene sentido que "solicite" pasar a vendedor
+            // Cualquier otro rol no-comprador (hoy solo ADMIN) no tiene sentido que "solicite" ser vendedor
             throw new RolInvalidoException();
         }
         if (usuario.getEstadoSolicitudVendedor() == EstadoSolicitudVendedor.PENDIENTE) {
-            throw new SolicitudVendedorInvalidaException();
+            throw new SolicitudPendienteExistenteException();
         }
 
         usuario.setNombreTienda(nombreTienda);
         usuario.setEstadoSolicitudVendedor(EstadoSolicitudVendedor.PENDIENTE);
-        return usuarioRepository.save(usuario);
+        Usuario guardado = usuarioRepository.save(usuario);
+
+        notificacionService.notificarAdmins(TipoNotificacion.SOLICITUD_VENDEDOR_PENDIENTE,
+                guardado.getNombre() + " " + guardado.getApellido() + " solicito ser vendedor (" + nombreTienda + ")",
+                null);
+
+        return guardado;
     }
 
     @Override
-    public List<Usuario> getSolicitudesVendedorPendientes() {
-        List<Usuario> solicitudes = usuarioRepository.findByEstadoSolicitudVendedor(EstadoSolicitudVendedor.PENDIENTE);
+    public Page<Usuario> getSolicitudesVendedorPendientes(PageRequest pageRequest) {
+        Page<Usuario> solicitudes = usuarioRepository
+                .findByEstadoSolicitudVendedor(EstadoSolicitudVendedor.PENDIENTE, pageRequest);
         if (solicitudes.isEmpty()) {
             throw new ListaVaciaException("No hay solicitudes de vendedor pendientes");
         }
@@ -265,12 +282,16 @@ public Usuario cambiarContrasenia(String email, String codigo, String nuevaContr
     }
 
     @Override
-    public Usuario resolverSolicitudVendedor(Long usuarioId, boolean aprobar) {
-        Usuario usuario = usuarioRepository.findById(usuarioId)
+    @Transactional
+    public Usuario resolverSolicitudVendedor(Long usuarioId, boolean aprobar, String comentario) {
+        Usuario usuario = usuarioRepository.findByIdConCandado(usuarioId)
                 .orElseThrow(UsuarioNoEncontradoException::new);
 
+        if (usuario.getEstadoSolicitudVendedor() == EstadoSolicitudVendedor.APROBADO) {
+            throw new YaEsVendedorException();
+        }
         if (usuario.getEstadoSolicitudVendedor() != EstadoSolicitudVendedor.PENDIENTE) {
-            throw new SolicitudVendedorInvalidaException();
+            throw new SolicitudVendedorNoEncontradaException();
         }
 
         if (aprobar) {
@@ -281,6 +302,17 @@ public Usuario cambiarContrasenia(String email, String codigo, String nuevaContr
             usuario.setNombreTienda(null);
         }
 
-        return usuarioRepository.save(usuario);
+        Usuario guardado = usuarioRepository.save(usuario);
+
+        if (aprobar) {
+            notificacionService.crear(guardado, TipoNotificacion.VENDEDOR_APROBADO,
+                    "Tu solicitud para ser vendedor fue aprobada. Ya podes publicar libros", null);
+        } else {
+            String motivo = comentario != null && !comentario.isBlank() ? " Motivo: " + comentario : "";
+            notificacionService.crear(guardado, TipoNotificacion.VENDEDOR_RECHAZADO,
+                    "Tu solicitud para ser vendedor fue rechazada." + motivo, null);
+        }
+
+        return guardado;
     }
 }
