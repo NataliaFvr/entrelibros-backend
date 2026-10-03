@@ -19,6 +19,7 @@ import com.uade.entrelibros.backend.entity.Usuario;
 import com.uade.entrelibros.backend.entity.dto.UsuarioUpdateRequest;
 import com.uade.entrelibros.backend.exceptions.CodigoVerificacionInvalidoException;
 import com.uade.entrelibros.backend.exceptions.EmailYaVerificadoException;
+import com.uade.entrelibros.backend.exceptions.RolInvalidoException;
 import com.uade.entrelibros.backend.exceptions.UsuarioDuplicadoException;
 import com.uade.entrelibros.backend.exceptions.UsuarioNoEncontradoException;
 import com.uade.entrelibros.backend.repository.CarritoItemRepository;
@@ -132,10 +133,13 @@ public class UsuarioServiceImpl implements UsuarioService {
 
 
     }
-
+    @Override
     public Usuario cambiarRol(Long usuarioId, Rol nuevoRol) {
+        if (nuevoRol == null) {
+            throw new RolInvalidoException();
+        }
         Usuario usuario = usuarioRepository.findById(usuarioId)
-            .orElseThrow(UsuarioNoEncontradoException::new);
+                .orElseThrow(UsuarioNoEncontradoException::new);
         usuario.setRol(nuevoRol);
         return usuarioRepository.save(usuario);
     }

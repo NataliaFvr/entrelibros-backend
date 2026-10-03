@@ -1,0 +1,10 @@
+package com.uade.entrelibros.backend.entity;
+
+public enum TipoNotificacion {
+    LIBRO_PENDIENTE_REVISION,
+    LIBRO_ACEPTADO,
+    LIBRO_RECHAZADO,
+    SOLICITUD_VENDEDOR_PENDIENTE,
+    VENDEDOR_APROBADO,
+    VENDEDOR_RECHAZADO
+}
