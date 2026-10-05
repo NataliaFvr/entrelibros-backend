@@ -115,8 +115,6 @@ public class UsuarioServiceImpl implements UsuarioService {
             usuario.setApellido(request.getApellido());
         if (request.getContrasena() != null && !request.getContrasena().isBlank())
             usuario.setContrasenaHash(passwordEncoder.encode(request.getContrasena()));
-        if (request.getProvincia() != null)
-            usuario.setProvincia(request.getProvincia());
 
         return usuarioRepository.save(usuario);
     }
@@ -249,11 +247,9 @@ public Usuario cambiarContrasenia(String email, String codigo, String nuevaContr
     @Override
     public Usuario solicitarVendedor(Usuario usuario, String nombreTienda) {
         if (usuario.getRol() == Rol.VENDEDOR) {
-            // Caso especifico: distinto de "rol invalido" generico, el mensaje le sirve mas al usuario
             throw new YaEsVendedorException();
         }
         if (usuario.getRol() != Rol.COMPRADOR) {
-            // Cualquier otro rol no-comprador (hoy solo ADMIN) no tiene sentido que "solicite" ser vendedor
             throw new RolInvalidoException();
         }
         if (usuario.getEstadoSolicitudVendedor() == EstadoSolicitudVendedor.PENDIENTE) {
