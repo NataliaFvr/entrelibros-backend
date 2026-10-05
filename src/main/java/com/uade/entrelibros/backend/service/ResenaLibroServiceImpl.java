@@ -19,6 +19,7 @@ import com.uade.entrelibros.backend.exceptions.ResenaDuplicadaException;
 import com.uade.entrelibros.backend.exceptions.ResenaLibroNoEncontradaException;
 import com.uade.entrelibros.backend.repository.OrdenItemRepository;
 import com.uade.entrelibros.backend.repository.ResenaLibroRepository;
+import java.util.Comparator;
 
 @Service
 public class ResenaLibroServiceImpl implements ResenaLibroService {
@@ -41,12 +42,17 @@ public class ResenaLibroServiceImpl implements ResenaLibroService {
                 .orElseThrow(ResenaLibroNoEncontradaException::new);
     }
 
-    public List<ResenaLibro> getResenasByLibro(Long idLibro) {
-        List<ResenaLibro> resenas = resenaLibroRepository.findByLibroId(idLibro);
-        if (resenas.isEmpty()) {
-            throw new ListaVaciaException("Ese libro todavía no tiene reseñas");
-        }
-        return resenas;
+    public List<ResenaLibro> getResenasByLibro(Long idLibro, Integer calificacion, String sort) {
+        Comparator<ResenaLibro> orden = switch (sort == null ? "" : sort) {
+            case "antiguas" -> Comparator.comparing(ResenaLibro::getFecha);
+            case "mejores"  -> Comparator.comparing(ResenaLibro::getCalificacion).reversed();
+            case "peores"   -> Comparator.comparing(ResenaLibro::getCalificacion);
+            default         -> Comparator.comparing(ResenaLibro::getFecha).reversed();
+        };
+        return resenaLibroRepository.findByLibroId(idLibro).stream()
+                .filter(r -> calificacion == null || r.getCalificacion().equals(calificacion))
+                .sorted(orden)
+                .toList();
     }
 
     public ResenaLibro crearResena(Usuario comprador, Long idOrdenItem, Integer calificacion, String comentario)

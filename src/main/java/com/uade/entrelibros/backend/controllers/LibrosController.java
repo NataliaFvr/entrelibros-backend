@@ -15,6 +15,7 @@ import com.uade.entrelibros.backend.entity.Usuario;
 import com.uade.entrelibros.backend.entity.dto.LibroFiltroRequest;
 import com.uade.entrelibros.backend.entity.dto.LibroRequest;
 import com.uade.entrelibros.backend.entity.dto.LibroResponse;
+import com.uade.entrelibros.backend.entity.dto.FiltrosDisponiblesResponse;
 import com.uade.entrelibros.backend.entity.EstadoModeracion;
 import com.uade.entrelibros.backend.entity.dto.ModeracionRequest;
 import com.uade.entrelibros.backend.exceptions.AccionNoPermitidaException;
@@ -49,6 +50,10 @@ public class LibrosController {
             @RequestParam(required = false) List<Integer> anios,
             @RequestParam(required = false) Boolean soloConDescuento,
             @RequestParam(required = false) List<Long> idVendedores,
+            @RequestParam(required = false) List<String> estadoLibro,
+            @RequestParam(required = false) String sort,
+            @RequestParam(required = false) String provinciaComprador,
+            @RequestParam(required = false) Boolean envioLocal,
             @RequestParam(defaultValue = "0") Integer page,
             @RequestParam(defaultValue = "20") Integer size) {
 
@@ -63,9 +68,19 @@ public class LibrosController {
         filtro.setAnios(anios);
         filtro.setSoloConDescuento(soloConDescuento);
         filtro.setIdVendedores(idVendedores);
+        filtro.setEstadosLibro(estadoLibro);
+        filtro.setSort(sort);
+        filtro.setProvinciaComprador(provinciaComprador);
+        filtro.setEnvioLocal(envioLocal);
 
         Page<Libro> libros = libroService.buscarLibros(filtro, PageRequest.of(page, size));
         return ResponseEntity.ok(libros.map(LibroResponse::from));
+    }
+
+    // Valores unicos para poblar los <select> de filtro del catalogo (Editorial, Autor, Idioma, Vendedor, Estado)
+    @GetMapping("/filtros-disponibles")
+    public ResponseEntity<FiltrosDisponiblesResponse> getFiltrosDisponibles() {
+        return ResponseEntity.ok(libroService.getFiltrosDisponibles());
     }
 
     @GetMapping("/{libroId}")
@@ -101,13 +116,23 @@ public class LibrosController {
     }
 
     @PreAuthorize("hasAuthority('VENDEDOR')")
-    @DeleteMapping("/{libroId}")
-    public ResponseEntity<Void> darDeBajaLibro(
+    @PatchMapping("/{libroId}/baja")
+    public ResponseEntity<LibroResponse> darDeBajaLibro(
             @AuthenticationPrincipal Usuario vendedor,
             @PathVariable Long libroId)
             throws LibroNoEncontradoException, RolInvalidoException, AccionNoPermitidaException {
-        libroService.darDeBajaLibro(libroId, vendedor);
-        return ResponseEntity.noContent().build();
+        Libro result = libroService.darDeBajaLibro(libroId, vendedor);
+        return ResponseEntity.ok(LibroResponse.from(result));
+    }
+
+    @PreAuthorize("hasAuthority('VENDEDOR')")
+    @PatchMapping("/{libroId}/reactivar")
+    public ResponseEntity<LibroResponse> reactivarLibro(
+            @AuthenticationPrincipal Usuario vendedor,
+            @PathVariable Long libroId)
+            throws LibroNoEncontradoException, RolInvalidoException, AccionNoPermitidaException {
+        Libro result = libroService.reactivarLibro(libroId, vendedor);
+        return ResponseEntity.ok(LibroResponse.from(result));
     }
 
     @PreAuthorize("hasAuthority('ADMIN')")

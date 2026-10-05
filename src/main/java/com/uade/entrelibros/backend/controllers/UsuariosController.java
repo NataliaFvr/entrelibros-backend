@@ -6,16 +6,22 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.security.access.prepost.PreAuthorize;
 
 import com.uade.entrelibros.backend.entity.Usuario;
 import com.uade.entrelibros.backend.entity.dto.RolUpdateRequest;
+import com.uade.entrelibros.backend.entity.dto.SolicitudVendedorRequest;
 import com.uade.entrelibros.backend.entity.dto.UsuarioRequest;
 import com.uade.entrelibros.backend.entity.dto.UsuarioResponse;
 import com.uade.entrelibros.backend.entity.dto.UsuarioUpdateRequest;
+import com.uade.entrelibros.backend.exceptions.RolInvalidoException;
+import com.uade.entrelibros.backend.exceptions.SolicitudPendienteExistenteException;
+import com.uade.entrelibros.backend.exceptions.SolicitudVendedorNoEncontradaException;
 import com.uade.entrelibros.backend.exceptions.UsuarioDuplicadoException;
 import com.uade.entrelibros.backend.exceptions.UsuarioNoEncontradoException;
+import com.uade.entrelibros.backend.exceptions.YaEsVendedorException;
 import com.uade.entrelibros.backend.service.UsuarioService;
 
 import jakarta.validation.Valid;
@@ -75,11 +81,11 @@ public class UsuariosController {
     }
 
     @PreAuthorize("hasAuthority('ADMIN')")
-    @DeleteMapping("/{usuarioId}")
-    public ResponseEntity<Void> eliminarUsuario(@PathVariable Long usuarioId)
+    @PatchMapping("/{usuarioId}/baja")
+    public ResponseEntity<UsuarioResponse> darDeBajaUsuario(@PathVariable Long usuarioId)
             throws UsuarioNoEncontradoException {
-        usuarioService.eliminarUsuario(usuarioId);
-        return ResponseEntity.noContent().build();
+        Usuario result = usuarioService.darDeBajaUsuario(usuarioId);
+        return ResponseEntity.ok(UsuarioResponse.from(result));
     }
 
     @PreAuthorize("hasAuthority('ADMIN')")
@@ -97,6 +103,38 @@ public class UsuariosController {
     public ResponseEntity<UsuarioResponse> reactivarUsuario(@PathVariable Long usuarioId)
             throws UsuarioNoEncontradoException {
         Usuario result = usuarioService.reactivarUsuario(usuarioId);
+        return ResponseEntity.ok(UsuarioResponse.from(result));
+    }
+
+    @PreAuthorize("hasAuthority('COMPRADOR')")
+    @PostMapping("/solicitud-vendedor")
+    public ResponseEntity<UsuarioResponse> solicitarVendedor(
+            @AuthenticationPrincipal Usuario usuario,
+            @Valid @RequestBody SolicitudVendedorRequest request)
+            throws RolInvalidoException, YaEsVendedorException, SolicitudPendienteExistenteException {
+        Usuario result = usuarioService.solicitarVendedor(usuario, request.getNombreTienda());
+        return ResponseEntity.ok(UsuarioResponse.from(result));
+    }
+
+    @PreAuthorize("hasAuthority('ADMIN')")
+    @GetMapping("/solicitudes-vendedor")
+    public ResponseEntity<Page<UsuarioResponse>> getSolicitudesVendedor(
+            @RequestParam(defaultValue = "0") Integer page,
+            @RequestParam(defaultValue = "20") Integer size) {
+        Page<UsuarioResponse> resultado = usuarioService
+                .getSolicitudesVendedorPendientes(PageRequest.of(page, size))
+                .map(UsuarioResponse::from);
+        return ResponseEntity.ok(resultado);
+    }
+
+    @PreAuthorize("hasAuthority('ADMIN')")
+    @PatchMapping("/{usuarioId}/solicitud-vendedor")
+    public ResponseEntity<UsuarioResponse> resolverSolicitudVendedor(
+            @PathVariable Long usuarioId,
+            @RequestParam boolean aprobar,
+            @RequestParam(required = false) String comentario)
+            throws UsuarioNoEncontradoException, YaEsVendedorException, SolicitudVendedorNoEncontradaException {
+        Usuario result = usuarioService.resolverSolicitudVendedor(usuarioId, aprobar, comentario);
         return ResponseEntity.ok(UsuarioResponse.from(result));
     }
 }

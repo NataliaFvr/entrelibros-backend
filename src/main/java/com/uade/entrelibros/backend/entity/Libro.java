@@ -1,5 +1,7 @@
 package com.uade.entrelibros.backend.entity;
 
+import java.time.LocalDateTime;
+
 import jakarta.persistence.*;
 import lombok.Data;
 
@@ -26,6 +28,8 @@ public class Libro {
         this.vendedor = vendedor;
         this.estadoPublicacion = EstadoPublicacion.ACTIVA;
         this.estadoModeracion = EstadoModeracion.EN_REVISION;
+        this.fechaPublicacion = LocalDateTime.now();
+        this.vendidos = 0;
     }
 
     @Id
@@ -57,4 +61,12 @@ public class Libro {
 
     @Enumerated(EnumType.STRING)
     private EstadoModeracion estadoModeracion;
+
+    // Momento en que se publicó (distinto de "anio", que es el año de edición del libro). Usado para sort=nuevo.
+    private LocalDateTime fechaPublicacion;
+
+    // Contador denormalizado de unidades vendidas: se suma en el checkout y se resta si se
+    // cancela/vence la reserva (ver CarritoServiceImpl y OrdenServiceImpl.devolverStock).
+    // Usado para sort=bestsellers.
+    private Integer vendidos = 0;
 }

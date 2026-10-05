@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.Data;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
 
@@ -55,8 +56,21 @@ public class Usuario implements UserDetails {
 
     @Enumerated(EnumType.STRING)
     private EstadoUsuario estado;
-
     private LocalDate fechaRegistro;
+    private Boolean emailVerificado = false;
+    private String codigoVerificacion;
+    private LocalDateTime codigoVerificacionExpira;
+    private String codigoResetPassword;
+    private LocalDateTime codigoResetPasswordExpira;
+
+    // Ubicación del usuario (se usa en el filtro de catálogo "envío local" comparando contra la provincia del comprador)
+    private String provincia;
+
+    // Alta de vendedor vía solicitud: un COMPRADOR pide pasar a VENDEDOR y un admin la aprueba/rechaza
+    private String nombreTienda;
+
+    @Enumerated(EnumType.STRING)
+    private EstadoSolicitudVendedor estadoSolicitudVendedor = EstadoSolicitudVendedor.NINGUNO;
 
     public Long getId() {
         return id;
@@ -68,7 +82,7 @@ public class Usuario implements UserDetails {
     }
 
     @Override
-    @JsonIgnore 
+    @JsonIgnore
     public String getPassword() {
         return contrasenaHash;
     }
@@ -95,6 +109,6 @@ public class Usuario implements UserDetails {
 
     @Override
     public boolean isEnabled() {
-        return estado == EstadoUsuario.ACTIVO;
+        return estado == EstadoUsuario.ACTIVO && Boolean.TRUE.equals(emailVerificado);
     }
 }

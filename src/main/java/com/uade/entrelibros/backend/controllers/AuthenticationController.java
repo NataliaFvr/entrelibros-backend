@@ -14,6 +14,14 @@ import com.uade.entrelibros.backend.exceptions.UsuarioDuplicadoException;
 import com.uade.entrelibros.backend.service.AuthenticationService;
 import jakarta.validation.Valid;
 
+import java.util.Map;
+import org.springframework.http.HttpStatus;
+import com.uade.entrelibros.backend.entity.dto.VerificarEmailRequest;
+import com.uade.entrelibros.backend.entity.dto.ReenviarCodigoRequest;
+import com.uade.entrelibros.backend.service.UsuarioService;
+
+import com.uade.entrelibros.backend.entity.dto.RecuperarContraseniaRequest;
+import com.uade.entrelibros.backend.entity.dto.CambiarContraseniaRequest;
 
 import lombok.RequiredArgsConstructor;
 
@@ -22,11 +30,26 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class AuthenticationController {
 
-    private final AuthenticationService authenticationService;
+   private final AuthenticationService authenticationService;
+   private final UsuarioService usuarioService; 
+   
+   @PostMapping("/register")
+   public ResponseEntity<Map<String, String>> register(@Valid @RequestBody UsuarioRequest request)
+        throws UsuarioDuplicadoException {
+        authenticationService.register(request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(
+            Map.of("mensaje", "Usuario registrado correctamente. Revisá tu email para verificar la cuenta."));
+    }
 
-    @PostMapping("/register")
-    public ResponseEntity<AuthenticationResponse> register(@Valid @RequestBody UsuarioRequest request) throws UsuarioDuplicadoException {
-        return ResponseEntity.ok(authenticationService.register(request));
+    @PostMapping("/verificar-email")
+    public ResponseEntity<AuthenticationResponse> verificarEmail(@Valid @RequestBody VerificarEmailRequest request) {
+        return ResponseEntity.ok(authenticationService.verificarEmail(request));
+    }
+
+    @PostMapping("/reenviar-codigo-verificacion")
+    public ResponseEntity<Map<String, String>> reenviarCodigo(@Valid @RequestBody ReenviarCodigoRequest request) {
+        usuarioService.reenviarCodigoVerificacion(request.getEmail());
+        return ResponseEntity.ok(Map.of("mensaje", "Código reenviado correctamente. Revisá tu email."));
     }
 
     @PostMapping("/login")
@@ -38,4 +61,16 @@ public class AuthenticationController {
     public ResponseEntity<AuthenticationResponse> refresh(@Valid @RequestBody RefreshTokenRequest request) {
         return ResponseEntity.ok(authenticationService.refresh(request));
     }
+    @PostMapping("/recuperar-contrasenia")
+    public ResponseEntity<Map<String, String>> recuperarContrasenia(@Valid @RequestBody RecuperarContraseniaRequest request) {
+        usuarioService.solicitarResetPassword(request.getEmail());
+        return ResponseEntity.ok(Map.of("mensaje", "Código de recuperación enviado al email"));
+    }
+
+    @PostMapping("/cambiar-contrasenia")
+    public ResponseEntity<Map<String, String>> cambiarContrasenia(@Valid @RequestBody CambiarContraseniaRequest request) {
+        usuarioService.cambiarContrasenia(request.getEmail(), request.getCodigo(), request.getNuevaContrasenia());
+        return ResponseEntity.ok(Map.of("mensaje", "Contraseña actualizada correctamente"));
+    }
+    
 }

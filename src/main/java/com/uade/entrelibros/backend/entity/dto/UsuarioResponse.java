@@ -13,6 +13,9 @@ public class UsuarioResponse {
     private String email;
     private String rol;
     private String estado;
+    private String provincia;
+    private String nombreTienda;
+    private String estadoSolicitudVendedor;
 
     public static UsuarioResponse from(Usuario usuario) {
         UsuarioResponse r = new UsuarioResponse();
@@ -23,6 +26,10 @@ public class UsuarioResponse {
         r.email = usuario.getEmail();
         r.rol = usuario.getRol().name();
         r.estado = usuario.getEstado().name();
+        r.provincia = usuario.getProvincia();
+        r.nombreTienda = usuario.getNombreTienda();
+        r.estadoSolicitudVendedor = usuario.getEstadoSolicitudVendedor() != null
+                ? usuario.getEstadoSolicitudVendedor().name() : null;
         return r;
     }
 }

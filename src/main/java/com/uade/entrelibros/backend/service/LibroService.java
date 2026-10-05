@@ -15,6 +15,7 @@ import com.uade.entrelibros.backend.exceptions.CategoriaNoEncontradaException;
 import com.uade.entrelibros.backend.exceptions.LibroNoEncontradoException;
 import com.uade.entrelibros.backend.exceptions.RolInvalidoException;
 import com.uade.entrelibros.backend.entity.dto.LibroRequest;
+import com.uade.entrelibros.backend.entity.dto.FiltrosDisponiblesResponse;
 
 public interface LibroService {
     Page<Libro> getLibros(PageRequest pageRequest);
@@ -30,11 +31,16 @@ public interface LibroService {
             throws LibroNoEncontradoException, CategoriaNoEncontradaException, RolInvalidoException,
             AccionNoPermitidaException;
 
-    void darDeBajaLibro(Long libroId, Usuario vendedor)
+    Libro darDeBajaLibro(Long libroId, Usuario vendedor)
+            throws LibroNoEncontradoException, RolInvalidoException, AccionNoPermitidaException;
+
+    Libro reactivarLibro(Long libroId, Usuario vendedor)
             throws LibroNoEncontradoException, RolInvalidoException, AccionNoPermitidaException;
 
     Libro moderarLibro(Long libroId, EstadoModeracion estadoModeracion, String comentario, Usuario moderador)
         throws LibroNoEncontradoException;
 
     Page<Libro> getLibrosPorEstadoModeracion(EstadoModeracion estado, PageRequest pageRequest);
+
+    FiltrosDisponiblesResponse getFiltrosDisponibles();
 }

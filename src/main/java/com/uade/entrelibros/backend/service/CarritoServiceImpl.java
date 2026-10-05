@@ -26,6 +26,7 @@ import com.uade.entrelibros.backend.exceptions.ItemCarritoNoEncontradoException;
 import com.uade.entrelibros.backend.exceptions.LibroNoEncontradoException;
 import com.uade.entrelibros.backend.exceptions.ListaVaciaException;
 import com.uade.entrelibros.backend.exceptions.StockInsuficienteException;
+import com.uade.entrelibros.backend.exceptions.UsuarioNoEncontradoException;
 import com.uade.entrelibros.backend.repository.CarritoItemRepository;
 import com.uade.entrelibros.backend.repository.CarritoRepository;
 import com.uade.entrelibros.backend.repository.LibroRepository;
@@ -61,10 +62,8 @@ public class CarritoServiceImpl implements CarritoService {
         if (carrito != null) {
             return carrito;
         }
-        // Nota: si el id de usuario no existe, esto tira un error genérico por ahora.
-        // Cuando Persona 1 tenga una UsuarioNoEncontradoException, conviene usarla acá.
         Usuario usuario = usuarioRepository.findById(idUsuario)
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+                .orElseThrow(UsuarioNoEncontradoException::new);
         return carritoRepository.save(new Carrito(usuario));
     }
 
@@ -181,6 +180,10 @@ public class CarritoServiceImpl implements CarritoService {
             ordenItemRepository.save(new OrdenItem(orden, libro, vendedor, item.getCantidad(), precioUnitario));
 
             libro.setStock(libro.getStock() - item.getCantidad());
+            // Contador de "vendidos" para el ranking de bestsellers (sort=bestsellers en /libros).
+            // Se descuenta en OrdenServiceImpl.devolverStock si la venta se cancela o vence despues.
+            int vendidosActuales = libro.getVendidos() != null ? libro.getVendidos() : 0;
+            libro.setVendidos(vendidosActuales + item.getCantidad());
             libroRepository.save(libro);
 
             carritoItemRepository.delete(item);

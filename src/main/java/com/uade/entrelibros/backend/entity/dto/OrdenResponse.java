@@ -20,6 +20,7 @@ public class OrdenResponse {
     private Long idComprador;
     private String nombreComprador;
     private List<OrdenItemResponse> items;
+    private LocalDateTime reservaHasta;
 
     public static OrdenResponse from(Orden orden, List<OrdenItem> ordenItems) {
         OrdenResponse r = from(orden);
@@ -31,6 +32,7 @@ public class OrdenResponse {
         OrdenResponse r = new OrdenResponse();
         r.id = orden.getId();
         r.fecha = orden.getFecha();
+        r.reservaHasta = orden.getReservaHasta();
         r.provinciaDestino = orden.getProvinciaDestino();
         r.subtotal = orden.getSubtotal();
         r.costoEnvio = orden.getCostoEnvio();

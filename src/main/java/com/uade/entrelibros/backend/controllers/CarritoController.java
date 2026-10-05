@@ -1,6 +1,7 @@
 package com.uade.entrelibros.backend.controllers;
 
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -64,12 +65,12 @@ public class CarritoController {
     }
 
     @DeleteMapping("/items/{idItem}")
-    public ResponseEntity<Void> quitarItem(
+    public ResponseEntity<Map<String, String>> quitarItem(
             @AuthenticationPrincipal Usuario usuario,
             @PathVariable Long idItem)
             throws ItemCarritoNoEncontradoException, AccionNoPermitidaException {
         carritoService.quitarItem(usuario.getId(), idItem);
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.ok(Map.of("mensaje", "Libro quitado del carrito"));
     }
 
     @PostMapping("/checkout")

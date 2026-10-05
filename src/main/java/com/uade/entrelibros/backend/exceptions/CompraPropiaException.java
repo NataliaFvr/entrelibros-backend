@@ -4,5 +4,5 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ResponseStatus;
 
 @ResponseStatus(code = HttpStatus.BAD_REQUEST, reason = "No podes comprar tu propia publicacion")
-public class CompraPropiaException extends RuntimeException {
+public class CompraPropiaException extends EntreLibrosException {
 }

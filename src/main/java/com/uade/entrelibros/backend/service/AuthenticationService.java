@@ -2,9 +2,7 @@ package com.uade.entrelibros.backend.service;
 
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
 
 import com.uade.entrelibros.backend.config.JwtService;
 import com.uade.entrelibros.backend.entity.Rol;
@@ -13,7 +11,10 @@ import com.uade.entrelibros.backend.entity.dto.AuthenticationRequest;
 import com.uade.entrelibros.backend.entity.dto.AuthenticationResponse;
 import com.uade.entrelibros.backend.entity.dto.RefreshTokenRequest;
 import com.uade.entrelibros.backend.entity.dto.UsuarioRequest;
+import com.uade.entrelibros.backend.entity.dto.VerificarEmailRequest;
+import com.uade.entrelibros.backend.exceptions.RefreshTokenInvalidoException;
 import com.uade.entrelibros.backend.exceptions.UsuarioDuplicadoException;
+import com.uade.entrelibros.backend.exceptions.UsuarioNoEncontradoException;
 import com.uade.entrelibros.backend.repository.UsuarioRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -28,22 +29,19 @@ public class AuthenticationService {
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
 
-    public AuthenticationResponse register(UsuarioRequest request) throws UsuarioDuplicadoException {
+    public void register(UsuarioRequest request) throws UsuarioDuplicadoException {
     Rol rolSolicitado = request.getRol();
     Rol rolFinal = (rolSolicitado == null || rolSolicitado == Rol.ADMIN)
             ? Rol.COMPRADOR
             : rolSolicitado;
 
-    Usuario usuario = usuarioService.createUsuario(
+    usuarioService.createUsuario(
             request.getNombreUsuario(),
             request.getEmail(),
             request.getContrasena(),
             request.getNombre(),
             request.getApellido(),
-            rolFinal);      
-
-    String jwtToken = jwtService.generateToken(usuario);
-    return buildResponse(usuario, jwtToken);
+            rolFinal);
 }
 
     public AuthenticationResponse authenticate(AuthenticationRequest request) {
@@ -53,7 +51,7 @@ public class AuthenticationService {
                         request.getContrasena()));
 
         Usuario usuario = usuarioRepository.findByEmail(request.getEmail())
-                .orElseThrow();
+                .orElseThrow(UsuarioNoEncontradoException::new);
 
         String jwtToken = jwtService.generateToken(usuario);
         return buildResponse(usuario, jwtToken);
@@ -63,15 +61,15 @@ public class AuthenticationService {
         try {
             String email = jwtService.extractUsername(request.getRefreshToken());
             Usuario usuario = usuarioRepository.findByEmail(email)
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Refresh token invalido"));
+                    .orElseThrow(RefreshTokenInvalidoException::new);
 
             if (!jwtService.isRefreshTokenValid(request.getRefreshToken(), usuario)) {
-                throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Refresh token invalido");
+                throw new RefreshTokenInvalidoException();
             }
 
             return buildResponse(usuario, jwtService.generateToken(usuario));
         } catch (JwtException | IllegalArgumentException exception) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Refresh token invalido");
+            throw new RefreshTokenInvalidoException();
         }
     }
 
@@ -84,4 +82,9 @@ public class AuthenticationService {
                 .rol(usuario.getRol().name())
                 .build();
     }
+    public AuthenticationResponse verificarEmail(VerificarEmailRequest request) {
+    Usuario usuario = usuarioService.verificarEmail(request.getEmail(), request.getCodigo());
+    String jwtToken = jwtService.generateToken(usuario);
+    return buildResponse(usuario, jwtToken);
+}
 }

@@ -23,4 +23,6 @@ public class UsuarioUpdateRequest {
 
     @Pattern(regexp = ".*\\S.*", message = "El apellido no puede estar vacío")
     private String apellido;
+
+    private String provincia;
 }

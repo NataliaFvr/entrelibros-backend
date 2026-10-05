@@ -14,6 +14,7 @@ public class ResenaLibroResponse {
     private LocalDate fecha;
     private Long idLibro;
     private String nombreComprador;
+    private String apellidoComprador;
 
     public static ResenaLibroResponse from(ResenaLibro resena) {
         ResenaLibroResponse r = new ResenaLibroResponse();
@@ -23,6 +24,7 @@ public class ResenaLibroResponse {
         r.fecha = resena.getFecha();
         r.idLibro = resena.getOrdenItem().getLibro().getId();
         r.nombreComprador = resena.getOrdenItem().getOrden().getComprador().getNombre();
+        r.apellidoComprador = resena.getOrdenItem().getOrden().getComprador().getApellido();
         return r;
     }
 }

@@ -3,6 +3,7 @@ package com.uade.entrelibros.backend.controllers;
 import java.io.IOException;
 import java.net.URI;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -72,11 +73,11 @@ public class ImagenesLibroController {
 
     @PreAuthorize("hasAuthority('VENDEDOR')")
     @DeleteMapping("/{imagenId}")
-    public ResponseEntity<Void> deleteImagenLibro(
+    public ResponseEntity<Map<String, String>> deleteImagenLibro(
             @AuthenticationPrincipal Usuario vendedor,
             @PathVariable Long imagenId)
             throws ImagenLibroNoEncontradaException, AccionNoPermitidaException {
         imagenLibroService.deleteImagenLibro(vendedor, imagenId);
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.ok(Map.of("mensaje", "Imagen eliminada correctamente"));
     }
 }
