@@ -75,11 +75,11 @@ public class CarritoController {
 
     @PostMapping("/checkout")
     public ResponseEntity<OrdenResponse> checkout(
-        @AuthenticationPrincipal Usuario usuario,
-        @RequestBody CheckoutRequest request)
-        throws CarritoVacioException, StockInsuficienteException, LibroNoDisponibleException,
-        CompraPropiaException, LibroNoEncontradoException {
-    Orden orden = carritoService.checkout(usuario.getId(), request.getProvinciaDestino());
-    return ResponseEntity.ok(OrdenResponse.from(orden));
+            @AuthenticationPrincipal Usuario usuario,
+            @RequestBody CheckoutRequest request)
+            throws CarritoVacioException, StockInsuficienteException, LibroNoDisponibleException,
+            CompraPropiaException, LibroNoEncontradoException {
+        Orden orden = carritoService.checkout(usuario.getId(), request.getIdDireccion(), request.getProvinciaDestino());
+        return ResponseEntity.ok(OrdenResponse.from(orden));
     }
 }

@@ -15,7 +15,7 @@ import com.uade.entrelibros.backend.exceptions.LibroNoEncontradoException;
 import com.uade.entrelibros.backend.exceptions.StockInsuficienteException;
 
 public interface CarritoService {
-Carrito getOrCrearCarrito(Long idUsuario);
+    Carrito getOrCrearCarrito(Long idUsuario);
 
     List<CarritoItem> getItemsCarrito(Long idUsuario);
 
@@ -25,5 +25,5 @@ Carrito getOrCrearCarrito(Long idUsuario);
 
     void quitarItem(Long idUsuario, Long idItem);
 
-    Orden checkout(Long idUsuario, String provinciaDestino);
+    Orden checkout(Long idUsuario, Long idDireccion, String provinciaDestino);
 }
