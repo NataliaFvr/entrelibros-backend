@@ -43,13 +43,17 @@ public class ResenaLibroController {
     }
 
     @GetMapping("/libro/{idLibro}")
-    public ResponseEntity<List<ResenaLibroResponse>> getResenasByLibro(@PathVariable Long idLibro) {
-        List<ResenaLibroResponse> resultado = resenaLibroService.getResenasByLibro(idLibro).stream()
+    public ResponseEntity<List<ResenaLibroResponse>> getResenasByLibro(
+            @PathVariable Long idLibro,
+            @RequestParam(required = false) Integer calificacion,
+            @RequestParam(required = false) String sort) {
+        List<ResenaLibroResponse> resultado = resenaLibroService
+                .getResenasByLibro(idLibro, calificacion, sort).stream()
                 .map(ResenaLibroResponse::from)
                 .toList();
         return ResponseEntity.ok(resultado);
     }
-
+    
     @PostMapping
     public ResponseEntity<ResenaLibroResponse> crearResena(
             @AuthenticationPrincipal Usuario comprador,

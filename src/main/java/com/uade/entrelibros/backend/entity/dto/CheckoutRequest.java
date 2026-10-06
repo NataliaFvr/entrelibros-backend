@@ -6,4 +6,5 @@ import lombok.Data;
 public class CheckoutRequest {
     private Long idUsuario;
     private String provinciaDestino;
+    private Long idDireccion;
 }

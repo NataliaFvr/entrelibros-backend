@@ -32,6 +32,9 @@ public class Orden {
 
     private LocalDateTime fecha;
     private String provinciaDestino;
+    private String calleDestino;
+    private String ciudadDestino;
+    private String cpDestino;
     private Double subtotal;
     private Double costoEnvio;
     private Double total;

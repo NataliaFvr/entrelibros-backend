@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.uade.entrelibros.backend.exceptions.LibroNoDisponibleException;
 import com.uade.entrelibros.backend.entity.Carrito;
 import com.uade.entrelibros.backend.entity.CarritoItem;
+import com.uade.entrelibros.backend.entity.Direccion;
 import com.uade.entrelibros.backend.entity.EstadoPublicacion;
 import com.uade.entrelibros.backend.entity.EstadoModeracion;
 import com.uade.entrelibros.backend.entity.Libro;
@@ -22,6 +23,7 @@ import com.uade.entrelibros.backend.exceptions.CarritoVacioException;
 import com.uade.entrelibros.backend.exceptions.AccionNoPermitidaException;
 import com.uade.entrelibros.backend.exceptions.CantidadInvalidaException;
 import com.uade.entrelibros.backend.exceptions.CompraPropiaException;
+import com.uade.entrelibros.backend.exceptions.DireccionNoEncontradaException;
 import com.uade.entrelibros.backend.exceptions.ItemCarritoNoEncontradoException;
 import com.uade.entrelibros.backend.exceptions.LibroNoEncontradoException;
 import com.uade.entrelibros.backend.exceptions.ListaVaciaException;
@@ -29,6 +31,7 @@ import com.uade.entrelibros.backend.exceptions.StockInsuficienteException;
 import com.uade.entrelibros.backend.exceptions.UsuarioNoEncontradoException;
 import com.uade.entrelibros.backend.repository.CarritoItemRepository;
 import com.uade.entrelibros.backend.repository.CarritoRepository;
+import com.uade.entrelibros.backend.repository.DireccionRepository;
 import com.uade.entrelibros.backend.repository.LibroRepository;
 import com.uade.entrelibros.backend.repository.OrdenItemRepository;
 import com.uade.entrelibros.backend.repository.OrdenRepository;
@@ -56,6 +59,8 @@ public class CarritoServiceImpl implements CarritoService {
     private OrdenItemRepository ordenItemRepository;
     @Autowired
     private EnvioService envioService;
+    @Autowired
+    private DireccionRepository direccionRepository;
 
     public Carrito getOrCrearCarrito(Long idUsuario) {
         Carrito carrito = carritoRepository.findByUsuarioId(idUsuario);
@@ -67,7 +72,8 @@ public class CarritoServiceImpl implements CarritoService {
         return carritoRepository.save(new Carrito(usuario));
     }
 
-    public List<CarritoItem> getItemsCarrito(Long idUsuario) {        Carrito carrito = getOrCrearCarrito(idUsuario);
+    public List<CarritoItem> getItemsCarrito(Long idUsuario) {
+        Carrito carrito = getOrCrearCarrito(idUsuario);
         List<CarritoItem> items = carritoItemRepository.findByCarritoId(carrito.getId());
         if (items.isEmpty()) {
             throw new ListaVaciaException("El carrito no tiene items");
@@ -93,7 +99,8 @@ public class CarritoServiceImpl implements CarritoService {
         Carrito carrito = getOrCrearCarrito(idUsuario);
         return carritoItemRepository.save(new CarritoItem(carrito, libro, cantidad));
     }
-        public CarritoItem modificarCantidad(Long idUsuario, Long idItem, Integer cantidad) {
+
+    public CarritoItem modificarCantidad(Long idUsuario, Long idItem, Integer cantidad) {
 
         if (cantidad == null || cantidad < 1)
             throw new CantidadInvalidaException();
@@ -127,7 +134,13 @@ public class CarritoServiceImpl implements CarritoService {
     }
 
     @Transactional
-    public Orden checkout(Long idUsuario, String provinciaDestino) {
+    public Orden checkout(Long idUsuario, Long idDireccion, String provinciaDestino) {
+        Direccion direccion = null;
+        if (idDireccion != null) {
+            direccion = direccionRepository.findByIdAndUsuarioId(idDireccion, idUsuario)
+                    .orElseThrow(DireccionNoEncontradaException::new);
+            provinciaDestino = direccion.getProvincia();
+        }
 
         Carrito carrito = getOrCrearCarrito(idUsuario);
         List<CarritoItem> items = carritoItemRepository.findByCarritoId(carrito.getId());
@@ -161,6 +174,11 @@ public class CarritoServiceImpl implements CarritoService {
         double total = subtotal + costoEnvio;
 
         Orden orden = new Orden(carrito.getUsuario(), provinciaDestino, subtotal, costoEnvio, total);
+        if (direccion != null) {
+            orden.setCalleDestino(direccion.getCalle());
+            orden.setCiudadDestino(direccion.getCiudad());
+            orden.setCpDestino(direccion.getCp());
+        }
         orden = ordenRepository.save(orden);
 
         Map<Long, OrdenVendedor> ordenVendedorPorVendedor = new HashMap<>();
@@ -180,8 +198,10 @@ public class CarritoServiceImpl implements CarritoService {
             ordenItemRepository.save(new OrdenItem(orden, libro, vendedor, item.getCantidad(), precioUnitario));
 
             libro.setStock(libro.getStock() - item.getCantidad());
-            // Contador de "vendidos" para el ranking de bestsellers (sort=bestsellers en /libros).
-            // Se descuenta en OrdenServiceImpl.devolverStock si la venta se cancela o vence despues.
+            // Contador de "vendidos" para el ranking de bestsellers (sort=bestsellers en
+            // /libros).
+            // Se descuenta en OrdenServiceImpl.devolverStock si la venta se cancela o vence
+            // despues.
             int vendidosActuales = libro.getVendidos() != null ? libro.getVendidos() : 0;
             libro.setVendidos(vendidosActuales + item.getCantidad());
             libroRepository.save(libro);
@@ -205,11 +225,13 @@ public class CarritoServiceImpl implements CarritoService {
         double descuento = libro.getDescuentoPct() != null ? libro.getDescuentoPct() : 0.0;
         return libro.getPrecio() * (1 - descuento / 100.0);
     }
+
     private ZonaEnvio mapearProvinciaAZona(String provinciaDestino) {
         if (provinciaDestino == null) {
             throw new EnvioNoEncontradoException();
         }
-        String p = provinciaDestino.trim().toUpperCase();
+        String p = java.text.Normalizer.normalize(provinciaDestino.trim(), java.text.Normalizer.Form.NFD)
+                .replaceAll("\\p{M}", "").toUpperCase();
         if (p.equals("CABA") || p.equals("CIUDAD AUTONOMA DE BUENOS AIRES")) {
             return ZonaEnvio.CABA;
         }
