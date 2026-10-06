@@ -66,6 +66,13 @@ public class Usuario implements UserDetails {
     // Ubicación del usuario (se usa en el filtro de catálogo "envío local" comparando contra la provincia del comprador)
     private String provincia;
 
+    // Clave del avatar elegido. Los avatares por defecto son assets del front: aca solo se guarda la clave
+    private String avatar;
+
+    // true si el usuario tiene una foto activa en ImagenUsuario. Se mantiene desde ImagenUsuarioService
+    // y evita consultar la tabla de imagenes (con sus bytes) para armar cada UsuarioResponse
+    private Boolean tieneFoto = false;
+
     // Alta de vendedor vía solicitud: un COMPRADOR pide pasar a VENDEDOR y un admin la aprueba/rechaza
     private String nombreTienda;
 

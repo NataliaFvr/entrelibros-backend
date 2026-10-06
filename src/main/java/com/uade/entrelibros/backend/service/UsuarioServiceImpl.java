@@ -113,6 +113,8 @@ public class UsuarioServiceImpl implements UsuarioService {
             usuario.setNombre(request.getNombre());
         if (request.getApellido() != null)
             usuario.setApellido(request.getApellido());
+        if (request.getAvatar() != null)
+            usuario.setAvatar(request.getAvatar().isBlank() ? null : request.getAvatar());
         if (request.getContrasena() != null && !request.getContrasena().isBlank())
             usuario.setContrasenaHash(passwordEncoder.encode(request.getContrasena()));
 
