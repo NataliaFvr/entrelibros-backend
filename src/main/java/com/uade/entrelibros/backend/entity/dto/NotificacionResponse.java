@@ -14,6 +14,7 @@ public class NotificacionResponse {
     private Boolean leida;
     private LocalDateTime fecha;
     private Long idLibro;
+    private Long idOrden;
 
     public static NotificacionResponse from(Notificacion notificacion) {
         NotificacionResponse r = new NotificacionResponse();
@@ -24,6 +25,9 @@ public class NotificacionResponse {
         r.fecha = notificacion.getFecha();
         if (notificacion.getLibro() != null) {
             r.idLibro = notificacion.getLibro().getId();
+        }
+        if (notificacion.getOrden() != null) {
+            r.idOrden = notificacion.getOrden().getId();
         }
         return r;
     }

@@ -11,11 +11,13 @@ import org.springframework.transaction.annotation.Transactional;
 import com.uade.entrelibros.backend.entity.EstadoUsuario;
 import com.uade.entrelibros.backend.entity.Libro;
 import com.uade.entrelibros.backend.entity.Notificacion;
+import com.uade.entrelibros.backend.entity.Orden;
 import com.uade.entrelibros.backend.entity.Rol;
 import com.uade.entrelibros.backend.entity.TipoNotificacion;
 import com.uade.entrelibros.backend.entity.Usuario;
 import com.uade.entrelibros.backend.exceptions.ListaVaciaException;
 import com.uade.entrelibros.backend.exceptions.NotificacionInvalidaException;
+import com.uade.entrelibros.backend.exceptions.NotificacionNoEncontradaException;
 
 import com.uade.entrelibros.backend.repository.NotificacionRepository;
 import com.uade.entrelibros.backend.repository.UsuarioRepository;
@@ -37,6 +39,17 @@ public class NotificacionServiceImpl implements NotificacionService {
         }
         return notificacionRepository.save(new Notificacion(destinatario, tipo, mensaje, libro));
     }
+
+    @Override
+    public Notificacion crearDeOrden(Usuario destinatario, TipoNotificacion tipo, String mensaje, Orden orden) {
+        if (destinatario == null || tipo == null || mensaje == null || mensaje.isBlank() || orden == null) {
+            throw new NotificacionInvalidaException();
+        }
+        Notificacion notificacion = new Notificacion(destinatario, tipo, mensaje, null);
+        notificacion.setOrden(orden);
+        return notificacionRepository.save(notificacion);
+    }
+
     @Override
     public void notificarAdmins(TipoNotificacion tipo, String mensaje, Libro libro) {
         List<Usuario> admins = usuarioRepository.findByRolAndEstado(Rol.ADMIN, EstadoUsuario.ACTIVO);
@@ -73,5 +86,27 @@ public class NotificacionServiceImpl implements NotificacionService {
             throw new ListaVaciaException("No tenes notificaciones sin leer");
         }
         return cantidad;
+    }
+
+    @Override
+    @Transactional
+    public Notificacion marcarLeida(Long idUsuario, Long idNotificacion) {
+        Notificacion notificacion = notificacionRepository.findByIdAndUsuarioId(idNotificacion, idUsuario)
+                .orElseThrow(NotificacionNoEncontradaException::new);
+        notificacion.setLeida(true);
+        return notificacionRepository.save(notificacion);
+    }
+
+    @Override
+    @Transactional
+    public void eliminar(Long idUsuario, Long idNotificacion) {
+        Notificacion notificacion = notificacionRepository.findByIdAndUsuarioId(idNotificacion, idUsuario)
+                .orElseThrow(NotificacionNoEncontradaException::new);
+        notificacionRepository.delete(notificacion);
+    }
+
+    @Override
+    public long contarNoLeidas(Long idUsuario) {
+        return notificacionRepository.countByUsuarioIdAndLeidaFalse(idUsuario);
     }
 }

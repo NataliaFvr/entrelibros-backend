@@ -1,5 +1,7 @@
 package com.uade.entrelibros.backend.repository;
 
+import java.util.Optional;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -15,6 +17,11 @@ public interface NotificacionRepository extends JpaRepository<Notificacion, Long
     Page<Notificacion> findByUsuarioIdOrderByFechaDesc(Long idUsuario, Pageable pageable);
 
     Page<Notificacion> findByUsuarioIdAndLeidaFalseOrderByFechaDesc(Long idUsuario, Pageable pageable);
+
+    // Filtrar por dueño en la misma consulta: una notificacion ajena es indistinguible de una inexistente
+    Optional<Notificacion> findByIdAndUsuarioId(Long id, Long idUsuario);
+
+    long countByUsuarioIdAndLeidaFalse(Long idUsuario);
 
     @Modifying(clearAutomatically = true)
     @Query("update Notificacion n set n.leida = true where n.usuario.id = :idUsuario and n.leida = false")

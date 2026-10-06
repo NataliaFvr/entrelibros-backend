@@ -42,6 +42,29 @@ public class NotificacionController {
         return ResponseEntity.ok(resultado);
     }
 
+    // Devuelve 0 cuando no hay nada (a diferencia de /no-leidas, que responde error de lista vacia): ideal para el contador de la campana
+    @GetMapping("/no-leidas/cantidad")
+    public ResponseEntity<Map<String, Long>> getCantidadNoLeidas(@AuthenticationPrincipal Usuario usuario) {
+        long cantidad = notificacionService.contarNoLeidas(usuario.getId());
+        return ResponseEntity.ok(Map.of("cantidad", cantidad));
+    }
+
+    @PatchMapping("/{idNotificacion}/leida")
+    public ResponseEntity<NotificacionResponse> marcarLeida(
+            @AuthenticationPrincipal Usuario usuario,
+            @PathVariable Long idNotificacion) {
+        return ResponseEntity.ok(NotificacionResponse.from(
+                notificacionService.marcarLeida(usuario.getId(), idNotificacion)));
+    }
+
+    @DeleteMapping("/{idNotificacion}")
+    public ResponseEntity<Map<String, String>> eliminar(
+            @AuthenticationPrincipal Usuario usuario,
+            @PathVariable Long idNotificacion) {
+        notificacionService.eliminar(usuario.getId(), idNotificacion);
+        return ResponseEntity.ok(Map.of("mensaje", "Notificacion eliminada"));
+    }
+
     @PatchMapping("/marcar-leidas")
     public ResponseEntity<Map<String, Object>> marcarLeidas(@AuthenticationPrincipal Usuario usuario) {
         int cantidad = notificacionService.marcarLeidas(usuario.getId());

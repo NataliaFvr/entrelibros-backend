@@ -1,6 +1,9 @@
 package com.uade.entrelibros.backend.service;
 
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -8,13 +11,16 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.uade.entrelibros.backend.entity.EstadoPago;
 import com.uade.entrelibros.backend.entity.Orden;
+import com.uade.entrelibros.backend.entity.OrdenItem;
 import com.uade.entrelibros.backend.entity.Pago;
+import com.uade.entrelibros.backend.entity.TipoNotificacion;
 import com.uade.entrelibros.backend.entity.Usuario;
 import com.uade.entrelibros.backend.exceptions.AccionNoPermitidaException;
 import com.uade.entrelibros.backend.exceptions.ListaVaciaException;
 import com.uade.entrelibros.backend.exceptions.OrdenNoEncontradaException;
 import com.uade.entrelibros.backend.exceptions.PagoNoEncontradoException;
 import com.uade.entrelibros.backend.exceptions.OrdenNoPagableException;
+import com.uade.entrelibros.backend.repository.OrdenItemRepository;
 import com.uade.entrelibros.backend.repository.OrdenRepository;
 import com.uade.entrelibros.backend.repository.PagoRepository;
 
@@ -27,6 +33,10 @@ public class PagoServiceImpl implements PagoService {
     private OrdenRepository ordenRepository;
     @Autowired
     private OrdenService ordenService;
+    @Autowired
+    private NotificacionService notificacionService;
+    @Autowired
+    private OrdenItemRepository ordenItemRepository;
 
     public List<Pago> getPagos() {
         List<Pago> pagos = pagoRepository.findAll();
@@ -74,7 +84,46 @@ public class PagoServiceImpl implements PagoService {
         orden.setEstadoPago(pago.getResultado());
         ordenRepository.save(orden);
 
+        // Misma transaccion que el pago: si algo falla, no queda una notificacion de un pago que no existe
+        if (pago.getResultado() == EstadoPago.SIMULADO_APROBADO) {
+            notificarCompraYPago(orden);
+            notificarVendedores(orden);
+        }
+
         return pago;
+    }
+
+    // Una notificacion por vendedor (no por item): una orden puede tener varios libros del mismo vendedor
+    private void notificarVendedores(Orden orden) {
+        Map<Long, List<OrdenItem>> itemsPorVendedor = new LinkedHashMap<>();
+        for (OrdenItem item : ordenItemRepository.findByOrdenId(orden.getId())) {
+            itemsPorVendedor.computeIfAbsent(item.getVendedor().getId(), id -> new java.util.ArrayList<>()).add(item);
+        }
+
+        for (List<OrdenItem> items : itemsPorVendedor.values()) {
+            int unidades = 0;
+            double monto = 0.0;
+            for (OrdenItem item : items) {
+                unidades += item.getCantidad();
+                monto += item.getCantidad() * item.getPrecioUnitario();
+            }
+            notificacionService.crearDeOrden(items.get(0).getVendedor(), TipoNotificacion.VENTA_REALIZADA,
+                    String.format(Locale.forLanguageTag("es-AR"),
+                            "Nueva venta en la compra #%d: %d unidad(es) por $%,.2f",
+                            orden.getId(), unidades, monto),
+                    orden);
+        }
+    }
+
+    // El front muestra las dos ("Compra confirmada" y "Pago procesado"), asi que se generan las dos
+    private void notificarCompraYPago(Orden orden) {
+        Usuario comprador = orden.getComprador();
+        notificacionService.crearDeOrden(comprador, TipoNotificacion.COMPRA_CONFIRMADA,
+                "Tu compra #" + orden.getId() + " fue confirmada", orden);
+        notificacionService.crearDeOrden(comprador, TipoNotificacion.PAGO_PROCESADO,
+                String.format(Locale.forLanguageTag("es-AR"),
+                        "Se proceso el pago de $%,.2f de tu compra #%d", orden.getTotal(), orden.getId()),
+                orden);
     }
 
     private void validarComprador(Orden orden, Usuario comprador) {

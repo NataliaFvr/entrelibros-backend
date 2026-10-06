@@ -43,4 +43,9 @@ public class Notificacion {
     @ManyToOne
     @JoinColumn(name = "id_libro")
     private Libro libro;
+
+    // Opcional: las notificaciones de compra y pago lo completan, para que el front pueda enlazar el pedido
+    @ManyToOne
+    @JoinColumn(name = "id_orden")
+    private Orden orden;
 }
