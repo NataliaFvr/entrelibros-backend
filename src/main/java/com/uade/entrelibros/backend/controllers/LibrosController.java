@@ -9,6 +9,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.validation.annotation.Validated;
 
 import com.uade.entrelibros.backend.entity.Libro;
 import com.uade.entrelibros.backend.entity.Usuario;
@@ -96,7 +97,7 @@ public class LibrosController {
     @PostMapping
     public ResponseEntity<LibroResponse> createLibro(
             @AuthenticationPrincipal Usuario vendedor,
-            @RequestBody LibroRequest request)
+            @Validated(LibroRequest.Crear.class) @RequestBody LibroRequest request)
             throws CategoriaNoEncontradaException, RolInvalidoException {
         Libro result = libroService.createLibro(request, vendedor);
         return ResponseEntity.created(URI.create("/libros/" + result.getId()))
@@ -108,7 +109,7 @@ public class LibrosController {
     public ResponseEntity<LibroResponse> updateLibro(
             @AuthenticationPrincipal Usuario vendedor,
             @PathVariable Long libroId,
-            @RequestBody LibroRequest request)
+            @Validated(LibroRequest.Actualizar.class) @RequestBody LibroRequest request)
             throws LibroNoEncontradoException, CategoriaNoEncontradaException, RolInvalidoException,
             AccionNoPermitidaException {
         Libro result = libroService.updateLibro(libroId, request, vendedor);
