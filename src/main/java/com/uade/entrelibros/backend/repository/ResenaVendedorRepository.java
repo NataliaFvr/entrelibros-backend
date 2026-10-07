@@ -19,4 +19,7 @@ public interface ResenaVendedorRepository extends JpaRepository<ResenaVendedor, 
 
     @Query("select avg(r.clasificacion) from ResenaVendedor r where r.vendedor.id = ?1")
     Double promedioPorVendedor(Long idVendedor);
+
+    @Query("select count(r) from ResenaVendedor r where r.vendedor.id = ?1")
+    long cantidadPorVendedor(Long idVendedor);
 }

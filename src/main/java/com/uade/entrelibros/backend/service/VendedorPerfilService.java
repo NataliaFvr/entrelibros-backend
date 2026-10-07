@@ -24,6 +24,8 @@ public class VendedorPerfilService {
                 .filter(usuario -> usuario.getRol() == Rol.VENDEDOR)
                 .orElseThrow(VendedorNoEncontradoException::new);
         return VendedorPerfilResponse.from(
-                vendedor, resenaVendedorRepository.promedioPorVendedor(idVendedor));
+                vendedor,
+                resenaVendedorRepository.promedioPorVendedor(idVendedor),
+                resenaVendedorRepository.cantidadPorVendedor(idVendedor));
     }
 }

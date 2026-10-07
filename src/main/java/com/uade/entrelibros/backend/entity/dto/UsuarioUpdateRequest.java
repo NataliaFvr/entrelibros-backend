@@ -26,6 +26,8 @@ public class UsuarioUpdateRequest {
     private String apellido;
 
     private String provincia;
+    private String telefono;
+    private String descripcion;
 
     // Clave del avatar elegido (los avatares por defecto estan como assets del front).
     // Mandar "" lo borra y el front vuelve a su avatar por defecto.

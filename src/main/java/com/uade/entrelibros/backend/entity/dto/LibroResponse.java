@@ -21,6 +21,17 @@ public class LibroResponse {
     private String estadoModeracion;
     private Long idVendedor;
     private String nombreVendedor;
+    private String snapshotTitulo;
+    private String snapshotAutor;
+    private String snapshotEditorial;
+    private Integer snapshotAnio;
+    private String snapshotIdioma;
+    private String snapshotEstadoLibro;
+    private Double snapshotPrecio;
+    private Double snapshotDescuentoPct;
+    private Integer snapshotStock;
+    private String snapshotDescripcion;
+    private java.time.LocalDateTime fechaSolicitudRevision;
 
     public static LibroResponse from(Libro libro) {
         LibroResponse r = new LibroResponse();
@@ -41,6 +52,18 @@ public class LibroResponse {
             r.idVendedor = libro.getVendedor().getId();
             r.nombreVendedor = libro.getVendedor().getNombre();
         }
-        return r;
+            r.snapshotTitulo = libro.getSnapshotTitulo();
+            r.snapshotAutor = libro.getSnapshotAutor();
+            r.snapshotEditorial = libro.getSnapshotEditorial();
+            r.snapshotAnio = libro.getSnapshotAnio();
+            r.snapshotIdioma = libro.getSnapshotIdioma();
+            r.snapshotEstadoLibro = libro.getSnapshotEstadoLibro() != null
+                    ? libro.getSnapshotEstadoLibro().name() : null;
+            r.snapshotPrecio = libro.getSnapshotPrecio();
+            r.snapshotDescuentoPct = libro.getSnapshotDescuentoPct();
+            r.snapshotStock = libro.getSnapshotStock();
+            r.snapshotDescripcion = libro.getSnapshotDescripcion();
+            r.fechaSolicitudRevision = libro.getFechaSolicitudRevision();
+            return r;
     }
 }

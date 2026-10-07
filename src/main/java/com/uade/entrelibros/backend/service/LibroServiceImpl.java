@@ -155,10 +155,12 @@ public class LibroServiceImpl implements LibroService {
                 .orElseThrow(LibroNoEncontradoException::new);
         validarDuenio(libro, vendedor);
 
-        aplicarCambios(libro, request);
-
         // Si se edita, vuelve a revision del admin
         boolean vuelveARevision = libro.getEstadoModeracion() != EstadoModeracion.EN_REVISION;
+        if (vuelveARevision) {
+            libro.guardarSnapshotActual();
+        }
+        aplicarCambios(libro, request);
         if (vuelveARevision) {
             libro.setEstadoModeracion(EstadoModeracion.EN_REVISION);
         }

@@ -16,10 +16,12 @@ public class VendedorPerfilResponse {
     private String provincia;
     private String descripcion;
     private LocalDate desde;
-    private String foto;
+    private boolean tieneFoto;
+    private String avatar;
     private Double promedioResenas;
+    private long cantidadResenas;
 
-    public static VendedorPerfilResponse from(Usuario vendedor, Double promedioResenas) {
+    public static VendedorPerfilResponse from(Usuario vendedor, Double promedioResenas, long cantidadResenas) {
         VendedorPerfilResponse response = new VendedorPerfilResponse();
         response.id = vendedor.getId();
         response.nombre = vendedor.getNombre();
@@ -28,8 +30,10 @@ public class VendedorPerfilResponse {
         response.provincia = vendedor.getProvincia();
         response.descripcion = vendedor.getDescripcion();
         response.desde = vendedor.getFechaRegistro();
-        response.foto = "/usuarios/" + vendedor.getId() + "/foto";
+        response.tieneFoto = Boolean.TRUE.equals(vendedor.getTieneFoto());
+        response.avatar = vendedor.getAvatar();
         response.promedioResenas = promedioResenas != null ? promedioResenas : 0.0;
+        response.cantidadResenas = cantidadResenas;
         return response;
     }
 }

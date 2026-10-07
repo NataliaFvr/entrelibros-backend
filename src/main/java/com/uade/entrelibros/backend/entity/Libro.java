@@ -69,4 +69,33 @@ public class Libro {
     // cancela/vence la reserva (ver CarritoServiceImpl y OrdenServiceImpl.devolverStock).
     // Usado para sort=bestsellers.
     private Integer vendidos = 0;
+
+    @Column(columnDefinition = "TEXT")
+    private String snapshotTitulo;
+    private String snapshotAutor;
+    private String snapshotEditorial;
+    private Integer snapshotAnio;
+    private String snapshotIdioma;
+    @Enumerated(EnumType.STRING)
+    private EstadoLibro snapshotEstadoLibro;
+    private Double snapshotPrecio;
+    private Double snapshotDescuentoPct;
+    private Integer snapshotStock;
+    @Column(columnDefinition = "TEXT")
+    private String snapshotDescripcion;
+    private LocalDateTime fechaSolicitudRevision;
+
+    public void guardarSnapshotActual() {
+        this.snapshotTitulo = titulo;
+        this.snapshotAutor = autor;
+        this.snapshotEditorial = editorial;
+        this.snapshotAnio = anio;
+        this.snapshotIdioma = idioma;
+        this.snapshotEstadoLibro = estadoLibro;
+        this.snapshotPrecio = precio;
+        this.snapshotDescuentoPct = descuentoPct;
+        this.snapshotStock = stock;
+        this.snapshotDescripcion = descripcion;
+        this.fechaSolicitudRevision = LocalDateTime.now();
+    }
 }
