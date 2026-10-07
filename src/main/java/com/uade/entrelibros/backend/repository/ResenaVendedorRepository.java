@@ -16,4 +16,7 @@ public interface ResenaVendedorRepository extends JpaRepository<ResenaVendedor, 
 
     @Query(value = "select r from ResenaVendedor r where r.vendedor.id = ?1")
     List<ResenaVendedor> findByVendedorId(Long idVendedor);
+
+    @Query("select avg(r.clasificacion) from ResenaVendedor r where r.vendedor.id = ?1")
+    Double promedioPorVendedor(Long idVendedor);
 }

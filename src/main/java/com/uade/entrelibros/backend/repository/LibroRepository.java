@@ -21,14 +21,6 @@ public interface LibroRepository extends JpaRepository<Libro, Long>, JpaSpecific
     @Query(value = "select l from Libro l where l.vendedor.id = ?1")
     List<Libro> findByVendedorId(Long idVendedor);
 
-    Page<Libro> findByVendedorIdAndEstadoModeracionAndEstadoPublicacion(
-            Long idVendedor,
-            com.uade.entrelibros.backend.entity.EstadoModeracion estadoModeracion,
-            com.uade.entrelibros.backend.entity.EstadoPublicacion estadoPublicacion,
-            Pageable pageable);
-
-    Page<Libro> findByVendedorId(Long idVendedor, Pageable pageable);
-
     // Listado por estado de moderacion (solo para el admin): NO pasa por visibles(),
     // asi el catalogo del comprador sigue sin mostrar los EN_REVISION.
     // Exige ACTIVA para que la cola ignore los libros que el vendedor ya dio de baja.

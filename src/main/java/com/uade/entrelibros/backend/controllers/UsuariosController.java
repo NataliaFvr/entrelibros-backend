@@ -112,7 +112,12 @@ public class UsuariosController {
             @AuthenticationPrincipal Usuario usuario,
             @Valid @RequestBody SolicitudVendedorRequest request)
             throws RolInvalidoException, YaEsVendedorException, SolicitudPendienteExistenteException {
-        Usuario result = usuarioService.solicitarVendedor(usuario, request.getNombreTienda());
+        Usuario result = usuarioService.solicitarVendedor(
+                usuario,
+                request.getNombreTienda(),
+                request.getTelefono(),
+                request.getDescripcion(),
+                request.getProvincia());
         return ResponseEntity.ok(UsuarioResponse.from(result));
     }
 

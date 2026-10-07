@@ -41,7 +41,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/auth/**").permitAll()
                         .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/libros/**", "/categorias/**",
-                                "/imagenes-libro/**", "/resenas-libro/**", "/resenas-vendedor/**")
+                                "/imagenes-libro/**", "/resenas-libro/**", "/resenas-vendedor/**",
+                                "/vendedores/**")
                         .permitAll()
                         // foto de perfil publica: un <img> no puede mandar el token
                         .requestMatchers(HttpMethod.GET, "/usuarios/*/foto").permitAll()

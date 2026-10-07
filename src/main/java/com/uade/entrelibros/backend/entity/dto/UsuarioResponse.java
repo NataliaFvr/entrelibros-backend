@@ -15,6 +15,8 @@ public class UsuarioResponse {
     private String estado;
     private String provincia;
     private String nombreTienda;
+    private String telefono;
+    private String descripcion;
     private String estadoSolicitudVendedor;
     private String avatar;
     private boolean tieneFoto;
@@ -30,6 +32,8 @@ public class UsuarioResponse {
         r.estado = usuario.getEstado().name();
         r.provincia = usuario.getProvincia();
         r.nombreTienda = usuario.getNombreTienda();
+        r.telefono = usuario.getTelefono();
+        r.descripcion = usuario.getDescripcion();
         r.estadoSolicitudVendedor = usuario.getEstadoSolicitudVendedor() != null
                 ? usuario.getEstadoSolicitudVendedor().name() : null;
         r.avatar = usuario.getAvatar();

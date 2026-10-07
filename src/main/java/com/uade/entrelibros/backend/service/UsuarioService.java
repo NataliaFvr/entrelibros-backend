@@ -27,7 +27,8 @@ public interface UsuarioService {
     public Usuario solicitarResetPassword(String email);
     public Usuario cambiarContrasenia(String email, String codigo, String nuevaContrasenia);
 
-    public Usuario solicitarVendedor(Usuario usuario, String nombreTienda);
+    public Usuario solicitarVendedor(Usuario usuario, String nombreTienda, String telefono,
+            String descripcion, String provincia);
     public Page<Usuario> getSolicitudesVendedorPendientes(PageRequest pageRequest);
     public Usuario resolverSolicitudVendedor(Long usuarioId, boolean aprobar, String comentario);
 }

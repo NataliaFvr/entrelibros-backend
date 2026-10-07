@@ -247,7 +247,8 @@ public Usuario cambiarContrasenia(String email, String codigo, String nuevaContr
 }
 
     @Override
-    public Usuario solicitarVendedor(Usuario usuario, String nombreTienda) {
+    public Usuario solicitarVendedor(Usuario usuario, String nombreTienda, String telefono,
+            String descripcion, String provincia) {
         if (usuario.getRol() == Rol.VENDEDOR) {
             throw new YaEsVendedorException();
         }
@@ -259,6 +260,9 @@ public Usuario cambiarContrasenia(String email, String codigo, String nuevaContr
         }
 
         usuario.setNombreTienda(nombreTienda);
+        usuario.setTelefono(telefono);
+        usuario.setDescripcion(descripcion);
+        usuario.setProvincia(provincia);
         usuario.setEstadoSolicitudVendedor(EstadoSolicitudVendedor.PENDIENTE);
         Usuario guardado = usuarioRepository.save(usuario);
 

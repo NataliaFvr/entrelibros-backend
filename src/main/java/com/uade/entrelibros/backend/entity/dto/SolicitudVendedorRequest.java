@@ -8,4 +8,13 @@ public class SolicitudVendedorRequest {
  
     @NotBlank(message = "El nombre de la tienda es obligatorio")
     private String nombreTienda;
+
+    @NotBlank(message = "El teléfono es obligatorio")
+    private String telefono;
+
+    @NotBlank(message = "La descripción es obligatoria")
+    private String descripcion;
+
+    @NotBlank(message = "La provincia es obligatoria")
+    private String provincia;
 }

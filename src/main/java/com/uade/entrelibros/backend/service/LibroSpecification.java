@@ -28,28 +28,9 @@ public class LibroSpecification {
             return cb.or(
                 cb.like(cb.lower(root.get("titulo")), like),
                 cb.like(cb.lower(root.get("autor")), like),
-                cb.like(cb.lower(root.get("editorial")), like),
-                cb.like(cb.lower(root.get("descripcion")), like),
-                cb.like(cb.lower(root.get("vendedor").get("nombre")), like),
-                cb.like(cb.lower(root.get("vendedor").get("apellido")), like),
-                cb.like(cb.lower(root.get("vendedor").get("nombreTienda")), like),
-                categoriaContieneTexto(root, query, cb, like)
+                cb.like(cb.lower(root.get("descripcion")), like)
             );
         };
-    }
-
-    private static jakarta.persistence.criteria.Predicate categoriaContieneTexto(
-            jakarta.persistence.criteria.Root<Libro> root,
-            jakarta.persistence.criteria.CriteriaQuery<?> query,
-            jakarta.persistence.criteria.CriteriaBuilder cb,
-            String like) {
-        Subquery<Long> sub = query.subquery(Long.class);
-        var lc = sub.from(LibroCategoria.class);
-        sub.select(lc.get("libro").get("id"))
-                .where(
-                        cb.equal(lc.get("libro").get("id"), root.get("id")),
-                        cb.like(cb.lower(lc.get("categoria").get("nombre")), like));
-        return cb.exists(sub);
     }
  
     public static Specification<Libro> tieneCategorias(List<Long> idCategorias) {
@@ -69,22 +50,6 @@ public class LibroSpecification {
  
     public static Specification<Libro> precioMaximo(Double max) {
         return (root, query, cb) -> max == null ? cb.conjunction() : cb.lessThanOrEqualTo(root.get("precio"), max);
-    }
-
-    public static Specification<Libro> anioMinimo(Integer min) {
-        return (root, query, cb) -> min == null
-                ? cb.conjunction() : cb.greaterThanOrEqualTo(root.get("anio"), min);
-    }
-
-    public static Specification<Libro> anioMaximo(Integer max) {
-        return (root, query, cb) -> max == null
-                ? cb.conjunction() : cb.lessThanOrEqualTo(root.get("anio"), max);
-    }
-
-    public static Specification<Libro> descuentoMinimo(Double min) {
-        return (root, query, cb) -> min == null
-                ? cb.conjunction() : cb.greaterThanOrEqualTo(
-                        cb.coalesce(root.get("descuentoPct"), 0.0), min);
     }
  
     public static Specification<Libro> enEditoriales(List<String> editoriales) {
@@ -135,25 +100,9 @@ public class LibroSpecification {
                 return cb.conjunction();
             }
             Path<String> provinciaVendedor = root.get("vendedor").get("provincia");
-            String compradorNormalizado = com.uade.entrelibros.backend.service.EnvioPolicy
-                    .normalizar(provinciaComprador);
-            jakarta.persistence.criteria.Expression<String> vendedorNormalizado =
-                    normalizar(cb, provinciaVendedor);
             return Boolean.TRUE.equals(envioLocal)
-                    ? cb.equal(vendedorNormalizado, compradorNormalizado)
-                    : cb.notEqual(vendedorNormalizado, compradorNormalizado);
+                    ? cb.equal(cb.upper(provinciaVendedor), provinciaComprador.toUpperCase())
+                    : cb.notEqual(cb.upper(provinciaVendedor), provinciaComprador.toUpperCase());
         };
-    }
-
-    private static jakarta.persistence.criteria.Expression<String> normalizar(
-            jakarta.persistence.criteria.CriteriaBuilder cb, Path<String> provincia) {
-        jakarta.persistence.criteria.Expression<String> resultado = cb.upper(provincia);
-        for (String[] reemplazo : List.of(
-                new String[] {"Á", "A"}, new String[] {"É", "E"}, new String[] {"Í", "I"},
-                new String[] {"Ó", "O"}, new String[] {"Ú", "U"}, new String[] {"Ü", "U"})) {
-            resultado = cb.function("replace", String.class, resultado,
-                    cb.literal(reemplazo[0]), cb.literal(reemplazo[1]));
-        }
-        return resultado;
     }
 }

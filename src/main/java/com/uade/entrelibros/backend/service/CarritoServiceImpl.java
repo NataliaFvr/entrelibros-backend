@@ -3,8 +3,6 @@ package com.uade.entrelibros.backend.service;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.math.BigDecimal;
-import java.math.RoundingMode;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -39,6 +37,8 @@ import com.uade.entrelibros.backend.repository.OrdenItemRepository;
 import com.uade.entrelibros.backend.repository.OrdenRepository;
 import com.uade.entrelibros.backend.repository.OrdenVendedorRepository;
 import com.uade.entrelibros.backend.repository.UsuarioRepository;
+import com.uade.entrelibros.backend.entity.ZonaEnvio;
+import com.uade.entrelibros.backend.exceptions.EnvioNoEncontradoException;
 
 @Service
 public class CarritoServiceImpl implements CarritoService {
@@ -58,7 +58,7 @@ public class CarritoServiceImpl implements CarritoService {
     @Autowired
     private OrdenItemRepository ordenItemRepository;
     @Autowired
-    private EnvioPolicy envioPolicy;
+    private EnvioService envioService;
     @Autowired
     private DireccionRepository direccionRepository;
 
@@ -169,7 +169,8 @@ public class CarritoServiceImpl implements CarritoService {
             subtotal += precioConDescuento(item.getLibro()) * item.getCantidad();
         }
 
-        double costoEnvio = envioPolicy.costoPorVendedor(items, provinciaDestino);
+        ZonaEnvio zona = mapearProvinciaAZona(provinciaDestino);
+        double costoEnvio = envioService.getCostoPorZona(zona);
         double total = subtotal + costoEnvio;
 
         Orden orden = new Orden(carrito.getUsuario(), provinciaDestino, subtotal, costoEnvio, total);
@@ -222,11 +223,21 @@ public class CarritoServiceImpl implements CarritoService {
 
     private double precioConDescuento(Libro libro) {
         double descuento = libro.getDescuentoPct() != null ? libro.getDescuentoPct() : 0.0;
-        return BigDecimal.valueOf(libro.getPrecio())
-                .multiply(BigDecimal.ONE.subtract(BigDecimal.valueOf(descuento)
-                        .divide(BigDecimal.valueOf(100), 10, RoundingMode.HALF_UP)))
-                .setScale(2, RoundingMode.HALF_UP)
-                .doubleValue();
+        return libro.getPrecio() * (1 - descuento / 100.0);
     }
 
+    private ZonaEnvio mapearProvinciaAZona(String provinciaDestino) {
+        if (provinciaDestino == null) {
+            throw new EnvioNoEncontradoException();
+        }
+        String p = java.text.Normalizer.normalize(provinciaDestino.trim(), java.text.Normalizer.Form.NFD)
+                .replaceAll("\\p{M}", "").toUpperCase();
+        if (p.equals("CABA") || p.equals("CIUDAD AUTONOMA DE BUENOS AIRES")) {
+            return ZonaEnvio.CABA;
+        }
+        if (p.equals("BUENOS AIRES") || p.equals("PROVINCIA DE BUENOS AIRES") || p.equals("PROVINCIA_BA")) {
+            return ZonaEnvio.PROVINCIA_BA;
+        }
+        return ZonaEnvio.RESTO_PAIS;
+    }
 }

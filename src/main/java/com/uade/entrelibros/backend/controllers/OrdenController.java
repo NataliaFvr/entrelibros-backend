@@ -53,7 +53,11 @@ public class OrdenController {
             throws OrdenNoEncontradaException, AccionNoPermitidaException {
         var orden = ordenService.getOrdenById(idOrden, usuario);
         List<OrdenItem> items = ordenService.getItemsDeOrden(idOrden);
-        if (usuario.getRol() == com.uade.entrelibros.backend.entity.Rol.VENDEDOR) {
+        boolean esComprador = orden.getComprador() != null
+                && orden.getComprador().getId().equals(usuario.getId());
+        boolean esAdmin = usuario.getRol() == com.uade.entrelibros.backend.entity.Rol.ADMIN;
+        if (!esComprador && !esAdmin
+                && usuario.getRol() == com.uade.entrelibros.backend.entity.Rol.VENDEDOR) {
             items = items.stream()
                     .filter(item -> item.getVendedor() != null
                             && item.getVendedor().getId().equals(usuario.getId()))

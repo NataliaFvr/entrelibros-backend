@@ -16,9 +16,7 @@ public class EnvioItemResponse {
         r.id = envioItem.getId();
         r.costo = envioItem.getCosto();
         r.idOrdenVendedor = envioItem.getOrdenVendedor().getId();
-        r.zona = envioItem.getEnvio().getZona()
-                == com.uade.entrelibros.backend.entity.ZonaEnvio.MISMA_PROVINCIA
-                ? "misma" : "distinta";
+        r.zona = envioItem.getEnvio().getZona().name();
         return r;
     }
 }

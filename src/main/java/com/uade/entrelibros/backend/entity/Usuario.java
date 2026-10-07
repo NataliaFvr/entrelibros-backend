@@ -75,6 +75,8 @@ public class Usuario implements UserDetails {
 
     // Alta de vendedor vía solicitud: un COMPRADOR pide pasar a VENDEDOR y un admin la aprueba/rechaza
     private String nombreTienda;
+    private String telefono;
+    private String descripcion;
 
     @Enumerated(EnumType.STRING)
     private EstadoSolicitudVendedor estadoSolicitudVendedor = EstadoSolicitudVendedor.NINGUNO;

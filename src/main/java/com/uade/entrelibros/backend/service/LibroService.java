@@ -16,7 +16,6 @@ import com.uade.entrelibros.backend.exceptions.LibroNoEncontradoException;
 import com.uade.entrelibros.backend.exceptions.RolInvalidoException;
 import com.uade.entrelibros.backend.entity.dto.LibroRequest;
 import com.uade.entrelibros.backend.entity.dto.FiltrosDisponiblesResponse;
-import com.uade.entrelibros.backend.entity.dto.LibroMioResponse;
 
 public interface LibroService {
     Page<Libro> getLibros(PageRequest pageRequest);
@@ -44,7 +43,4 @@ public interface LibroService {
     Page<Libro> getLibrosPorEstadoModeracion(EstadoModeracion estado, PageRequest pageRequest);
 
     FiltrosDisponiblesResponse getFiltrosDisponibles();
-
-    Page<LibroMioResponse> getLibrosMios(Usuario vendedor, EstadoModeracion estadoModeracion,
-            com.uade.entrelibros.backend.entity.EstadoPublicacion estadoPublicacion, Pageable pageable);
 }

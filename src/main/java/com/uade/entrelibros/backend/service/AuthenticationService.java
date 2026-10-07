@@ -30,13 +30,18 @@ public class AuthenticationService {
     private final AuthenticationManager authenticationManager;
 
     public void register(UsuarioRequest request) throws UsuarioDuplicadoException {
+    Rol rolSolicitado = request.getRol();
+    Rol rolFinal = (rolSolicitado == null || rolSolicitado == Rol.ADMIN)
+            ? Rol.COMPRADOR
+            : rolSolicitado;
+
     usuarioService.createUsuario(
             request.getNombreUsuario(),
             request.getEmail(),
             request.getContrasena(),
             request.getNombre(),
             request.getApellido(),
-            Rol.COMPRADOR);
+            rolFinal);
 }
 
     public AuthenticationResponse authenticate(AuthenticationRequest request) {

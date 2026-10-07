@@ -8,11 +8,9 @@ import org.springframework.web.bind.annotation.*;
 
 import com.uade.entrelibros.backend.entity.Usuario;
 import com.uade.entrelibros.backend.entity.dto.EstadisticasVendedorResponse;
-import com.uade.entrelibros.backend.entity.ResenaLibro;
-import com.uade.entrelibros.backend.entity.dto.ResenaLibroResponse;
+import com.uade.entrelibros.backend.entity.dto.VendedorPerfilResponse;
 import com.uade.entrelibros.backend.service.EstadisticasVendedorService;
-import com.uade.entrelibros.backend.service.ResenaLibroService;
-import java.util.List;
+import com.uade.entrelibros.backend.service.VendedorPerfilService;
 
 @RestController
 @RequestMapping("vendedores")
@@ -22,7 +20,12 @@ public class VendedoresController {
     private EstadisticasVendedorService estadisticasService;
 
     @Autowired
-    private ResenaLibroService resenaLibroService;
+    private VendedorPerfilService vendedorPerfilService;
+
+    @GetMapping("/{idVendedor}")
+    public ResponseEntity<VendedorPerfilResponse> getPerfil(@PathVariable Long idVendedor) {
+        return ResponseEntity.ok(vendedorPerfilService.getPerfil(idVendedor));
+    }
 
     @PreAuthorize("hasAuthority('VENDEDOR')")
     @GetMapping("/estadisticas")
@@ -30,13 +33,4 @@ public class VendedoresController {
         return ResponseEntity.ok(estadisticasService.getEstadisticas(vendedor));
     }
 
-    @GetMapping("/{idVendedor}/opiniones-libros")
-    public ResponseEntity<List<ResenaLibroResponse>> getOpinionesLibros(
-            @PathVariable Long idVendedor) {
-        List<ResenaLibroResponse> resultado = resenaLibroService
-                .getResenasByVendedor(idVendedor).stream()
-                .map(ResenaLibroResponse::from)
-                .toList();
-        return ResponseEntity.ok(resultado);
-    }
 }
