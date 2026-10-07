@@ -16,4 +16,6 @@ public interface EnvioService {
     Envio crearEnvio(ZonaEnvio zona, Double costoFijo);
 
     Double getCostoPorZona(ZonaEnvio zona);
+
+    Envio actualizarCosto(Long idEnvio, Double costoFijo);
 }

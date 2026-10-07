@@ -12,6 +12,7 @@ public class DireccionResponse {
     private String ciudad;
     private String provincia;
     private String cp;
+    private boolean principal;
 
     public static DireccionResponse from(Direccion d) {
         DireccionResponse r = new DireccionResponse();
@@ -21,6 +22,7 @@ public class DireccionResponse {
         r.ciudad = d.getCiudad();
         r.provincia = d.getProvincia();
         r.cp = d.getCp();
+        r.principal = d.isPrincipal();
         return r;
     }
 }

@@ -48,4 +48,14 @@ public class DireccionController {
         direccionService.eliminar(usuario.getId(), id);
         return ResponseEntity.ok(Map.of("mensaje", "Direccion eliminada"));
     }
+
+    @PatchMapping("/{id}/principal")
+    public ResponseEntity<List<DireccionResponse>> marcarPrincipal(
+            @AuthenticationPrincipal Usuario usuario,
+            @PathVariable Long id) {
+        List<DireccionResponse> resultado = direccionService.marcarPrincipal(usuario.getId(), id).stream()
+                .map(DireccionResponse::from)
+                .toList();
+        return ResponseEntity.ok(resultado);
+    }
 }

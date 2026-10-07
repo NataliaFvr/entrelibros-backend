@@ -100,9 +100,25 @@ public class LibroSpecification {
                 return cb.conjunction();
             }
             Path<String> provinciaVendedor = root.get("vendedor").get("provincia");
+            String compradorNormalizado = com.uade.entrelibros.backend.service.EnvioPolicy
+                    .normalizar(provinciaComprador);
+            jakarta.persistence.criteria.Expression<String> vendedorNormalizado =
+                    normalizar(cb, provinciaVendedor);
             return Boolean.TRUE.equals(envioLocal)
-                    ? cb.equal(cb.upper(provinciaVendedor), provinciaComprador.toUpperCase())
-                    : cb.notEqual(cb.upper(provinciaVendedor), provinciaComprador.toUpperCase());
+                    ? cb.equal(vendedorNormalizado, compradorNormalizado)
+                    : cb.notEqual(vendedorNormalizado, compradorNormalizado);
         };
+    }
+
+    private static jakarta.persistence.criteria.Expression<String> normalizar(
+            jakarta.persistence.criteria.CriteriaBuilder cb, Path<String> provincia) {
+        jakarta.persistence.criteria.Expression<String> resultado = cb.upper(provincia);
+        for (String[] reemplazo : List.of(
+                new String[] {"Á", "A"}, new String[] {"É", "E"}, new String[] {"Í", "I"},
+                new String[] {"Ó", "O"}, new String[] {"Ú", "U"}, new String[] {"Ü", "U"})) {
+            resultado = cb.function("replace", String.class, resultado,
+                    cb.literal(reemplazo[0]), cb.literal(reemplazo[1]));
+        }
+        return resultado;
     }
 }

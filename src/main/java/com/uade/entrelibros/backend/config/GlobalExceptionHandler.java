@@ -59,6 +59,11 @@ public class GlobalExceptionHandler {
                 .body(Map.of("error", ex.getMessage()));
     }
 
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<Map<String, String>> handleArgumentoInvalido(IllegalArgumentException ex) {
+        return ResponseEntity.badRequest().body(Map.of("error", ex.getMessage()));
+    }
+
     @ExceptionHandler(DisabledException.class)
     public ResponseEntity<Map<String, String>> handleUsuarioNoVerificado(DisabledException ex) {
         return ResponseEntity

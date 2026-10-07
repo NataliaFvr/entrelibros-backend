@@ -27,6 +27,9 @@ public class Direccion {
     @JoinColumn(name = "id_usuario")
     private Usuario usuario;
 
+    @Column(nullable = false, columnDefinition = "BOOLEAN DEFAULT FALSE")
+    private boolean principal;
+
     private String alias;
     private String calle;
     private String ciudad;

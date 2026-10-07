@@ -24,8 +24,14 @@ import com.uade.entrelibros.backend.exceptions.LibroNoEncontradoException;
 import com.uade.entrelibros.backend.exceptions.RolInvalidoException;
 import com.uade.entrelibros.backend.service.LibroService;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Sort;
 import com.uade.entrelibros.backend.entity.dto.HistorialModeracionResponse;
 import com.uade.entrelibros.backend.service.HistorialModeracionService;
+import com.uade.entrelibros.backend.entity.EstadoPublicacion;
+import com.uade.entrelibros.backend.entity.dto.LibroMioResponse;
+import com.uade.entrelibros.backend.repository.LibroCategoriaRepository;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 
 @RestController
@@ -37,6 +43,9 @@ public class LibrosController {
 
     @Autowired
     private HistorialModeracionService historialModeracionService;
+
+    @Autowired
+    private LibroCategoriaRepository libroCategoriaRepository;
 
     @GetMapping
     public ResponseEntity<Page<LibroResponse>> getLibros(
@@ -74,7 +83,30 @@ public class LibrosController {
         filtro.setEnvioLocal(envioLocal);
 
         Page<Libro> libros = libroService.buscarLibros(filtro, PageRequest.of(page, size));
-        return ResponseEntity.ok(libros.map(LibroResponse::from));
+        Map<Long, List<String>> categorias = categoriasPorLibro(libros.getContent());
+        return ResponseEntity.ok(libros.map(libro -> LibroResponse.from(
+                libro, categorias.getOrDefault(libro.getId(), List.of()), provinciaComprador)));
+    }
+
+    @PreAuthorize("hasAuthority('VENDEDOR')")
+    @GetMapping("/mios")
+    public ResponseEntity<Page<LibroMioResponse>> getMisLibros(
+            @AuthenticationPrincipal Usuario vendedor,
+            @RequestParam(required = false) EstadoModeracion estadoModeracion,
+            @RequestParam(required = false) EstadoPublicacion estadoPublicacion,
+            @RequestParam(defaultValue = "0") Integer page,
+            @RequestParam(defaultValue = "20") Integer size,
+            @RequestParam(required = false) String sort) {
+        Sort sortConfig = switch (sort == null ? "" : sort) {
+            case "precioAsc" -> Sort.by("precio").ascending();
+            case "precioDesc" -> Sort.by("precio").descending();
+            case "descuento" -> Sort.by("descuentoPct").descending();
+            case "bestsellers" -> Sort.by("vendidos").descending();
+            case "nuevo", "" -> Sort.by("fechaPublicacion").descending();
+            default -> Sort.by("fechaPublicacion").descending();
+        };
+        return ResponseEntity.ok(libroService.getLibrosMios(
+                vendedor, estadoModeracion, estadoPublicacion, PageRequest.of(page, size, sortConfig)));
     }
 
     // Valores unicos para poblar los <select> de filtro del catalogo (Editorial, Autor, Idioma, Vendedor, Estado)
@@ -86,10 +118,11 @@ public class LibrosController {
     @GetMapping("/{libroId}")
     public ResponseEntity<LibroResponse> getLibroById(
             @AuthenticationPrincipal(errorOnInvalidType = false) Usuario usuario,
-            @PathVariable Long libroId)
+            @PathVariable Long libroId,
+            @RequestParam(required = false) String provinciaComprador)
             throws LibroNoEncontradoException {
         Libro libro = libroService.getLibroById(libroId, usuario);
-        return ResponseEntity.ok(LibroResponse.from(libro));
+        return ResponseEntity.ok(LibroResponse.from(libro, categoriasDe(libro), provinciaComprador));
     }
 
     @PreAuthorize("hasAuthority('VENDEDOR')")
@@ -100,7 +133,7 @@ public class LibrosController {
             throws CategoriaNoEncontradaException, RolInvalidoException {
         Libro result = libroService.createLibro(request, vendedor);
         return ResponseEntity.created(URI.create("/libros/" + result.getId()))
-                .body(LibroResponse.from(result));
+                .body(LibroResponse.from(result, categoriasDe(result)));
     }
 
     @PreAuthorize("hasAuthority('VENDEDOR')")
@@ -112,7 +145,7 @@ public class LibrosController {
             throws LibroNoEncontradoException, CategoriaNoEncontradaException, RolInvalidoException,
             AccionNoPermitidaException {
         Libro result = libroService.updateLibro(libroId, request, vendedor);
-        return ResponseEntity.ok(LibroResponse.from(result));
+        return ResponseEntity.ok(LibroResponse.from(result, categoriasDe(result)));
     }
 
     @PreAuthorize("hasAuthority('VENDEDOR')")
@@ -122,7 +155,7 @@ public class LibrosController {
             @PathVariable Long libroId)
             throws LibroNoEncontradoException, RolInvalidoException, AccionNoPermitidaException {
         Libro result = libroService.darDeBajaLibro(libroId, vendedor);
-        return ResponseEntity.ok(LibroResponse.from(result));
+        return ResponseEntity.ok(LibroResponse.from(result, categoriasDe(result)));
     }
 
     @PreAuthorize("hasAuthority('VENDEDOR')")
@@ -132,7 +165,7 @@ public class LibrosController {
             @PathVariable Long libroId)
             throws LibroNoEncontradoException, RolInvalidoException, AccionNoPermitidaException {
         Libro result = libroService.reactivarLibro(libroId, vendedor);
-        return ResponseEntity.ok(LibroResponse.from(result));
+        return ResponseEntity.ok(LibroResponse.from(result, categoriasDe(result)));
     }
 
     @PreAuthorize("hasAuthority('ADMIN')")
@@ -144,7 +177,7 @@ public class LibrosController {
         throws LibroNoEncontradoException {
         Libro result = libroService.moderarLibro(
                 libroId, request.getEstadoModeracion(), request.getComentario(), moderador);
-        return ResponseEntity.ok(LibroResponse.from(result));
+        return ResponseEntity.ok(LibroResponse.from(result, categoriasDe(result)));
     }
 
     // Listado de moderacion SOLO para el admin. No toca el catalogo (visibles()):
@@ -157,7 +190,9 @@ public class LibrosController {
             @RequestParam(defaultValue = "0") Integer page,
             @RequestParam(defaultValue = "20") Integer size) {
         Page<Libro> libros = libroService.getLibrosPorEstadoModeracion(estado, PageRequest.of(page, size));
-        return ResponseEntity.ok(libros.map(LibroResponse::from));
+        Map<Long, List<String>> categorias = categoriasPorLibro(libros.getContent());
+        return ResponseEntity.ok(libros.map(libro -> LibroResponse.from(
+                libro, categorias.getOrDefault(libro.getId(), List.of()))));
     }
 
     @PreAuthorize("hasAuthority('ADMIN')")
@@ -176,5 +211,19 @@ public class LibrosController {
             @RequestParam(defaultValue = "0") Integer page,
             @RequestParam(defaultValue = "20") Integer size) {
         return ResponseEntity.ok(historialModeracionService.getHistorialCompleto(PageRequest.of(page, size)));
+    }
+
+    private List<String> categoriasDe(Libro libro) {
+        return libroCategoriaRepository.findByLibroId(libro.getId()).stream()
+                .map(lc -> lc.getCategoria().getNombre()).toList();
+    }
+
+    private Map<Long, List<String>> categoriasPorLibro(List<Libro> libros) {
+        if (libros.isEmpty()) {
+            return Map.of();
+        }
+        return libroCategoriaRepository.findNombresPorLibroIds(libros.stream().map(Libro::getId).toList()).stream()
+                .collect(Collectors.groupingBy(fila -> (Long) fila[0],
+                        Collectors.mapping(fila -> (String) fila[1], Collectors.toList())));
     }
 }
