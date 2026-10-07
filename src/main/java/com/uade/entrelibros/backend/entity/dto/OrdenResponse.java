@@ -2,6 +2,7 @@ package com.uade.entrelibros.backend.entity.dto;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 import com.uade.entrelibros.backend.entity.Orden;
 import com.uade.entrelibros.backend.entity.OrdenItem;
@@ -32,9 +33,17 @@ public class OrdenResponse {
     }
 
     public static OrdenResponse from(Orden orden, List<OrdenItem> ordenItems, String proveedor) {
+        return from(orden, ordenItems, proveedor, Map.of());
+    }
+
+    public static OrdenResponse from(Orden orden, List<OrdenItem> ordenItems, String proveedor,
+            Map<Long, List<String>> categoriasPorLibro) {
         OrdenResponse r = from(orden);
         r.proveedor = proveedor;
-        r.items = ordenItems.stream().map(OrdenItemResponse::from).toList();
+        r.items = ordenItems.stream()
+                .map(item -> OrdenItemResponse.from(item,
+                        categoriasPorLibro.getOrDefault(item.getLibro().getId(), List.of())))
+                .toList();
         return r;
     }
 

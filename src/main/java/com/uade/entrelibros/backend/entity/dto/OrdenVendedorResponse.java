@@ -4,6 +4,7 @@ import com.uade.entrelibros.backend.entity.OrdenVendedor;
 import com.uade.entrelibros.backend.entity.OrdenItem;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import lombok.Data;
 
 @Data
@@ -27,6 +28,11 @@ public class OrdenVendedorResponse {
     }
 
     public static OrdenVendedorResponse from(OrdenVendedor ov, List<OrdenItem> items, String proveedor) {
+        return from(ov, items, proveedor, Map.of());
+    }
+
+    public static OrdenVendedorResponse from(OrdenVendedor ov, List<OrdenItem> items, String proveedor,
+            Map<Long, List<String>> categoriasPorLibro) {
         OrdenVendedorResponse r = new OrdenVendedorResponse();
         r.id = ov.getId();
         r.estado = ov.getEstado() != null ? ov.getEstado().name() : null;
@@ -46,7 +52,10 @@ public class OrdenVendedorResponse {
             r.idVendedor = ov.getVendedor().getId();
             r.nombreVendedor = ov.getVendedor().getNombre();
         }
-        r.items = items.stream().map(OrdenItemResponse::from).toList();
+        r.items = items.stream()
+                .map(item -> OrdenItemResponse.from(item,
+                        categoriasPorLibro.getOrDefault(item.getLibro().getId(), List.of())))
+                .toList();
         return r;
     }
 }

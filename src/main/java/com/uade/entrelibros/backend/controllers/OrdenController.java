@@ -18,6 +18,7 @@ import com.uade.entrelibros.backend.exceptions.OrdenNoCancelableException;
 import com.uade.entrelibros.backend.service.OrdenService;
 import com.uade.entrelibros.backend.repository.PagoRepository;
 import com.uade.entrelibros.backend.repository.OrdenItemRepository;
+import com.uade.entrelibros.backend.repository.LibroCategoriaRepository;
 import com.uade.entrelibros.backend.entity.OrdenItem;
 import com.uade.entrelibros.backend.entity.Pago;
 import java.util.Map;
@@ -36,6 +37,9 @@ public class OrdenController {
 
     @Autowired
     private OrdenItemRepository ordenItemRepository;
+
+    @Autowired
+    private LibroCategoriaRepository libroCategoriaRepository;
 
     @GetMapping
     public ResponseEntity<List<OrdenResponse>> getOrdenes(@AuthenticationPrincipal Usuario usuario)
@@ -63,7 +67,8 @@ public class OrdenController {
                             && item.getVendedor().getId().equals(usuario.getId()))
                     .toList();
         }
-        return ResponseEntity.ok(OrdenResponse.from(orden, items, proveedorDe(orden.getId())));
+        return ResponseEntity.ok(OrdenResponse.from(
+                orden, items, proveedorDe(orden.getId()), categoriasPorLibro(items)));
     }
 
     @GetMapping("/comprador")
@@ -80,16 +85,20 @@ public class OrdenController {
         List<com.uade.entrelibros.backend.entity.OrdenVendedor> ventas =
                 ordenService.getOrdenesDelVendedor(vendedor);
         List<Long> idsOrden = ventas.stream().map(venta -> venta.getOrden().getId()).toList();
-        Map<Long, List<OrdenItem>> itemsPorOrden = ordenItemRepository
+        List<OrdenItem> itemsDelVendedor = ordenItemRepository
                 .findByOrdenIdInAndVendedorId(idsOrden, vendedor.getId()).stream()
+                .toList();
+        Map<Long, List<OrdenItem>> itemsPorOrden = itemsDelVendedor.stream()
                 .collect(Collectors.groupingBy(item -> item.getOrden().getId()));
+        Map<Long, List<String>> categoriasPorLibro = categoriasPorLibro(itemsDelVendedor);
         Map<Long, String> proveedores = pagoRepository.findByOrdenIdIn(idsOrden).stream()
                 .collect(Collectors.toMap(pago -> pago.getOrden().getId(), Pago::getProveedor, (a, b) -> a));
         List<OrdenVendedorResponse> resultado = ventas.stream()
                 .map(venta -> OrdenVendedorResponse.from(
                         venta,
                         itemsPorOrden.getOrDefault(venta.getOrden().getId(), List.of()),
-                        proveedores.get(venta.getOrden().getId())))
+                        proveedores.get(venta.getOrden().getId()),
+                        categoriasPorLibro))
                 .toList();
         return ResponseEntity.ok(resultado);
     }
@@ -116,5 +125,20 @@ public class OrdenController {
                 .findFirst()
                 .map(Pago::getProveedor)
                 .orElse(null);
+    }
+
+    private Map<Long, List<String>> categoriasPorLibro(List<OrdenItem> items) {
+        List<Long> idsLibro = items.stream()
+                .filter(item -> item.getLibro() != null)
+                .map(item -> item.getLibro().getId())
+                .distinct()
+                .toList();
+        if (idsLibro.isEmpty()) {
+            return Map.of();
+        }
+        return libroCategoriaRepository.findByLibroIdIn(idsLibro).stream()
+                .collect(Collectors.groupingBy(
+                        lc -> lc.getLibro().getId(),
+                        Collectors.mapping(lc -> lc.getCategoria().getNombre(), Collectors.toList())));
     }
 }
