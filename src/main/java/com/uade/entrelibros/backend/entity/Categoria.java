@@ -20,4 +20,6 @@ public class Categoria {
 
     @Column(unique = true)
     private String nombre;
+
+    private boolean activa = true;
 }

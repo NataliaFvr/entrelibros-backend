@@ -18,7 +18,7 @@ public class CategoriaServiceImpl implements CategoriaService {
     private CategoriaRepository categoriaRepository;
 
     public List<Categoria> getCategorias() {
-        List<Categoria> categorias = categoriaRepository.findAll();
+        List<Categoria> categorias = categoriaRepository.findByActivaTrueOrderByNombreAsc();
         if (categorias.isEmpty()) {
             throw new ListaVaciaException("No hay categorías registradas");
         }
@@ -34,6 +34,24 @@ public class CategoriaServiceImpl implements CategoriaService {
         Categoria existente = categoriaRepository.findByNombre(nombre);
         if (existente != null)
             throw new CategoriaDuplicadaException();
-        return categoriaRepository.save(new Categoria(nombre));
+        return categoriaRepository.save(new Categoria(nombre.trim()));
+    }
+
+    @Override
+    public Categoria renombrarCategoria(Long categoriaId, String nombre) {
+        Categoria categoria = getCategoriaById(categoriaId);
+        Categoria existente = categoriaRepository.findByNombre(nombre.trim());
+        if (existente != null && !existente.getId().equals(categoriaId)) {
+            throw new CategoriaDuplicadaException();
+        }
+        categoria.setNombre(nombre.trim());
+        return categoriaRepository.save(categoria);
+    }
+
+    @Override
+    public Categoria cambiarEstado(Long categoriaId, boolean activa) {
+        Categoria categoria = getCategoriaById(categoriaId);
+        categoria.setActiva(activa);
+        return categoriaRepository.save(categoria);
     }
 }

@@ -12,4 +12,8 @@ public interface CategoriaService {
     Categoria getCategoriaById(Long categoriaId);
 
     Categoria createCategoria(String nombre);
+
+    Categoria renombrarCategoria(Long categoriaId, String nombre);
+
+    Categoria cambiarEstado(Long categoriaId, boolean activa);
 }
