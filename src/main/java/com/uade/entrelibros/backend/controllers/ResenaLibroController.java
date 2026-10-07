@@ -53,6 +53,16 @@ public class ResenaLibroController {
                 .toList();
         return ResponseEntity.ok(resultado);
     }
+
+    @GetMapping("/vendedor/{idVendedor}/opiniones-libros")
+    public ResponseEntity<List<ResenaLibroResponse>> getOpinionesByVendedor(
+            @PathVariable Long idVendedor) {
+        List<ResenaLibroResponse> resultado = resenaLibroService
+                .getResenasByVendedor(idVendedor).stream()
+                .map(ResenaLibroResponse::from)
+                .toList();
+        return ResponseEntity.ok(resultado);
+    }
     
     @PostMapping
     public ResponseEntity<ResenaLibroResponse> crearResena(

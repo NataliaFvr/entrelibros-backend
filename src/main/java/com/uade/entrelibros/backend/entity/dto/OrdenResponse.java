@@ -19,6 +19,8 @@ public class OrdenResponse {
     private String estadoPago;
     private Long idComprador;
     private String nombreComprador;
+    private String apellidoComprador;
+    private String proveedor;
     private List<OrdenItemResponse> items;
     private LocalDateTime reservaHasta;
     private String calleDestino;
@@ -26,7 +28,12 @@ public class OrdenResponse {
     private String cpDestino;
 
     public static OrdenResponse from(Orden orden, List<OrdenItem> ordenItems) {
+        return from(orden, ordenItems, null);
+    }
+
+    public static OrdenResponse from(Orden orden, List<OrdenItem> ordenItems, String proveedor) {
         OrdenResponse r = from(orden);
+        r.proveedor = proveedor;
         r.items = ordenItems.stream().map(OrdenItemResponse::from).toList();
         return r;
     }
@@ -47,6 +54,7 @@ public class OrdenResponse {
         if (orden.getComprador() != null) {
             r.idComprador = orden.getComprador().getId();
             r.nombreComprador = orden.getComprador().getNombre();
+            r.apellidoComprador = orden.getComprador().getApellido();
         }
         return r;
     }

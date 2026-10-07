@@ -24,6 +24,7 @@ import com.uade.entrelibros.backend.exceptions.ItemCarritoNoEncontradoException;
 import com.uade.entrelibros.backend.exceptions.LibroNoEncontradoException;
 import com.uade.entrelibros.backend.exceptions.StockInsuficienteException;
 import com.uade.entrelibros.backend.service.CarritoService;
+import com.uade.entrelibros.backend.repository.ImagenLibroRepository;
 import com.uade.entrelibros.backend.exceptions.LibroNoDisponibleException;
 
 @RestController
@@ -33,10 +34,15 @@ public class CarritoController {
     @Autowired
     private CarritoService carritoService;
 
+    @Autowired
+    private ImagenLibroRepository imagenLibroRepository;
+
     @GetMapping
     public ResponseEntity<List<CarritoItemResponse>> getCarrito(@AuthenticationPrincipal Usuario usuario) {
         List<CarritoItemResponse> resultado = carritoService.getItemsCarrito(usuario.getId()).stream()
-                .map(CarritoItemResponse::from)
+                .map(item -> CarritoItemResponse.from(item,
+                        imagenLibroRepository.findFirstByLibroIdOrderByOrdenAsc(item.getLibro().getId())
+                                .orElse(null)))
                 .toList();
         return ResponseEntity.ok(resultado);
     }
@@ -49,7 +55,9 @@ public class CarritoController {
             CompraPropiaException {
         CarritoItem result = carritoService.agregarItem(
                 usuario.getId(), request.getIdLibro(), request.getCantidad());
-        return ResponseEntity.ok(CarritoItemResponse.from(result));
+        return ResponseEntity.ok(CarritoItemResponse.from(result,
+                imagenLibroRepository.findFirstByLibroIdOrderByOrdenAsc(result.getLibro().getId())
+                        .orElse(null)));
     }
 
     @PatchMapping("/items/{idItem}")
@@ -61,7 +69,9 @@ public class CarritoController {
             StockInsuficienteException, LibroNoDisponibleException {
         CarritoItem result = carritoService.modificarCantidad(
                 usuario.getId(), idItem, request.getCantidad());
-        return ResponseEntity.ok(CarritoItemResponse.from(result));
+        return ResponseEntity.ok(CarritoItemResponse.from(result,
+                imagenLibroRepository.findFirstByLibroIdOrderByOrdenAsc(result.getLibro().getId())
+                        .orElse(null)));
     }
 
     @DeleteMapping("/items/{idItem}")

@@ -9,6 +9,9 @@ public class LibroFiltroRequest {
     private List<Long> idCategorias;
     private Double precioMin;
     private Double precioMax;
+    private Integer anioMin;
+    private Integer anioMax;
+    private Double descuentoMin;
     private List<String> editoriales;
     private List<String> autores;
     private List<String> idiomas;

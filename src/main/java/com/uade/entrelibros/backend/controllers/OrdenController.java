@@ -16,6 +16,13 @@ import com.uade.entrelibros.backend.exceptions.OrdenVendedorNoEncontradaExceptio
 import com.uade.entrelibros.backend.exceptions.RolInvalidoException;
 import com.uade.entrelibros.backend.exceptions.OrdenNoCancelableException;
 import com.uade.entrelibros.backend.service.OrdenService;
+import com.uade.entrelibros.backend.repository.PagoRepository;
+import com.uade.entrelibros.backend.repository.OrdenItemRepository;
+import com.uade.entrelibros.backend.entity.OrdenItem;
+import com.uade.entrelibros.backend.entity.Pago;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("ordenes")
@@ -24,11 +31,17 @@ public class OrdenController {
     @Autowired
     private OrdenService ordenService;
 
+    @Autowired
+    private PagoRepository pagoRepository;
+
+    @Autowired
+    private OrdenItemRepository ordenItemRepository;
+
     @GetMapping
     public ResponseEntity<List<OrdenResponse>> getOrdenes(@AuthenticationPrincipal Usuario usuario)
             throws AccionNoPermitidaException {
         List<OrdenResponse> resultado = ordenService.getOrdenes(usuario).stream()
-                .map(OrdenResponse::from)
+                .map(orden -> OrdenResponse.from(orden, List.of(), proveedorDe(orden.getId())))
                 .toList();
         return ResponseEntity.ok(resultado);
     }
@@ -39,13 +52,20 @@ public class OrdenController {
             @PathVariable Long idOrden)
             throws OrdenNoEncontradaException, AccionNoPermitidaException {
         var orden = ordenService.getOrdenById(idOrden, usuario);
-        return ResponseEntity.ok(OrdenResponse.from(orden, ordenService.getItemsDeOrden(idOrden)));
+        List<OrdenItem> items = ordenService.getItemsDeOrden(idOrden);
+        if (usuario.getRol() == com.uade.entrelibros.backend.entity.Rol.VENDEDOR) {
+            items = items.stream()
+                    .filter(item -> item.getVendedor() != null
+                            && item.getVendedor().getId().equals(usuario.getId()))
+                    .toList();
+        }
+        return ResponseEntity.ok(OrdenResponse.from(orden, items, proveedorDe(orden.getId())));
     }
 
     @GetMapping("/comprador")
     public ResponseEntity<List<OrdenResponse>> getOrdenesByComprador(@AuthenticationPrincipal Usuario comprador) {
         List<OrdenResponse> resultado = ordenService.getOrdenesByComprador(comprador).stream()
-                .map(OrdenResponse::from)
+                .map(orden -> OrdenResponse.from(orden, List.of(), proveedorDe(orden.getId())))
                 .toList();
         return ResponseEntity.ok(resultado);
     }
@@ -53,8 +73,19 @@ public class OrdenController {
     @GetMapping("/vendedor")
     public ResponseEntity<List<OrdenVendedorResponse>> getOrdenesDelVendedor(@AuthenticationPrincipal Usuario vendedor)
             throws RolInvalidoException {
-        List<OrdenVendedorResponse> resultado = ordenService.getOrdenesDelVendedor(vendedor).stream()
-                .map(OrdenVendedorResponse::from)
+        List<com.uade.entrelibros.backend.entity.OrdenVendedor> ventas =
+                ordenService.getOrdenesDelVendedor(vendedor);
+        List<Long> idsOrden = ventas.stream().map(venta -> venta.getOrden().getId()).toList();
+        Map<Long, List<OrdenItem>> itemsPorOrden = ordenItemRepository
+                .findByOrdenIdInAndVendedorId(idsOrden, vendedor.getId()).stream()
+                .collect(Collectors.groupingBy(item -> item.getOrden().getId()));
+        Map<Long, String> proveedores = pagoRepository.findByOrdenIdIn(idsOrden).stream()
+                .collect(Collectors.toMap(pago -> pago.getOrden().getId(), Pago::getProveedor, (a, b) -> a));
+        List<OrdenVendedorResponse> resultado = ventas.stream()
+                .map(venta -> OrdenVendedorResponse.from(
+                        venta,
+                        itemsPorOrden.getOrDefault(venta.getOrden().getId(), List.of()),
+                        proveedores.get(venta.getOrden().getId())))
                 .toList();
         return ResponseEntity.ok(resultado);
     }
@@ -74,5 +105,12 @@ public class OrdenController {
             @PathVariable Long idOrden)
             throws OrdenNoEncontradaException, AccionNoPermitidaException, OrdenNoCancelableException {
         return ResponseEntity.ok(OrdenResponse.from(ordenService.cancelarOrden(idOrden, comprador)));
+    }
+
+    private String proveedorDe(Long idOrden) {
+        return pagoRepository.findByOrdenId(idOrden).stream()
+                .findFirst()
+                .map(Pago::getProveedor)
+                .orElse(null);
     }
 }

@@ -16,4 +16,7 @@ public interface ResenaLibroRepository extends JpaRepository<ResenaLibro, Long> 
 
     @Query(value = "select r from ResenaLibro r where r.ordenItem.libro.id = ?1")
     List<ResenaLibro> findByLibroId(Long idLibro);
+
+    @Query("select r from ResenaLibro r where r.ordenItem.vendedor.id = ?1 order by r.fecha desc")
+    List<ResenaLibro> findByVendedorIdOrderByFechaDesc(Long idVendedor);
 }

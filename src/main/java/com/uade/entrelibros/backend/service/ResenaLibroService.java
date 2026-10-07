@@ -18,6 +18,8 @@ public interface ResenaLibroService {
 
     List<ResenaLibro> getResenasByLibro(Long idLibro, Integer calificacion, String sort);
 
+    List<ResenaLibro> getResenasByVendedor(Long idVendedor);
+
    ResenaLibro crearResena(Usuario comprador, Long idOrdenItem, Integer calificacion, String comentario)
             throws OrdenItemNoEncontradoException, CalificacionInvalidaException, ResenaDuplicadaException,
             AccionNoPermitidaException;

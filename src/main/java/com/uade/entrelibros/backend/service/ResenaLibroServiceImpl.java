@@ -55,6 +55,15 @@ public class ResenaLibroServiceImpl implements ResenaLibroService {
                 .toList();
     }
 
+    @Override
+    public List<ResenaLibro> getResenasByVendedor(Long idVendedor) {
+        List<ResenaLibro> resenas = resenaLibroRepository.findByVendedorIdOrderByFechaDesc(idVendedor);
+        if (resenas.isEmpty()) {
+            throw new ListaVaciaException("Ese vendedor todavía no tiene reseñas de libros");
+        }
+        return resenas;
+    }
+
     public ResenaLibro crearResena(Usuario comprador, Long idOrdenItem, Integer calificacion, String comentario)
             throws OrdenItemNoEncontradoException, CalificacionInvalidaException, ResenaDuplicadaException,
             AccionNoPermitidaException {

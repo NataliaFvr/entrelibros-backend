@@ -53,6 +53,9 @@ public class LibrosController {
             @RequestParam(required = false) List<Long> idCategorias,
             @RequestParam(required = false) Double precioMin,
             @RequestParam(required = false) Double precioMax,
+            @RequestParam(required = false) Integer anioMin,
+            @RequestParam(required = false) Integer anioMax,
+            @RequestParam(required = false) Double descuentoMin,
             @RequestParam(required = false) List<String> editoriales,
             @RequestParam(required = false) List<String> autores,
             @RequestParam(required = false) List<String> idiomas,
@@ -71,6 +74,9 @@ public class LibrosController {
         filtro.setIdCategorias(idCategorias);
         filtro.setPrecioMin(precioMin);
         filtro.setPrecioMax(precioMax);
+        filtro.setAnioMin(anioMin);
+        filtro.setAnioMax(anioMax);
+        filtro.setDescuentoMin(descuentoMin);
         filtro.setEditoriales(editoriales);
         filtro.setAutores(autores);
         filtro.setIdiomas(idiomas);

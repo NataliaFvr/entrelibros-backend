@@ -13,4 +13,6 @@ public interface PagoRepository extends JpaRepository<Pago, Long> {
 
     @Query(value = "select p from Pago p where p.orden.id = ?1")
     List<Pago> findByOrdenId(Long idOrden);
+
+    List<Pago> findByOrdenIdIn(List<Long> idsOrden);
 }

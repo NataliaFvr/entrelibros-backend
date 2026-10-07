@@ -16,6 +16,11 @@ public interface OrdenItemRepository extends JpaRepository<OrdenItem, Long> {
 
     List<OrdenItem> findByOrdenIdAndVendedorId(Long idOrden, Long idVendedor);
 
+    List<OrdenItem> findByOrdenIdInAndVendedorId(List<Long> idsOrden, Long idVendedor);
+
+    java.util.Optional<OrdenItem> findFirstByOrdenIdAndVendedorIdOrderByIdAsc(
+            Long idOrden, Long idVendedor);
+
     @Query("select oi from OrdenItem oi where oi.vendedor.id = ?1 "
             + "and oi.orden.estadoPago = com.uade.entrelibros.backend.entity.EstadoPago.SIMULADO_APROBADO "
             + "and exists (select ov.id from OrdenVendedor ov where ov.orden = oi.orden and ov.vendedor = oi.vendedor "
