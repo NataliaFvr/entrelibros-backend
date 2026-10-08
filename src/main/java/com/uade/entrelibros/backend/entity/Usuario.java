@@ -9,6 +9,7 @@ import java.util.Collection;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.uade.entrelibros.backend.service.EnvioPolicy;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -66,6 +67,13 @@ public class Usuario implements UserDetails {
     // Ubicación del usuario (se usa en el filtro de catálogo "envío local" comparando contra la provincia del comprador)
     private String provincia;
 
+    // Provincia normalizada con EnvioPolicy.normalizar (sin tildes ni mayusculas, espacios colapsados,
+    // CABA = Ciudad Autonoma de Buenos Aires). La usa el filtro envioLocal del catalogo para comparar en SQL
+    // con EXACTAMENTE la misma regla que el checkout y LibroResponse.envio. Se mantiene sola (setProvincia +
+    // @PrePersist/@PreUpdate); ProvinciaNormalizadaBackfill completa las filas viejas al arrancar.
+    @JsonIgnore
+    private String provinciaNormalizada;
+
     // Clave del avatar elegido. Los avatares por defecto son assets del front: aca solo se guarda la clave
     private String avatar;
 
@@ -83,6 +91,17 @@ public class Usuario implements UserDetails {
 
     public Long getId() {
         return id;
+    }
+
+    public void setProvincia(String provincia) {
+        this.provincia = provincia;
+        this.provinciaNormalizada = EnvioPolicy.normalizarONull(provincia);
+    }
+
+    @PrePersist
+    @PreUpdate
+    void sincronizarProvinciaNormalizada() {
+        this.provinciaNormalizada = EnvioPolicy.normalizarONull(provincia);
     }
 
     @Override

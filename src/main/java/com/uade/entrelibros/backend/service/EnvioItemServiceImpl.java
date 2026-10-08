@@ -52,7 +52,11 @@ public class EnvioItemServiceImpl implements EnvioItemService {
         return items;
     }
 
-    public EnvioItem crearEnvioItem(Usuario vendedor, Long idOrdenVendedor, ZonaEnvio zona)
+    // El tipo de envio NO lo elige el vendedor: es el que se cobro en el checkout (OrdenVendedor.zonaEnvio) o,
+    // en ordenes viejas, el que da EnvioPolicy (provincia del vendedor vs provincia destino). El campo "zona" del
+    // request se ignora a proposito (queda en EnvioItemRequest para no romper clientes). Un solo envio por
+    // OrdenVendedor: si ya existe se devuelve el mismo en vez de duplicar el cobro.
+    public EnvioItem crearEnvioItem(Usuario vendedor, Long idOrdenVendedor, ZonaEnvio zonaIgnorada)
             throws OrdenVendedorNoEncontradaException, EnvioNoEncontradoException,
             AccionNoPermitidaException, RolInvalidoException {
 
@@ -67,11 +71,21 @@ public class EnvioItemServiceImpl implements EnvioItemService {
             throw new AccionNoPermitidaException();
         }
 
-        // La tarifa aplicada sale del catalogo de envios segun la zona de destino
+        List<EnvioItem> existentes = envioItemRepository.findByOrdenVendedorId(idOrdenVendedor);
+        if (!existentes.isEmpty()) {
+            return existentes.get(0);
+        }
+
+        ZonaEnvio zona = ordenVendedor.getZonaEnvio() != null
+                ? ordenVendedor.getZonaEnvio()
+                : EnvioPolicy.determinarTipo(ordenVendedor.getVendedor().getProvincia(),
+                        ordenVendedor.getOrden().getProvinciaDestino());
+
         Envio envio = envioRepository.findByZona(zona);
         if (envio == null)
             throw new EnvioNoEncontradoException();
 
-        return envioItemRepository.save(new EnvioItem(ordenVendedor, envio, envio.getCostoFijo()));
+        double costo = ordenVendedor.getCostoEnvio() != null ? ordenVendedor.getCostoEnvio() : envio.getCostoFijo();
+        return envioItemRepository.save(new EnvioItem(ordenVendedor, envio, costo));
     }
 }

@@ -291,26 +291,22 @@ public class LibroServiceImpl implements LibroService {
     @Transactional(readOnly = true)
     public Page<LibroMioResponse> getLibrosMios(Usuario vendedor, EstadoModeracion estadoModeracion,
             EstadoPublicacion estadoPublicacion, Pageable pageable) {
-        Page<Libro> pagina;
-        if (estadoModeracion != null && estadoPublicacion != null) {
-            pagina = libroRepository.findByVendedorIdAndEstadoModeracionAndEstadoPublicacion(
-                    vendedor.getId(), estadoModeracion, estadoPublicacion, pageable);
-        } else if (estadoModeracion != null) {
-            pagina = libroRepository.findAll(
-                    Specification.where((root, query, cb) -> cb.and(
-                            cb.equal(root.get("vendedor").get("id"), vendedor.getId()),
-                            cb.equal(root.get("estadoModeracion"), estadoModeracion))), pageable);
-        } else if (estadoPublicacion != null) {
-            pagina = libroRepository.findAll(
-                    Specification.where((root, query, cb) -> cb.and(
-                            cb.equal(root.get("vendedor").get("id"), vendedor.getId()),
-                            cb.equal(root.get("estadoPublicacion"), estadoPublicacion))), pageable);
-        } else {
-            pagina = libroRepository.findByVendedorId(vendedor.getId(), pageable);
-        }
+        // Una sola consulta para cualquier combinacion de filtros (vendedor viene en el mismo select: @EntityGraph)
+        Specification<Libro> spec = LibroSpecification.deVendedor(vendedor.getId())
+                .and(LibroSpecification.conEstadoModeracion(estadoModeracion))
+                .and(LibroSpecification.conEstadoPublicacion(estadoPublicacion));
+        Page<Libro> pagina = libroRepository.findAll(spec, pageable);
+
         if (pagina.isEmpty()) {
-            throw new ListaVaciaException(estadoModeracion != null || estadoPublicacion != null
-                    ? "No tenés libros con ese estado" : "No tenés libros publicados");
+            boolean hayFiltros = estadoModeracion != null || estadoPublicacion != null;
+            // "con ese estado" solo si hay filtros, ninguno coincide y el vendedor SI tiene libros.
+            // Pagina fuera de rango (totalElements > 0) o vendedor sin libros -> "publicados".
+            // El count extra corre solo en este camino de error.
+            if (hayFiltros && pagina.getTotalElements() == 0
+                    && libroRepository.countByVendedorId(vendedor.getId()) > 0) {
+                throw new ListaVaciaException("No tenés libros con ese estado");
+            }
+            throw new ListaVaciaException("No tenés libros publicados");
         }
 
         List<Long> ids = pagina.getContent().stream().map(Libro::getId).toList();
@@ -319,10 +315,18 @@ public class LibroServiceImpl implements LibroService {
                         fila -> (Long) fila[0],
                         java.util.stream.Collectors.mapping(fila -> (String) fila[1],
                                 java.util.stream.Collectors.toList())));
-        java.util.Map<Long, String> rechazos = historialModeracionRepository
-                .findByLibroIdInAndEstadoNuevoOrderByFechaDesc(ids, EstadoModeracion.RECHAZADO).stream()
-                .collect(java.util.stream.Collectors.toMap(
-                        h -> h.getLibro().getId(), HistorialModeracion::getComentario, (anterior, actual) -> anterior));
+
+        // motivoRechazo solo para los libros que HOY estan RECHAZADOS (si se volvio a aceptar, va null)
+        List<Long> rechazados = pagina.getContent().stream()
+                .filter(l -> l.getEstadoModeracion() == EstadoModeracion.RECHAZADO)
+                .map(Libro::getId)
+                .toList();
+        java.util.Map<Long, String> rechazos = new java.util.HashMap<>();
+        if (!rechazados.isEmpty()) {
+            for (Object[] fila : historialModeracionRepository.findUltimoMotivoRechazoPorLibroIds(rechazados)) {
+                rechazos.put((Long) fila[0], (String) fila[1]);
+            }
+        }
         return pagina.map(libro -> LibroMioResponse.from(libro,
                 categorias.getOrDefault(libro.getId(), List.of()), rechazos.get(libro.getId())));
     }

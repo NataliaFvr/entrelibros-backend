@@ -22,6 +22,9 @@ public class OrdenVendedorResponse {
     private String estadoPago;
     private String proveedor;
     private List<OrdenItemResponse> items;
+    // Envio cobrado a este vendedor ("misma" | "distinta" y su costo). null en ordenes anteriores al cambio.
+    private String envio;
+    private Double costoEnvio;
 
     public static OrdenVendedorResponse from(OrdenVendedor ov) {
         return from(ov, List.of(), null);
@@ -52,6 +55,11 @@ public class OrdenVendedorResponse {
             r.idVendedor = ov.getVendedor().getId();
             r.nombreVendedor = ov.getVendedor().getNombre();
         }
+        if (ov.getZonaEnvio() != null) {
+            r.envio = ov.getZonaEnvio() == com.uade.entrelibros.backend.entity.ZonaEnvio.MISMA_PROVINCIA
+                    ? "misma" : "distinta";
+        }
+        r.costoEnvio = ov.getCostoEnvio();
         r.items = items.stream()
                 .map(item -> OrdenItemResponse.from(item,
                         categoriasPorLibro.getOrDefault(item.getLibro().getId(), List.of())))

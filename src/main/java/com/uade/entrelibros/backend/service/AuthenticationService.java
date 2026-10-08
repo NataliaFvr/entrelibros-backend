@@ -29,15 +29,18 @@ public class AuthenticationService {
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
 
+    // Registro publico: SIEMPRE crea un COMPRADOR. El campo "rol" del body se ignora a proposito
+    // (queda en UsuarioRequest porque POST /usuarios, solo ADMIN, si lo usa).
+    // El unico camino a VENDEDOR es POST /usuarios/solicitud-vendedor + aprobacion de un admin.
     public void register(UsuarioRequest request) throws UsuarioDuplicadoException {
-    usuarioService.createUsuario(
-            request.getNombreUsuario(),
-            request.getEmail(),
-            request.getContrasena(),
-            request.getNombre(),
-            request.getApellido(),
-            Rol.COMPRADOR);
-}
+        usuarioService.createUsuario(
+                request.getNombreUsuario(),
+                request.getEmail(),
+                request.getContrasena(),
+                request.getNombre(),
+                request.getApellido(),
+                Rol.COMPRADOR);
+    }
 
     public AuthenticationResponse authenticate(AuthenticationRequest request) {
         authenticationManager.authenticate(
@@ -68,6 +71,12 @@ public class AuthenticationService {
         }
     }
 
+    public AuthenticationResponse verificarEmail(VerificarEmailRequest request) {
+        Usuario usuario = usuarioService.verificarEmail(request.getEmail(), request.getCodigo());
+        String jwtToken = jwtService.generateToken(usuario);
+        return buildResponse(usuario, jwtToken);
+    }
+
     private AuthenticationResponse buildResponse(Usuario usuario, String jwtToken) {
         return AuthenticationResponse.builder()
                 .accessToken(jwtToken)
@@ -77,9 +86,4 @@ public class AuthenticationService {
                 .rol(usuario.getRol().name())
                 .build();
     }
-    public AuthenticationResponse verificarEmail(VerificarEmailRequest request) {
-    Usuario usuario = usuarioService.verificarEmail(request.getEmail(), request.getCodigo());
-    String jwtToken = jwtService.generateToken(usuario);
-    return buildResponse(usuario, jwtToken);
-}
 }

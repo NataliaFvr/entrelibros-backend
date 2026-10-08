@@ -42,7 +42,9 @@ public class SecurityConfig {
                         .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/libros/**", "/categorias/**",
                                 "/imagenes-libro/**", "/resenas-libro/**", "/resenas-vendedor/**",
-                                "/vendedores/**")
+                                "/vendedores/**",
+                                // tarifas de envio: precios publicos (pagina "Politicas de envio" sin sesion)
+                                "/envios", "/envios/**")
                         .permitAll()
                         // foto de perfil publica: un <img> no puede mandar el token
                         .requestMatchers(HttpMethod.GET, "/usuarios/*/foto").permitAll()

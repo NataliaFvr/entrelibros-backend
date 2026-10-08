@@ -2,6 +2,8 @@ package com.uade.entrelibros.backend.repository;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
@@ -21,6 +23,13 @@ public interface LibroRepository extends JpaRepository<Libro, Long>, JpaSpecific
     @Query(value = "select l from Libro l where l.vendedor.id = ?1")
     List<Libro> findByVendedorId(Long idVendedor);
 
+    // Catalogo (GET /libros) y "mis libros": trae el vendedor en el MISMO select. Sin esto, el @ManyToOne EAGER
+    // dispara un select extra por cada vendedor distinto de la pagina. Es ToOne: la paginacion sigue en SQL.
+    @EntityGraph(attributePaths = "vendedor")
+    Page<Libro> findAll(Specification<Libro> spec, Pageable pageable);
+
+    long countByVendedorId(Long idVendedor);
+
     Page<Libro> findByVendedorIdAndEstadoModeracionAndEstadoPublicacion(
             Long idVendedor,
             com.uade.entrelibros.backend.entity.EstadoModeracion estadoModeracion,
@@ -32,6 +41,7 @@ public interface LibroRepository extends JpaRepository<Libro, Long>, JpaSpecific
     // Listado por estado de moderacion (solo para el admin): NO pasa por visibles(),
     // asi el catalogo del comprador sigue sin mostrar los EN_REVISION.
     // Exige ACTIVA para que la cola ignore los libros que el vendedor ya dio de baja.
+    @EntityGraph(attributePaths = "vendedor")
     Page<Libro> findByEstadoModeracionAndEstadoPublicacion(
             com.uade.entrelibros.backend.entity.EstadoModeracion estadoModeracion,
             com.uade.entrelibros.backend.entity.EstadoPublicacion estadoPublicacion,

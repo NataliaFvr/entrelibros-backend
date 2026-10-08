@@ -30,4 +30,11 @@ public class OrdenVendedor {
 
     @Enumerated(EnumType.STRING)
     private EstadoOrdenVendedor estado;
+
+    // Envio cobrado a este vendedor en la compra (uno solo, aunque haya varios libros suyos).
+    // Foto al momento del checkout: si despues el admin cambia la tarifa, la orden no cambia.
+    @Enumerated(EnumType.STRING)
+    private ZonaEnvio zonaEnvio;
+
+    private Double costoEnvio;
 }

@@ -1,10 +1,9 @@
 package com.uade.entrelibros.backend.service;
 
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.math.BigDecimal;
-import java.math.RoundingMode;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -164,10 +163,12 @@ public class CarritoServiceImpl implements CarritoService {
         }
 
         // Revalidar stock CON CANDADO: acá es donde se traba la carrera entre
-        // dos compras simultáneas del mismo libro
+        // dos compras simultáneas del mismo libro. Cada libro se bloquea una sola vez.
+        Map<Long, Libro> librosBloqueados = new LinkedHashMap<>();
         for (CarritoItem item : items) {
             Libro libro = libroRepository.findByIdConCandado(item.getLibro().getId())
                     .orElseThrow(LibroNoEncontradoException::new);
+            librosBloqueados.put(libro.getId(), libro);
 
             if (libro.getVendedor().getId().equals(idUsuario)) {
                 throw new CompraPropiaException();
@@ -180,11 +181,16 @@ public class CarritoServiceImpl implements CarritoService {
 
         double subtotal = 0.0;
         for (CarritoItem item : items) {
-            subtotal += precioConDescuento(item.getLibro()) * item.getCantidad();
+            subtotal += precioConDescuento(librosBloqueados.get(item.getLibro().getId())) * item.getCantidad();
         }
+        subtotal = EnvioPolicy.redondear(subtotal);
 
-        double costoEnvio = envioPolicy.costoPorVendedor(items, provinciaDestino);
-        double total = subtotal + costoEnvio;
+        // Un envio por vendedor (misma/distinta provincia que el destino), igual que useCostoEnvio del front
+        Map<Long, EnvioPolicy.EnvioVendedor> envios = envioPolicy.enviosPorVendedor(
+                librosBloqueados.values(), provinciaDestino);
+        double costoEnvio = EnvioPolicy.redondear(envios.values().stream()
+                .mapToDouble(EnvioPolicy.EnvioVendedor::costo).sum());
+        double total = EnvioPolicy.redondear(subtotal + costoEnvio);
 
         Orden orden = new Orden(carrito.getUsuario(), provinciaDestino, subtotal, costoEnvio, total);
         if (direccion != null) {
@@ -197,13 +203,16 @@ public class CarritoServiceImpl implements CarritoService {
         Map<Long, OrdenVendedor> ordenVendedorPorVendedor = new HashMap<>();
 
         for (CarritoItem item : items) {
-            Libro libro = libroRepository.findByIdConCandado(item.getLibro().getId())
-                    .orElseThrow(LibroNoEncontradoException::new);
+            Libro libro = librosBloqueados.get(item.getLibro().getId());
             Usuario vendedor = libro.getVendedor();
 
             OrdenVendedor ordenVendedor = ordenVendedorPorVendedor.get(vendedor.getId());
             if (ordenVendedor == null) {
-                ordenVendedor = ordenVendedorRepository.save(new OrdenVendedor(orden, vendedor));
+                EnvioPolicy.EnvioVendedor envio = envios.get(vendedor.getId());
+                OrdenVendedor nueva = new OrdenVendedor(orden, vendedor);
+                nueva.setZonaEnvio(envio.zona());
+                nueva.setCostoEnvio(envio.costo());
+                ordenVendedor = ordenVendedorRepository.save(nueva);
                 ordenVendedorPorVendedor.put(vendedor.getId(), ordenVendedor);
             }
 
@@ -234,13 +243,11 @@ public class CarritoServiceImpl implements CarritoService {
         }
     }
 
-    private double precioConDescuento(Libro libro) {
+    // EXACTAMENTE la cuenta de precioFinal del front: Math.round(base * (1 - d / 100) * 100) / 100.
+    // (Con BigDecimal hay casos borde, p. ej. 1.005, en los que el back redondeaba distinto que el front.)
+    static double precioConDescuento(Libro libro) {
         double descuento = libro.getDescuentoPct() != null ? libro.getDescuentoPct() : 0.0;
-        return BigDecimal.valueOf(libro.getPrecio())
-                .multiply(BigDecimal.ONE.subtract(BigDecimal.valueOf(descuento)
-                        .divide(BigDecimal.valueOf(100), 10, RoundingMode.HALF_UP)))
-                .setScale(2, RoundingMode.HALF_UP)
-                .doubleValue();
+        return Math.round(libro.getPrecio() * (1 - descuento / 100.0) * 100) / 100.0;
     }
 
 }

@@ -126,34 +126,36 @@ public class LibroSpecification {
         };
     }
 
-    // Filtro de envío local: compara la provincia del vendedor contra la provincia del comprador.
-    // Si falta alguno de los dos datos (provincia del vendedor sin cargar, o no se mandó provinciaComprador),
-    // no se aplica el filtro para no esconder libros por falta de dato, en vez de dar un falso negativo.
-    public static Specification<Libro> envioLocal(String provinciaComprador, Boolean envioLocal) {
-        return (root, query, cb) -> {
-            if (envioLocal == null || provinciaComprador == null || provinciaComprador.isBlank()) {
-                return cb.conjunction();
-            }
-            Path<String> provinciaVendedor = root.get("vendedor").get("provincia");
-            String compradorNormalizado = com.uade.entrelibros.backend.service.EnvioPolicy
-                    .normalizar(provinciaComprador);
-            jakarta.persistence.criteria.Expression<String> vendedorNormalizado =
-                    normalizar(cb, provinciaVendedor);
-            return Boolean.TRUE.equals(envioLocal)
-                    ? cb.equal(vendedorNormalizado, compradorNormalizado)
-                    : cb.notEqual(vendedorNormalizado, compradorNormalizado);
-        };
+    public static Specification<Libro> deVendedor(Long idVendedor) {
+        return (root, query, cb) -> cb.equal(root.get("vendedor").get("id"), idVendedor);
     }
 
-    private static jakarta.persistence.criteria.Expression<String> normalizar(
-            jakarta.persistence.criteria.CriteriaBuilder cb, Path<String> provincia) {
-        jakarta.persistence.criteria.Expression<String> resultado = cb.upper(provincia);
-        for (String[] reemplazo : List.of(
-                new String[] {"Á", "A"}, new String[] {"É", "E"}, new String[] {"Í", "I"},
-                new String[] {"Ó", "O"}, new String[] {"Ú", "U"}, new String[] {"Ü", "U"})) {
-            resultado = cb.function("replace", String.class, resultado,
-                    cb.literal(reemplazo[0]), cb.literal(reemplazo[1]));
-        }
-        return resultado;
+    public static Specification<Libro> conEstadoModeracion(EstadoModeracion estado) {
+        return (root, query, cb) -> estado == null ? cb.conjunction() : cb.equal(root.get("estadoModeracion"), estado);
+    }
+
+    public static Specification<Libro> conEstadoPublicacion(EstadoPublicacion estado) {
+        return (root, query, cb) -> estado == null ? cb.conjunction() : cb.equal(root.get("estadoPublicacion"), estado);
+    }
+
+    // Filtro de envio: misma regla que EnvioPolicy.determinarTipo (y que tipoEnvio del front). Compara la provincia
+    // del vendedor ya normalizada (Usuario.provinciaNormalizada, calculada en Java con EnvioPolicy) contra la del
+    // comprador normalizada con la MISMA funcion, asi no hay diferencias de tildes, espacios ni CABA entre SQL y Java.
+    // Si falta cualquiera de las dos provincias el envio es DISTINTA: envioLocal=true no trae nada y
+    // envioLocal=false trae todo (incluidos los vendedores sin provincia cargada).
+    public static Specification<Libro> envioLocal(String provinciaComprador, Boolean envioLocal) {
+        return (root, query, cb) -> {
+            if (envioLocal == null) {
+                return cb.conjunction();
+            }
+            String comprador = EnvioPolicy.normalizarONull(provinciaComprador);
+            Path<String> provinciaVendedor = root.get("vendedor").get("provinciaNormalizada");
+            if (Boolean.TRUE.equals(envioLocal)) {
+                return comprador == null ? cb.disjunction() : cb.equal(provinciaVendedor, comprador);
+            }
+            return comprador == null
+                    ? cb.conjunction()
+                    : cb.or(cb.isNull(provinciaVendedor), cb.notEqual(provinciaVendedor, comprador));
+        };
     }
 }

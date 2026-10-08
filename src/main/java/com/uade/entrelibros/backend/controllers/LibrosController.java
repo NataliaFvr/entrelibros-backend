@@ -21,7 +21,9 @@ import com.uade.entrelibros.backend.entity.EstadoModeracion;
 import com.uade.entrelibros.backend.entity.dto.ModeracionRequest;
 import com.uade.entrelibros.backend.exceptions.AccionNoPermitidaException;
 import com.uade.entrelibros.backend.exceptions.CategoriaNoEncontradaException;
+import com.uade.entrelibros.backend.exceptions.EstadoFiltroInvalidoException;
 import com.uade.entrelibros.backend.exceptions.LibroNoEncontradoException;
+import com.uade.entrelibros.backend.exceptions.ListaVaciaException;
 import com.uade.entrelibros.backend.exceptions.RolInvalidoException;
 import com.uade.entrelibros.backend.service.LibroService;
 import org.springframework.data.domain.Page;
@@ -95,25 +97,61 @@ public class LibrosController {
                 libro, categorias.getOrDefault(libro.getId(), List.of()), provinciaComprador)));
     }
 
+    // Libros del vendedor autenticado en TODOS sus estados. /mios es literal y gana sobre /{libroId}.
+    // Sin resultados -> ListaVaciaException (404). COMPRADOR/ADMIN -> 403 por @PreAuthorize.
+    // Los estados llegan como texto para devolver {"error": ...} si son invalidos y aceptar PENDIENTE = EN_REVISION.
     @PreAuthorize("hasAuthority('VENDEDOR')")
     @GetMapping("/mios")
     public ResponseEntity<Page<LibroMioResponse>> getMisLibros(
             @AuthenticationPrincipal Usuario vendedor,
-            @RequestParam(required = false) EstadoModeracion estadoModeracion,
-            @RequestParam(required = false) EstadoPublicacion estadoPublicacion,
+            @RequestParam(required = false) String estadoModeracion,
+            @RequestParam(required = false) String estadoPublicacion,
             @RequestParam(defaultValue = "0") Integer page,
             @RequestParam(defaultValue = "20") Integer size,
-            @RequestParam(required = false) String sort) {
-        Sort sortConfig = switch (sort == null ? "" : sort) {
+            @RequestParam(required = false) String sort) throws EstadoFiltroInvalidoException {
+        EstadoModeracion moderacion = parsearModeracion(estadoModeracion);
+        EstadoPublicacion publicacion = parsearPublicacion(estadoPublicacion);
+        if (page < 0) {
+            throw new ListaVaciaException("No tenés libros publicados");
+        }
+        int tamanio = Math.min(Math.max(size, 1), 100);
+        Sort sortConfig = switch (sort == null ? "" : sort.trim()) {
             case "precioAsc" -> Sort.by("precio").ascending();
             case "precioDesc" -> Sort.by("precio").descending();
             case "descuento" -> Sort.by("descuentoPct").descending();
             case "bestsellers" -> Sort.by("vendidos").descending();
-            case "nuevo", "" -> Sort.by("fechaPublicacion").descending();
-            default -> Sort.by("fechaPublicacion").descending();
+            default -> Sort.by("fechaPublicacion").descending(); // "nuevo" o sin sort: mas nuevos primero
         };
+        // desempate por id: la paginacion queda estable aunque haya fechas iguales
+        sortConfig = sortConfig.and(Sort.by("id").descending());
         return ResponseEntity.ok(libroService.getLibrosMios(
-                vendedor, estadoModeracion, estadoPublicacion, PageRequest.of(page, size, sortConfig)));
+                vendedor, moderacion, publicacion, PageRequest.of(page, tamanio, sortConfig)));
+    }
+
+    private EstadoModeracion parsearModeracion(String valor) {
+        if (valor == null || valor.isBlank()) {
+            return null;
+        }
+        String v = valor.trim().toUpperCase();
+        if (v.equals("PENDIENTE")) {
+            return EstadoModeracion.EN_REVISION;
+        }
+        try {
+            return EstadoModeracion.valueOf(v);
+        } catch (IllegalArgumentException e) {
+            throw new EstadoFiltroInvalidoException();
+        }
+    }
+
+    private EstadoPublicacion parsearPublicacion(String valor) {
+        if (valor == null || valor.isBlank()) {
+            return null;
+        }
+        return switch (valor.trim().toUpperCase()) {
+            case "ACTIVA", "ACTIVO" -> EstadoPublicacion.ACTIVA;
+            case "DADA_DE_BAJA", "DADO_DE_BAJA", "BAJA" -> EstadoPublicacion.DADA_DE_BAJA;
+            default -> throw new EstadoFiltroInvalidoException();
+        };
     }
 
     // Valores unicos para poblar los <select> de filtro del catalogo (Editorial, Autor, Idioma, Vendedor, Estado)
@@ -220,9 +258,9 @@ public class LibrosController {
         return ResponseEntity.ok(historialModeracionService.getHistorialCompleto(PageRequest.of(page, size)));
     }
 
+    // Una consulta escalar (antes cargaba cada LibroCategoria con su libro y categoria EAGER = selects extra)
     private List<String> categoriasDe(Libro libro) {
-        return libroCategoriaRepository.findByLibroId(libro.getId()).stream()
-                .map(lc -> lc.getCategoria().getNombre()).toList();
+        return categoriasPorLibro(List.of(libro)).getOrDefault(libro.getId(), List.of());
     }
 
     private Map<Long, List<String>> categoriasPorLibro(List<Libro> libros) {
