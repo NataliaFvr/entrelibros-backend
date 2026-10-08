@@ -13,7 +13,8 @@ public class EnvioResponse {
     public static EnvioResponse from(Envio envio) {
         EnvioResponse r = new EnvioResponse();
         r.id = envio.getId();
-        r.zona = envio.getZona().name();
+        r.zona = envio.getZona() == com.uade.entrelibros.backend.entity.ZonaEnvio.MISMA_PROVINCIA
+                ? "misma" : "distinta";
         r.costoFijo = envio.getCostoFijo();
         return r;
     }

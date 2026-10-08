@@ -20,6 +20,7 @@ import com.uade.entrelibros.backend.entity.dto.LibroFiltroRequest;
 import com.uade.entrelibros.backend.entity.dto.LibroRequest;
 import com.uade.entrelibros.backend.entity.dto.FiltrosDisponiblesResponse;
 import com.uade.entrelibros.backend.entity.dto.VendedorOptionResponse;
+import com.uade.entrelibros.backend.entity.dto.LibroMioResponse;
 import com.uade.entrelibros.backend.exceptions.AccionNoPermitidaException;
 import com.uade.entrelibros.backend.exceptions.CategoriaNoEncontradaException;
 import com.uade.entrelibros.backend.exceptions.LibroNoEncontradoException;
@@ -69,6 +70,9 @@ public class LibroServiceImpl implements LibroService {
             .and(LibroSpecification.tieneCategorias(filtro.getIdCategorias()))
             .and(LibroSpecification.precioMinimo(filtro.getPrecioMin()))
             .and(LibroSpecification.precioMaximo(filtro.getPrecioMax()))
+            .and(LibroSpecification.anioMinimo(filtro.getAnioMin()))
+            .and(LibroSpecification.anioMaximo(filtro.getAnioMax()))
+            .and(LibroSpecification.descuentoMinimo(filtro.getDescuentoMin()))
             .and(LibroSpecification.enEditoriales(filtro.getEditoriales()))
             .and(LibroSpecification.enAutores(filtro.getAutores()))
             .and(LibroSpecification.enIdiomas(filtro.getIdiomas()))
@@ -281,6 +285,46 @@ public class LibroServiceImpl implements LibroService {
                                 : v.getNombre() + " " + v.getApellido()))
                 .toList());
         return r;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<LibroMioResponse> getLibrosMios(Usuario vendedor, EstadoModeracion estadoModeracion,
+            EstadoPublicacion estadoPublicacion, Pageable pageable) {
+        Page<Libro> pagina;
+        if (estadoModeracion != null && estadoPublicacion != null) {
+            pagina = libroRepository.findByVendedorIdAndEstadoModeracionAndEstadoPublicacion(
+                    vendedor.getId(), estadoModeracion, estadoPublicacion, pageable);
+        } else if (estadoModeracion != null) {
+            pagina = libroRepository.findAll(
+                    Specification.where((root, query, cb) -> cb.and(
+                            cb.equal(root.get("vendedor").get("id"), vendedor.getId()),
+                            cb.equal(root.get("estadoModeracion"), estadoModeracion))), pageable);
+        } else if (estadoPublicacion != null) {
+            pagina = libroRepository.findAll(
+                    Specification.where((root, query, cb) -> cb.and(
+                            cb.equal(root.get("vendedor").get("id"), vendedor.getId()),
+                            cb.equal(root.get("estadoPublicacion"), estadoPublicacion))), pageable);
+        } else {
+            pagina = libroRepository.findByVendedorId(vendedor.getId(), pageable);
+        }
+        if (pagina.isEmpty()) {
+            throw new ListaVaciaException(estadoModeracion != null || estadoPublicacion != null
+                    ? "No tenés libros con ese estado" : "No tenés libros publicados");
+        }
+
+        List<Long> ids = pagina.getContent().stream().map(Libro::getId).toList();
+        java.util.Map<Long, List<String>> categorias = libroCategoriaRepository.findNombresPorLibroIds(ids).stream()
+                .collect(java.util.stream.Collectors.groupingBy(
+                        fila -> (Long) fila[0],
+                        java.util.stream.Collectors.mapping(fila -> (String) fila[1],
+                                java.util.stream.Collectors.toList())));
+        java.util.Map<Long, String> rechazos = historialModeracionRepository
+                .findByLibroIdInAndEstadoNuevoOrderByFechaDesc(ids, EstadoModeracion.RECHAZADO).stream()
+                .collect(java.util.stream.Collectors.toMap(
+                        h -> h.getLibro().getId(), HistorialModeracion::getComentario, (anterior, actual) -> anterior));
+        return pagina.map(libro -> LibroMioResponse.from(libro,
+                categorias.getOrDefault(libro.getId(), List.of()), rechazos.get(libro.getId())));
     }
 
     private void notificarEnvioARevision(Libro libro, Usuario vendedor, boolean esEdicion) {

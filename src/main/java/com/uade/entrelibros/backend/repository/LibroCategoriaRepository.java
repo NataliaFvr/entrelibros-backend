@@ -16,4 +16,7 @@ public interface LibroCategoriaRepository extends JpaRepository<LibroCategoria, 
 
     @Query("select lc from LibroCategoria lc where lc.libro.id in ?1")
     List<LibroCategoria> findByLibroIdIn(List<Long> libroIds);
+
+    @Query("select lc.libro.id, lc.categoria.nombre from LibroCategoria lc where lc.libro.id in :ids")
+    List<Object[]> findNombresPorLibroIds(@org.springframework.data.repository.query.Param("ids") List<Long> idsLibros);
 }

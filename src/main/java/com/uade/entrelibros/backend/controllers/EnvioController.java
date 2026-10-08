@@ -45,4 +45,12 @@ public class EnvioController {
         return ResponseEntity.created(URI.create("/envios/" + result.getId()))
                 .body(EnvioResponse.from(result));
     }
+
+    @PreAuthorize("hasAuthority('ADMIN')")
+    @PatchMapping("/{idEnvio}")
+    public ResponseEntity<EnvioResponse> actualizarCosto(
+            @PathVariable Long idEnvio, @RequestBody EnvioRequest request) {
+        Envio result = envioService.actualizarCosto(idEnvio, request.getCostoFijo());
+        return ResponseEntity.ok(EnvioResponse.from(result));
+    }
 }
