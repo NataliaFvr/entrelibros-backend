@@ -83,6 +83,11 @@ public class CarritoServiceImpl implements CarritoService {
 
     public CarritoItem agregarItem(Long idUsuario, Long idLibro, Integer cantidad) {
 
+        if (cantidad == null || cantidad < 1)
+            throw new CantidadInvalidaException();
+        if (idLibro == null)
+            throw new LibroNoEncontradoException();
+
         Libro libro = libroRepository.findById(idLibro)
                 .orElseThrow(LibroNoEncontradoException::new);
 
@@ -92,11 +97,20 @@ public class CarritoServiceImpl implements CarritoService {
 
         validarLibroDisponible(libro);
 
-        if (libro.getStock() < cantidad) {
+        // Si el libro ya está en el carrito se suma al mismo renglón, y el stock se controla contra el total
+        Carrito carrito = getOrCrearCarrito(idUsuario);
+        CarritoItem existente = carritoItemRepository.findByCarritoIdAndLibroId(carrito.getId(), idLibro)
+                .orElse(null);
+        int total = cantidad + (existente != null ? existente.getCantidad() : 0);
+
+        if (libro.getStock() < total) {
             throw new StockInsuficienteException();
         }
 
-        Carrito carrito = getOrCrearCarrito(idUsuario);
+        if (existente != null) {
+            existente.setCantidad(total);
+            return carritoItemRepository.save(existente);
+        }
         return carritoItemRepository.save(new CarritoItem(carrito, libro, cantidad));
     }
 
