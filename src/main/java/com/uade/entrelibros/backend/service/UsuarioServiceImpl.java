@@ -68,20 +68,37 @@ public class UsuarioServiceImpl implements UsuarioService {
 
     public Usuario createUsuario(String nombreUsuario, String email, String contrasena, String nombre,
             String apellido, Rol rol) {
+        return crearUsuario(nombreUsuario, email, contrasena, nombre, apellido, rol, false);
+    }
+
+    @Override
+    public Usuario createUsuarioDesdeAdmin(String nombreUsuario, String email, String contrasena, String nombre,
+            String apellido, Rol rol) {
+        return crearUsuario(nombreUsuario, email, contrasena, nombre, apellido, rol, true);
+    }
+
+    private Usuario crearUsuario(String nombreUsuario, String email, String contrasena, String nombre,
+            String apellido, Rol rol, boolean creadoPorAdmin) {
         List<Usuario> existentes = usuarioRepository.findByEmailOrNombreUsuario(email, nombreUsuario);
         if (!existentes.isEmpty())
             throw new UsuarioDuplicadoException();
 
         String contrasenaHasheada = passwordEncoder.encode(contrasena);
-        String codigo = generarCodigo();
-
         Usuario nuevoUsuario = new Usuario(nombreUsuario, email, contrasenaHasheada, nombre, apellido, rol);
-        nuevoUsuario.setEmailVerificado(false);
-        nuevoUsuario.setCodigoVerificacion(codigo);
-        nuevoUsuario.setCodigoVerificacionExpira(LocalDateTime.now().plusMinutes(15));
+        if (creadoPorAdmin) {
+            nuevoUsuario.setEmailVerificado(true);
+        } else {
+            String codigo = generarCodigo();
+            nuevoUsuario.setEmailVerificado(false);
+            nuevoUsuario.setCodigoVerificacion(codigo);
+            nuevoUsuario.setCodigoVerificacionExpira(LocalDateTime.now().plusMinutes(15));
+        }
 
         Usuario guardado = usuarioRepository.save(nuevoUsuario);
-        emailService.enviarCodigoVerificacion(guardado.getEmail(), guardado.getNombre(), codigo);
+        if (!creadoPorAdmin) {
+            emailService.enviarCodigoVerificacion(
+                    guardado.getEmail(), guardado.getNombre(), guardado.getCodigoVerificacion());
+        }
 
         return guardado;
     }

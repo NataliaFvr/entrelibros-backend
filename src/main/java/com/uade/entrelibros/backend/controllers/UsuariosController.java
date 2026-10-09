@@ -59,7 +59,7 @@ public class UsuariosController {
     @PostMapping
     public ResponseEntity<UsuarioResponse> createUsuario(@Valid @RequestBody UsuarioRequest usuarioRequest)
             throws UsuarioDuplicadoException {
-        Usuario result = usuarioService.createUsuario(
+        Usuario result = usuarioService.createUsuarioDesdeAdmin(
                 usuarioRequest.getNombreUsuario(),
                 usuarioRequest.getEmail(),
                 usuarioRequest.getContrasena(),

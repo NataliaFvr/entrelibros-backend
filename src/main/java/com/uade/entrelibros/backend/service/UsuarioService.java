@@ -18,6 +18,8 @@ public interface UsuarioService {
     public Usuario createUsuario(String nombreUsuario, String email, String contrasena, String nombre, String apellido);
     public Usuario createUsuario(String nombreUsuario, String email, String contrasena, String nombre,
             String apellido, Rol rol);
+    public Usuario createUsuarioDesdeAdmin(String nombreUsuario, String email, String contrasena, String nombre,
+            String apellido, Rol rol);
     public Usuario updateUsuario(Long usuarioId, UsuarioUpdateRequest request);
     public Usuario darDeBajaUsuario(Long usuarioId);
     public Usuario cambiarRol(Long usuarioId, Rol nuevoRol);
