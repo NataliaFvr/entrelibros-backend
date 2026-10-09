@@ -15,6 +15,7 @@ public class LibroResponse {
     private String idioma;
     private String estadoLibro;
     private Double precio;
+    private Double precioFinal;
     private Double descuentoPct;
     private Integer stock;
     private String descripcion;
@@ -34,6 +35,7 @@ public class LibroResponse {
     private String snapshotIdioma;
     private String snapshotEstadoLibro;
     private Double snapshotPrecio;
+    private Double snapshotPrecioFinal;
     private Double snapshotDescuentoPct;
     private Integer snapshotStock;
     private String snapshotDescripcion;
@@ -67,6 +69,15 @@ public class LibroResponse {
         r.idioma = libro.getIdioma();
         r.estadoLibro = libro.getEstadoLibro() != null ? libro.getEstadoLibro().name() : null;
         r.precio = libro.getPrecio();
+        double descuento = libro.getDescuentoPct() != null ? libro.getDescuentoPct() : 0.0;
+        r.precioFinal = libro.getPrecio() == null ? null
+                : java.math.BigDecimal.valueOf(libro.getPrecio())
+                        .multiply(java.math.BigDecimal.ONE.subtract(
+                                java.math.BigDecimal.valueOf(descuento)
+                                        .divide(java.math.BigDecimal.valueOf(100), 10,
+                                                java.math.RoundingMode.HALF_UP)))
+                        .setScale(2, java.math.RoundingMode.HALF_UP)
+                        .doubleValue();
         r.descuentoPct = libro.getDescuentoPct();
         r.stock = libro.getStock();
         r.descripcion = libro.getDescripcion();
@@ -97,6 +108,15 @@ public class LibroResponse {
         r.snapshotEstadoLibro = libro.getSnapshotEstadoLibro() != null
                 ? libro.getSnapshotEstadoLibro().name() : null;
         r.snapshotPrecio = libro.getSnapshotPrecio();
+        r.snapshotPrecioFinal = libro.getSnapshotPrecio() == null ? null
+                : java.math.BigDecimal.valueOf(libro.getSnapshotPrecio())
+                        .multiply(java.math.BigDecimal.ONE.subtract(
+                                java.math.BigDecimal.valueOf(
+                                        libro.getSnapshotDescuentoPct() != null ? libro.getSnapshotDescuentoPct() : 0.0)
+                                        .divide(java.math.BigDecimal.valueOf(100), 10,
+                                                java.math.RoundingMode.HALF_UP)))
+                        .setScale(2, java.math.RoundingMode.HALF_UP)
+                        .doubleValue();
         r.snapshotDescuentoPct = libro.getSnapshotDescuentoPct();
         r.snapshotStock = libro.getSnapshotStock();
         r.snapshotDescripcion = libro.getSnapshotDescripcion();
