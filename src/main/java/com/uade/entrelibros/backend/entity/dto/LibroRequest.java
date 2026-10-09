@@ -10,6 +10,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import lombok.Data;
 
+// El vendedor NO viaja en el body: se toma del token (@AuthenticationPrincipal en LibrosController)
 @Data
 public class LibroRequest {
     public interface Crear {}
@@ -46,6 +47,5 @@ public class LibroRequest {
             groups = {Crear.class, Actualizar.class})
     private Integer stock;
     private String descripcion;
-    private Long idVendedor;
     private List<Long> idCategorias;
 }
