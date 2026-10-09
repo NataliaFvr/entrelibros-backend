@@ -35,6 +35,17 @@ public class CategoriasController {
                 .toList());
     }
 
+    // Solo ADMIN: incluye las categorias dadas de baja, para poder reactivarlas desde el panel
+    // (GET /categorias, que es publico, devuelve solo las activas). Va antes de /{categoriaId}.
+    @PreAuthorize("hasAuthority('ADMIN')")
+    @GetMapping("/todas")
+    public ResponseEntity<List<CategoriaResponse>> getTodas() {
+        return ResponseEntity.ok(categoriaService.getTodasLasCategorias().stream()
+                .map(categoria -> CategoriaResponse.from(
+                        categoria, imagenCategoriaService.tieneImagen(categoria.getId())))
+                .toList());
+    }
+
     @GetMapping("/{categoriaId}")
     public ResponseEntity<CategoriaResponse> getCategoriaById(@PathVariable Long categoriaId)
             throws CategoriaNoEncontradaException {

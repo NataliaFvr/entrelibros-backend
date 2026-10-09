@@ -38,6 +38,16 @@ public class LibroResponse {
     private Integer snapshotStock;
     private String snapshotDescripcion;
     private java.time.LocalDateTime fechaSolicitudRevision;
+    // URL relativa de la imagen de portada (la primera por orden), con la misma forma que CarritoItemResponse.portada.
+    // null si el libro no tiene imagenes.
+    private String portada;
+
+    public LibroResponse conPortada(Long idImagen) {
+        if (idImagen != null) {
+            this.portada = "/imagenes-libro/" + idImagen + "/contenido";
+        }
+        return this;
+    }
 
     public static LibroResponse from(Libro libro) {
         return from(libro, List.of(), null);

@@ -32,7 +32,9 @@ import com.uade.entrelibros.backend.entity.dto.HistorialModeracionResponse;
 import com.uade.entrelibros.backend.service.HistorialModeracionService;
 import com.uade.entrelibros.backend.entity.EstadoPublicacion;
 import com.uade.entrelibros.backend.entity.dto.LibroMioResponse;
+import com.uade.entrelibros.backend.repository.ImagenLibroRepository;
 import com.uade.entrelibros.backend.repository.LibroCategoriaRepository;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -49,6 +51,9 @@ public class LibrosController {
 
     @Autowired
     private LibroCategoriaRepository libroCategoriaRepository;
+
+    @Autowired
+    private ImagenLibroRepository imagenLibroRepository;
 
     @GetMapping
     public ResponseEntity<Page<LibroResponse>> getLibros(
@@ -93,8 +98,10 @@ public class LibrosController {
 
         Page<Libro> libros = libroService.buscarLibros(filtro, PageRequest.of(page, size));
         Map<Long, List<String>> categorias = categoriasPorLibro(libros.getContent());
+        Map<Long, Long> portadas = portadasPorLibro(libros.getContent());
         return ResponseEntity.ok(libros.map(libro -> LibroResponse.from(
-                libro, categorias.getOrDefault(libro.getId(), List.of()), provinciaComprador)));
+                libro, categorias.getOrDefault(libro.getId(), List.of()), provinciaComprador)
+                .conPortada(portadas.get(libro.getId()))));
     }
 
     // Libros del vendedor autenticado en TODOS sus estados. /mios es literal y gana sobre /{libroId}.
@@ -124,8 +131,11 @@ public class LibrosController {
         };
         // desempate por id: la paginacion queda estable aunque haya fechas iguales
         sortConfig = sortConfig.and(Sort.by("id").descending());
-        return ResponseEntity.ok(libroService.getLibrosMios(
-                vendedor, moderacion, publicacion, PageRequest.of(page, tamanio, sortConfig)));
+        Page<LibroMioResponse> mios = libroService.getLibrosMios(
+                vendedor, moderacion, publicacion, PageRequest.of(page, tamanio, sortConfig));
+        Map<Long, Long> portadas = portadasPorIds(mios.getContent().stream().map(LibroMioResponse::getId).toList());
+        mios.forEach(libro -> libro.conPortada(portadas.get(libro.getId())));
+        return ResponseEntity.ok(mios);
     }
 
     private EstadoModeracion parsearModeracion(String valor) {
@@ -167,7 +177,8 @@ public class LibrosController {
             @RequestParam(required = false) String provinciaComprador)
             throws LibroNoEncontradoException {
         Libro libro = libroService.getLibroById(libroId, usuario);
-        return ResponseEntity.ok(LibroResponse.from(libro, categoriasDe(libro), provinciaComprador));
+        return ResponseEntity.ok(LibroResponse.from(libro, categoriasDe(libro), provinciaComprador)
+                .conPortada(portadaDe(libro)));
     }
 
     @PreAuthorize("hasAuthority('VENDEDOR')")
@@ -190,7 +201,7 @@ public class LibrosController {
             throws LibroNoEncontradoException, CategoriaNoEncontradaException, RolInvalidoException,
             AccionNoPermitidaException {
         Libro result = libroService.updateLibro(libroId, request, vendedor);
-        return ResponseEntity.ok(LibroResponse.from(result, categoriasDe(result)));
+        return ResponseEntity.ok(respuesta(result));
     }
 
     @PreAuthorize("hasAuthority('VENDEDOR')")
@@ -200,7 +211,7 @@ public class LibrosController {
             @PathVariable Long libroId)
             throws LibroNoEncontradoException, RolInvalidoException, AccionNoPermitidaException {
         Libro result = libroService.darDeBajaLibro(libroId, vendedor);
-        return ResponseEntity.ok(LibroResponse.from(result, categoriasDe(result)));
+        return ResponseEntity.ok(respuesta(result));
     }
 
     @PreAuthorize("hasAuthority('VENDEDOR')")
@@ -210,7 +221,7 @@ public class LibrosController {
             @PathVariable Long libroId)
             throws LibroNoEncontradoException, RolInvalidoException, AccionNoPermitidaException {
         Libro result = libroService.reactivarLibro(libroId, vendedor);
-        return ResponseEntity.ok(LibroResponse.from(result, categoriasDe(result)));
+        return ResponseEntity.ok(respuesta(result));
     }
 
     @PreAuthorize("hasAuthority('ADMIN')")
@@ -222,7 +233,7 @@ public class LibrosController {
         throws LibroNoEncontradoException {
         Libro result = libroService.moderarLibro(
                 libroId, request.getEstadoModeracion(), request.getComentario(), moderador);
-        return ResponseEntity.ok(LibroResponse.from(result, categoriasDe(result)));
+        return ResponseEntity.ok(respuesta(result));
     }
 
     // Listado de moderacion SOLO para el admin. No toca el catalogo (visibles()):
@@ -236,8 +247,10 @@ public class LibrosController {
             @RequestParam(defaultValue = "20") Integer size) {
         Page<Libro> libros = libroService.getLibrosPorEstadoModeracion(estado, PageRequest.of(page, size));
         Map<Long, List<String>> categorias = categoriasPorLibro(libros.getContent());
+        Map<Long, Long> portadas = portadasPorLibro(libros.getContent());
         return ResponseEntity.ok(libros.map(libro -> LibroResponse.from(
-                libro, categorias.getOrDefault(libro.getId(), List.of()))));
+                libro, categorias.getOrDefault(libro.getId(), List.of()))
+                .conPortada(portadas.get(libro.getId()))));
     }
 
     @PreAuthorize("hasAuthority('ADMIN')")
@@ -256,6 +269,32 @@ public class LibrosController {
             @RequestParam(defaultValue = "0") Integer page,
             @RequestParam(defaultValue = "20") Integer size) {
         return ResponseEntity.ok(historialModeracionService.getHistorialCompleto(PageRequest.of(page, size)));
+    }
+
+    // LibroResponse completo (categorias + portada) para un solo libro
+    private LibroResponse respuesta(Libro libro) {
+        return LibroResponse.from(libro, categoriasDe(libro)).conPortada(portadaDe(libro));
+    }
+
+    // Una consulta que trae SOLO ids (nunca el LONGBLOB): filas ordenadas por libro y orden,
+    // asi que la primera de cada libro es su portada. Una consulta por pagina, no una por libro.
+    private Map<Long, Long> portadasPorLibro(List<Libro> libros) {
+        return portadasPorIds(libros.stream().map(Libro::getId).toList());
+    }
+
+    private Map<Long, Long> portadasPorIds(List<Long> idsLibros) {
+        if (idsLibros.isEmpty()) {
+            return Map.of();
+        }
+        Map<Long, Long> portadas = new HashMap<>();
+        for (Object[] fila : imagenLibroRepository.findIdsPorLibroIds(idsLibros)) {
+            portadas.putIfAbsent((Long) fila[0], (Long) fila[1]);
+        }
+        return portadas;
+    }
+
+    private Long portadaDe(Libro libro) {
+        return portadasPorLibro(List.of(libro)).get(libro.getId());
     }
 
     // Una consulta escalar (antes cargaba cada LibroCategoria con su libro y categoria EAGER = selects extra)

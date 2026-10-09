@@ -14,4 +14,7 @@ public interface CategoriaRepository extends JpaRepository<Categoria, Long> {
     Categoria findByNombre(String nombre);
 
     List<Categoria> findByActivaTrueOrderByNombreAsc();
+
+    // Activas e inactivas: para el panel del admin
+    List<Categoria> findAllByOrderByNombreAsc();
 }

@@ -15,6 +15,8 @@ public class ResenaVendedorResponse {
     private LocalDate fecha;
     private Long idPago;
     private Long idVendedor;
+    // Para que el front sepa cual es "mi" resena sin guardarlo en localStorage
+    private Long idComprador;
     private String nombreComprador;
     private String apellidoComprador;
     private Long idLibro;
@@ -32,6 +34,7 @@ public class ResenaVendedorResponse {
         r.fecha = resena.getFecha();
         r.idPago = resena.getPago().getId();
         r.idVendedor = resena.getVendedor().getId();
+        r.idComprador = resena.getComprador().getId();
         r.nombreComprador = resena.getComprador().getNombre();
         r.apellidoComprador = resena.getComprador().getApellido();
         if (item != null && item.getLibro() != null) {

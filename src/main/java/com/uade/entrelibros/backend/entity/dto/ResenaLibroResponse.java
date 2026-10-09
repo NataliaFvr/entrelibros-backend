@@ -14,6 +14,8 @@ public class ResenaLibroResponse {
     private LocalDate fecha;
     private Long idLibro;
     private String tituloLibro;
+    // Para que el front sepa cual es "mi" resena sin guardarlo en localStorage
+    private Long idComprador;
     private String nombreComprador;
     private String apellidoComprador;
 
@@ -25,6 +27,7 @@ public class ResenaLibroResponse {
         r.fecha = resena.getFecha();
         r.idLibro = resena.getOrdenItem().getLibro().getId();
         r.tituloLibro = resena.getOrdenItem().getLibro().getTitulo();
+        r.idComprador = resena.getOrdenItem().getOrden().getComprador().getId();
         r.nombreComprador = resena.getOrdenItem().getOrden().getComprador().getNombre();
         r.apellidoComprador = resena.getOrdenItem().getOrden().getComprador().getApellido();
         return r;

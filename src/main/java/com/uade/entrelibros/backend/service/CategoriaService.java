@@ -9,6 +9,8 @@ import com.uade.entrelibros.backend.exceptions.CategoriaNoEncontradaException;
 public interface CategoriaService {
     List<Categoria> getCategorias();
 
+    List<Categoria> getTodasLasCategorias();
+
     Categoria getCategoriaById(Long categoriaId);
 
     Categoria createCategoria(String nombre);
