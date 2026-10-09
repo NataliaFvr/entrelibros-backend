@@ -15,6 +15,7 @@ import com.uade.entrelibros.backend.entity.dto.VerificarEmailRequest;
 import com.uade.entrelibros.backend.exceptions.RefreshTokenInvalidoException;
 import com.uade.entrelibros.backend.exceptions.UsuarioDuplicadoException;
 import com.uade.entrelibros.backend.exceptions.UsuarioNoEncontradoException;
+import com.uade.entrelibros.backend.exceptions.CuentaDadaDeBajaException;
 import com.uade.entrelibros.backend.repository.UsuarioRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -43,13 +44,15 @@ public class AuthenticationService {
     }
 
     public AuthenticationResponse authenticate(AuthenticationRequest request) {
+        Usuario usuario = usuarioRepository.findByEmail(request.getEmail())
+                .orElseThrow(UsuarioNoEncontradoException::new);
+        if (usuario.getEstado() == com.uade.entrelibros.backend.entity.EstadoUsuario.DADO_DE_BAJA) {
+            throw new CuentaDadaDeBajaException();
+        }
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
                         request.getEmail(),
                         request.getContrasena()));
-
-        Usuario usuario = usuarioRepository.findByEmail(request.getEmail())
-                .orElseThrow(UsuarioNoEncontradoException::new);
 
         String jwtToken = jwtService.generateToken(usuario);
         return buildResponse(usuario, jwtToken);

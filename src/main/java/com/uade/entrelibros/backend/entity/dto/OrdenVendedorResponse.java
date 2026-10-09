@@ -21,6 +21,10 @@ public class OrdenVendedorResponse {
     private String apellidoComprador;
     private String estadoPago;
     private String proveedor;
+    private String provinciaDestino;
+    private String calleDestino;
+    private String ciudadDestino;
+    private String cpDestino;
     private List<OrdenItemResponse> items;
     // Envio cobrado a este vendedor ("misma" | "distinta" y su costo). null en ordenes anteriores al cambio.
     private String envio;
@@ -45,6 +49,10 @@ public class OrdenVendedorResponse {
             r.estadoPago = ov.getOrden().getEstadoPago() != null
                     ? ov.getOrden().getEstadoPago().name() : null;
             r.proveedor = proveedor;
+            r.provinciaDestino = ov.getOrden().getProvinciaDestino();
+            r.calleDestino = ov.getOrden().getCalleDestino();
+            r.ciudadDestino = ov.getOrden().getCiudadDestino();
+            r.cpDestino = ov.getOrden().getCpDestino();
             if (ov.getOrden().getComprador() != null) {
                 r.idComprador = ov.getOrden().getComprador().getId();
                 r.nombreComprador = ov.getOrden().getComprador().getNombre();

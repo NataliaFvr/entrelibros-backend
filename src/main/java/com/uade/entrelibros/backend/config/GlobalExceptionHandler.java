@@ -16,6 +16,7 @@ import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.security.authentication.DisabledException;
 import com.uade.entrelibros.backend.exceptions.EntreLibrosException;
 import com.uade.entrelibros.backend.exceptions.ListaVaciaException;
+import com.uade.entrelibros.backend.exceptions.CuentaDadaDeBajaException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -71,5 +72,14 @@ public class GlobalExceptionHandler {
                 .body(Map.of(
                         "error", "Tenés que verificar tu email antes de iniciar sesión",
                         "codigo", "email_no_verificado"));
+    }
+
+    @ExceptionHandler(CuentaDadaDeBajaException.class)
+    public ResponseEntity<Map<String, String>> handleCuentaDadaDeBaja(CuentaDadaDeBajaException ex) {
+        return ResponseEntity
+                .status(HttpStatus.FORBIDDEN)
+                .body(Map.of(
+                        "error", "La cuenta está dada de baja",
+                        "codigo", "cuenta_dada_de_baja"));
     }
 }

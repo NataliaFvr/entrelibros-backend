@@ -26,6 +26,7 @@ public class LibroRequest {
             groups = {Crear.class, Actualizar.class})
     private Integer anio;
     private String idioma;
+    @NotNull(message = "El estado del libro es obligatorio", groups = Crear.class)
     private String estadoLibro;
 
     @NotNull(message = "El precio es obligatorio", groups = Crear.class)
