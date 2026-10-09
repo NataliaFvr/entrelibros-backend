@@ -102,7 +102,7 @@ public class CarritoServiceImpl implements CarritoService {
                 .orElse(null);
         int total = cantidad + (existente != null ? existente.getCantidad() : 0);
 
-        if (libro.getStock() < total) {
+        if (maxCantidad(libro) < total) {
             throw new StockInsuficienteException();
         }
 
@@ -129,7 +129,7 @@ public class CarritoServiceImpl implements CarritoService {
 
         validarLibroDisponible(libro);
 
-        if (libro.getStock() < cantidad) {
+        if (maxCantidad(libro) < cantidad) {
             throw new StockInsuficienteException();
         }
 
@@ -185,7 +185,7 @@ public class CarritoServiceImpl implements CarritoService {
         }
         subtotal = EnvioPolicy.redondear(subtotal);
 
-        // Un envio por vendedor (misma/distinta provincia que el destino), igual que useCostoEnvio del front
+        // Un envio por vendedor; el costo calculado se devuelve en OrdenResponse.
         Map<Long, EnvioPolicy.EnvioVendedor> envios = envioPolicy.enviosPorVendedor(
                 librosBloqueados.values(), provinciaDestino);
         double costoEnvio = EnvioPolicy.redondear(envios.values().stream()
@@ -241,6 +241,12 @@ public class CarritoServiceImpl implements CarritoService {
                 || libro.getEstadoModeracion() != EstadoModeracion.ACEPTADO) {
             throw new LibroNoDisponibleException();
         }
+
+    }
+
+    private int maxCantidad(Libro libro) {
+        return libro.getEstadoLibro() == com.uade.entrelibros.backend.entity.EstadoLibro.USADO
+                ? 1 : libro.getStock();
     }
 
     // EXACTAMENTE la cuenta de precioFinal del front: Math.round(base * (1 - d / 100) * 100) / 100.

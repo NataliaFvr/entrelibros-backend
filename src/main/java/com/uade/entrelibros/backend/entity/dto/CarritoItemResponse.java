@@ -17,6 +17,7 @@ public class CarritoItemResponse {
     private Double subtotal;
     private String nombreTienda;
     private Integer stock;
+    private Integer maxCantidad;
     private Double descuentoPct;
     private String portada;
 
@@ -49,6 +50,9 @@ public class CarritoItemResponse {
             }
             r.descuentoPct = descuento;
             r.stock = item.getLibro().getStock();
+            r.maxCantidad = item.getLibro().getEstadoLibro() != null
+                    && item.getLibro().getEstadoLibro().name().equals("USADO")
+                    ? 1 : item.getLibro().getStock();
             if (item.getLibro().getVendedor() != null) {
                 String tienda = item.getLibro().getVendedor().getNombreTienda();
                 r.nombreTienda = tienda != null && !tienda.isBlank()
