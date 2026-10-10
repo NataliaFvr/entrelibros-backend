@@ -11,4 +11,6 @@ public class FiltrosDisponiblesResponse {
     private List<String> idiomas;
     private List<String> estadosLibro;
     private List<VendedorOptionResponse> vendedores;
+    private Double precioMin;
+    private Double precioMax;
 }

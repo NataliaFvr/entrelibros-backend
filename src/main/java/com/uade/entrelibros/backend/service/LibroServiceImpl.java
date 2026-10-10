@@ -88,18 +88,20 @@ public class LibroServiceImpl implements LibroService {
     // Traduce el parametro sort (String, mas simple de pasar por query param) a un Sort real de Spring Data,
     // preservando la pagina/tamanio que ya traia el Pageable original.
     private Pageable aplicarSort(Pageable pageable, String sort) {
-        if (sort == null || sort.isBlank()) {
-            return pageable;
-        }
-        Sort ordenamiento = switch (sort) {
+        Sort ordenamiento = switch (sort == null ? "" : sort.trim()) {
             case "precioAsc" -> Sort.by("precio").ascending();
             case "precioDesc" -> Sort.by("precio").descending();
             case "descuento" -> Sort.by("descuentoPct").descending();
             case "nuevo" -> Sort.by("fechaPublicacion").descending();
-            case "bestsellers" -> Sort.by("vendidos").descending();
+            // Los usados son piezas únicas: no participan del ranking de bestsellers.
+            // NUEVO ordena antes que USADO, y luego se ordena por ventas.
+            case "bestsellers" -> Sort.by("estadoLibro").ascending()
+                    .and(Sort.by("vendidos").descending());
             default -> Sort.unsorted();
         };
-        return PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), ordenamiento);
+        // Sin este desempate, la base puede reordenar filas empatadas entre dos páginas.
+        return PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(),
+                ordenamiento.and(Sort.by("id").descending()));
     }
 
     @Override
@@ -282,8 +284,10 @@ public class LibroServiceImpl implements LibroService {
                         v.getId(),
                         v.getNombreTienda() != null && !v.getNombreTienda().isBlank()
                                 ? v.getNombreTienda()
-                                : v.getNombre() + " " + v.getApellido()))
+                                : v.getNombre()))
                 .toList());
+        r.setPrecioMin(libroRepository.findPrecioMinimoVisible());
+        r.setPrecioMax(libroRepository.findPrecioMaximoVisible());
         return r;
     }
 

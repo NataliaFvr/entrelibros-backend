@@ -13,6 +13,7 @@ public class CarritoItemResponse {
     private Integer cantidad;
     private Long idLibro;
     private String tituloLibro;
+    private String autor;
     private Double precioUnitario;
     private Double subtotal;
     private String nombreTienda;
@@ -32,6 +33,7 @@ public class CarritoItemResponse {
         if (item.getLibro() != null) {
             r.idLibro = item.getLibro().getId();
             r.tituloLibro = item.getLibro().getTitulo();
+            r.autor = item.getLibro().getAutor();
             Double precio = item.getLibro().getPrecio();
             Double descuento = item.getLibro().getDescuentoPct() != null
                     ? item.getLibro().getDescuentoPct() : 0.0;

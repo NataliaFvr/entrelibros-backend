@@ -22,7 +22,7 @@ public interface UsuarioService {
             String apellido, Rol rol);
     public Usuario updateUsuario(Long usuarioId, UsuarioUpdateRequest request);
     public Usuario darDeBajaUsuario(Long usuarioId);
-    public Usuario cambiarRol(Long usuarioId, Rol nuevoRol, String provincia, String telefono);
+    public Usuario cambiarRol(Long usuarioId, Rol nuevoRol, String nombreTienda, String provincia, String telefono);
     public Usuario reactivarUsuario(Long usuarioId);
     public Usuario verificarEmail(String email, String codigo);
     public Usuario reenviarCodigoVerificacion(String email);
