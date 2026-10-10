@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import com.uade.entrelibros.backend.entity.Usuario;
+import com.uade.entrelibros.backend.entity.Orden;
 import com.uade.entrelibros.backend.entity.dto.OrdenResponse;
 import com.uade.entrelibros.backend.entity.dto.OrdenVendedorResponse;
 import com.uade.entrelibros.backend.exceptions.AccionNoPermitidaException;
@@ -44,10 +45,7 @@ public class OrdenController {
     @GetMapping
     public ResponseEntity<List<OrdenResponse>> getOrdenes(@AuthenticationPrincipal Usuario usuario)
             throws AccionNoPermitidaException {
-        List<OrdenResponse> resultado = ordenService.getOrdenes(usuario).stream()
-                .map(orden -> OrdenResponse.from(orden, List.of(), proveedorDe(orden.getId())))
-                .toList();
-        return ResponseEntity.ok(resultado);
+        return ResponseEntity.ok(respuestasConItems(ordenService.getOrdenes(usuario)));
     }
 
     @GetMapping("/{idOrden}")
@@ -73,10 +71,7 @@ public class OrdenController {
 
     @GetMapping("/comprador")
     public ResponseEntity<List<OrdenResponse>> getOrdenesByComprador(@AuthenticationPrincipal Usuario comprador) {
-        List<OrdenResponse> resultado = ordenService.getOrdenesByComprador(comprador).stream()
-                .map(orden -> OrdenResponse.from(orden, List.of(), proveedorDe(orden.getId())))
-                .toList();
-        return ResponseEntity.ok(resultado);
+        return ResponseEntity.ok(respuestasConItems(ordenService.getOrdenesByComprador(comprador)));
     }
 
     @GetMapping("/vendedor")
@@ -125,6 +120,20 @@ public class OrdenController {
                 .findFirst()
                 .map(Pago::getProveedor)
                 .orElse(null);
+    }
+
+    // Las listas de órdenes incluyen los ítems en lote, evitando que el cliente deba pedir el detalle una por una.
+    private List<OrdenResponse> respuestasConItems(List<Orden> ordenes) {
+        List<Long> idsOrden = ordenes.stream().map(Orden::getId).toList();
+        if (idsOrden.isEmpty()) return List.of();
+        List<OrdenItem> items = ordenItemRepository.findByOrdenIdIn(idsOrden);
+        Map<Long, List<OrdenItem>> itemsPorOrden = items.stream()
+                .collect(Collectors.groupingBy(item -> item.getOrden().getId()));
+        Map<Long, List<String>> categorias = categoriasPorLibro(items);
+        Map<Long, String> proveedores = pagoRepository.findByOrdenIdIn(idsOrden).stream()
+                .collect(Collectors.toMap(pago -> pago.getOrden().getId(), Pago::getProveedor, (a, b) -> a));
+        return ordenes.stream().map(orden -> OrdenResponse.from(orden,
+                itemsPorOrden.getOrDefault(orden.getId(), List.of()), proveedores.get(orden.getId()), categorias)).toList();
     }
 
     private Map<Long, List<String>> categoriasPorLibro(List<OrdenItem> items) {

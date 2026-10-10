@@ -16,6 +16,8 @@ public interface OrdenItemRepository extends JpaRepository<OrdenItem, Long> {
 
     List<OrdenItem> findByOrdenIdAndVendedorId(Long idOrden, Long idVendedor);
 
+    List<OrdenItem> findByOrdenIdIn(List<Long> idsOrden);
+
     List<OrdenItem> findByOrdenIdInAndVendedorId(List<Long> idsOrden, Long idVendedor);
 
     java.util.Optional<OrdenItem> findFirstByOrdenIdAndVendedorIdOrderByIdAsc(

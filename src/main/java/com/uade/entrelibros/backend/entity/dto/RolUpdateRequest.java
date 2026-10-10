@@ -6,4 +6,6 @@ import lombok.Data;
 @Data
 public class RolUpdateRequest {
     private Rol rol;
+    private String provincia;
+    private String telefono;
 }

@@ -94,7 +94,8 @@ public class UsuariosController {
             @PathVariable Long usuarioId,
             @RequestBody RolUpdateRequest request)
             throws UsuarioNoEncontradoException {
-        Usuario result = usuarioService.cambiarRol(usuarioId, request.getRol());
+        Usuario result = usuarioService.cambiarRol(
+                usuarioId, request.getRol(), request.getProvincia(), request.getTelefono());
         return ResponseEntity.ok(UsuarioResponse.from(result));
     }
 

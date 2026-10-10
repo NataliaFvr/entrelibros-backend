@@ -168,12 +168,19 @@ public class UsuarioServiceImpl implements UsuarioService {
 
     }
     @Override
-    public Usuario cambiarRol(Long usuarioId, Rol nuevoRol) {
+    public Usuario cambiarRol(Long usuarioId, Rol nuevoRol, String provincia, String telefono) {
         if (nuevoRol == null) {
             throw new RolInvalidoException();
         }
         Usuario usuario = usuarioRepository.findById(usuarioId)
                 .orElseThrow(UsuarioNoEncontradoException::new);
+        if (nuevoRol == Rol.VENDEDOR && usuario.getRol() != Rol.VENDEDOR) {
+            if (provincia == null || provincia.isBlank() || telefono == null || telefono.isBlank()) {
+                throw new IllegalArgumentException("Para habilitar a un vendedor, la provincia y el teléfono son obligatorios");
+            }
+            usuario.setProvincia(provincia.trim());
+            usuario.setTelefono(telefono.trim());
+        }
         usuario.setRol(nuevoRol);
         return usuarioRepository.save(usuario);
     }
