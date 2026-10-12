@@ -19,6 +19,7 @@ import com.uade.entrelibros.backend.entity.Rol;
 import com.uade.entrelibros.backend.entity.Usuario;
 import com.uade.entrelibros.backend.entity.dto.UsuarioUpdateRequest;
 import com.uade.entrelibros.backend.entity.TipoNotificacion;
+import com.uade.entrelibros.backend.exceptions.DatosVendedorIncompletosException;
 import com.uade.entrelibros.backend.exceptions.CodigoVerificacionInvalidoException;
 import com.uade.entrelibros.backend.exceptions.EmailYaVerificadoException;
 import com.uade.entrelibros.backend.exceptions.ListaVaciaException;
@@ -177,7 +178,7 @@ public class UsuarioServiceImpl implements UsuarioService {
         if (nuevoRol == Rol.VENDEDOR && usuario.getRol() != Rol.VENDEDOR) {
             if (nombreTienda == null || nombreTienda.isBlank() || provincia == null || provincia.isBlank()
                     || telefono == null || telefono.isBlank()) {
-                throw new IllegalArgumentException("Para habilitar a un vendedor, el nombre de tienda, la provincia y el teléfono son obligatorios");
+                throw new DatosVendedorIncompletosException();
             }
             usuario.setNombreTienda(nombreTienda.trim());
             usuario.setProvincia(provincia.trim());

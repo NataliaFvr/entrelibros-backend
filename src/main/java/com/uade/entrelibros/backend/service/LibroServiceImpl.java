@@ -21,6 +21,7 @@ import com.uade.entrelibros.backend.entity.dto.LibroRequest;
 import com.uade.entrelibros.backend.entity.dto.FiltrosDisponiblesResponse;
 import com.uade.entrelibros.backend.entity.dto.VendedorOptionResponse;
 import com.uade.entrelibros.backend.entity.dto.LibroMioResponse;
+import com.uade.entrelibros.backend.exceptions.EstadoLibroInvalidoException;
 import com.uade.entrelibros.backend.exceptions.AccionNoPermitidaException;
 import com.uade.entrelibros.backend.exceptions.CategoriaNoEncontradaException;
 import com.uade.entrelibros.backend.exceptions.LibroNoEncontradoException;
@@ -140,7 +141,7 @@ public class LibroServiceImpl implements LibroService {
         validarVendedor(vendedor);
 
         Libro libro = new Libro(request.getTitulo(), request.getAutor(), request.getEditorial(), request.getAnio(),
-                request.getIdioma(), EstadoLibro.valueOf(request.getEstadoLibro()), request.getPrecio(),
+                request.getIdioma(), parsearEstadoLibro(request.getEstadoLibro()), request.getPrecio(),
                 request.getDescuentoPct(), request.getStock(), request.getDescripcion(), vendedor);
         libro = libroRepository.save(libro);
 
@@ -192,11 +193,19 @@ public class LibroServiceImpl implements LibroService {
         setIfPresent(request.getEditorial(), libro::setEditorial);
         setIfPresent(request.getAnio(), libro::setAnio);
         setIfPresent(request.getIdioma(), libro::setIdioma);
-        setIfPresent(request.getEstadoLibro(), v -> libro.setEstadoLibro(EstadoLibro.valueOf(v)));
+        setIfPresent(request.getEstadoLibro(), v -> libro.setEstadoLibro(parsearEstadoLibro(v)));
         setIfPresent(request.getPrecio(), libro::setPrecio);
         setIfPresent(request.getDescuentoPct(), libro::setDescuentoPct);
         setIfPresent(request.getStock(), libro::setStock);
         setIfPresent(request.getDescripcion(), libro::setDescripcion);
+    }
+
+    private EstadoLibro parsearEstadoLibro(String valor) {
+        try {
+            return EstadoLibro.valueOf(valor.trim().toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new EstadoLibroInvalidoException();
+        }
     }
 
     private <T> void setIfPresent(T value, Consumer<T> setter) {
