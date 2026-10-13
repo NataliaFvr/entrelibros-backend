@@ -9,6 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.uade.entrelibros.backend.entity.EstadoPago;
 import com.uade.entrelibros.backend.entity.OrdenItem;
 import com.uade.entrelibros.backend.entity.ResenaLibro;
+import com.uade.entrelibros.backend.entity.Rol;
 import com.uade.entrelibros.backend.entity.Usuario;
 import com.uade.entrelibros.backend.exceptions.AccionNoPermitidaException;
 import com.uade.entrelibros.backend.exceptions.CalificacionInvalidaException;
@@ -109,10 +110,18 @@ public class ResenaLibroServiceImpl implements ResenaLibroService {
     }
 
     @Transactional
-    public void eliminarResena(Long idResena, Usuario comprador) {
+    public void eliminarResena(Long idResena, Usuario usuario) {
         ResenaLibro resena = getResenaById(idResena);
-        validarAutor(resena, comprador);
+        // La borra su autor o un ADMIN (moderacion de contenido). Editar sigue siendo solo del autor:
+        // el admin elimina, no reescribe lo que dijo otra persona.
+        if (!esAdmin(usuario)) {
+            validarAutor(resena, usuario);
+        }
         resenaLibroRepository.delete(resena);
+    }
+
+    private boolean esAdmin(Usuario usuario) {
+        return usuario != null && usuario.getRol() == Rol.ADMIN;
     }
 
     private void validarCalificacion(Integer calificacion) {
