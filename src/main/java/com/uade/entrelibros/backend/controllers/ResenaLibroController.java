@@ -89,8 +89,8 @@ public class ResenaLibroController {
     @DeleteMapping("/{idResena}")
     public ResponseEntity<Map<String, String>> eliminarResena(
             @PathVariable Long idResena,
-            @AuthenticationPrincipal Usuario comprador) {
-        resenaLibroService.eliminarResena(idResena, comprador);
+            @AuthenticationPrincipal Usuario usuario) {
+        resenaLibroService.eliminarResena(idResena, usuario);
         return ResponseEntity.ok(Map.of("mensaje", "Reseña eliminada correctamente"));
     }
 }

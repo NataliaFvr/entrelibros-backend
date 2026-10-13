@@ -10,6 +10,7 @@ import com.uade.entrelibros.backend.entity.EstadoPago;
 import com.uade.entrelibros.backend.entity.Pago;
 import com.uade.entrelibros.backend.entity.ResenaVendedor;
 import com.uade.entrelibros.backend.entity.OrdenVendedor;
+import com.uade.entrelibros.backend.entity.Rol;
 import com.uade.entrelibros.backend.entity.Usuario;
 import com.uade.entrelibros.backend.exceptions.AccionNoPermitidaException;
 import com.uade.entrelibros.backend.exceptions.CalificacionInvalidaException;
@@ -110,10 +111,17 @@ public class ResenaVendedorServiceImpl implements ResenaVendedorService {
     }
 
     @Transactional
-    public void eliminarResena(Long idResena, Usuario comprador) {
+    public void eliminarResena(Long idResena, Usuario usuario) {
         ResenaVendedor resena = getResenaById(idResena);
-        validarAutor(resena, comprador);
+        // La borra su autor o un ADMIN (moderacion de contenido). Editar sigue siendo solo del autor.
+        if (!esAdmin(usuario)) {
+            validarAutor(resena, usuario);
+        }
         resenaVendedorRepository.delete(resena);
+    }
+
+    private boolean esAdmin(Usuario usuario) {
+        return usuario != null && usuario.getRol() == Rol.ADMIN;
     }
 
     private void validarClasificacion(Integer clasificacion) {

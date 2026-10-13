@@ -26,5 +26,5 @@ public interface ResenaLibroService {
 
     ResenaLibro modificarResena(Long idResena, Usuario comprador, Integer calificacion, String comentario);
 
-    void eliminarResena(Long idResena, Usuario comprador);
+    void eliminarResena(Long idResena, Usuario usuario);
 }
