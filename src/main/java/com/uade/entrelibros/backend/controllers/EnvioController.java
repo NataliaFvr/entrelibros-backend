@@ -15,6 +15,8 @@ import com.uade.entrelibros.backend.exceptions.EnvioDuplicadoException;
 import com.uade.entrelibros.backend.exceptions.EnvioNoEncontradoException;
 import com.uade.entrelibros.backend.service.EnvioService;
 
+import jakarta.validation.Valid;
+
 @RestController
 @RequestMapping("envios")
 public class EnvioController {
@@ -39,7 +41,7 @@ public class EnvioController {
 
     @PreAuthorize("hasAuthority('ADMIN')")
     @PostMapping
-    public ResponseEntity<EnvioResponse> crearEnvio(@RequestBody EnvioRequest request)
+    public ResponseEntity<EnvioResponse> crearEnvio(@Valid @RequestBody EnvioRequest request)
             throws EnvioDuplicadoException {
         Envio result = envioService.crearEnvio(request.getZona(), request.getCostoFijo());
         return ResponseEntity.created(URI.create("/envios/" + result.getId()))
@@ -49,7 +51,7 @@ public class EnvioController {
     @PreAuthorize("hasAuthority('ADMIN')")
     @PatchMapping("/{idEnvio}")
     public ResponseEntity<EnvioResponse> actualizarCosto(
-            @PathVariable Long idEnvio, @RequestBody EnvioRequest request) {
+            @PathVariable Long idEnvio, @Valid @RequestBody EnvioRequest request) {
         Envio result = envioService.actualizarCosto(idEnvio, request.getCostoFijo());
         return ResponseEntity.ok(EnvioResponse.from(result));
     }

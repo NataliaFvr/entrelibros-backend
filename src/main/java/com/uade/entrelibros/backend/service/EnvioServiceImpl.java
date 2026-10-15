@@ -1,5 +1,6 @@
 package com.uade.entrelibros.backend.service;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -8,6 +9,7 @@ import org.springframework.stereotype.Service;
 
 import com.uade.entrelibros.backend.entity.Envio;
 import com.uade.entrelibros.backend.entity.ZonaEnvio;
+import com.uade.entrelibros.backend.exceptions.CampoInvalidoException;
 import com.uade.entrelibros.backend.exceptions.CostoEnvioInvalidoException;
 import com.uade.entrelibros.backend.exceptions.EnvioDuplicadoException;
 import com.uade.entrelibros.backend.exceptions.EnvioNoEncontradoException;
@@ -133,6 +135,9 @@ public class EnvioServiceImpl implements EnvioService {
     private void validarCosto(Double costoFijo) {
         if (costoFijo == null || costoFijo.isNaN() || costoFijo.isInfinite() || costoFijo <= 0) {
             throw new CostoEnvioInvalidoException();
+        }
+        if (BigDecimal.valueOf(costoFijo).scale() > 2) {
+            throw new CampoInvalidoException("costoFijo", "El costo admite hasta 2 decimales.");
         }
     }
 }

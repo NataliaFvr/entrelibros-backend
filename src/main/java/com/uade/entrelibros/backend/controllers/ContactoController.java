@@ -15,8 +15,8 @@ import com.uade.entrelibros.backend.service.EmailService;
 
 import jakarta.validation.Valid;
 
-// Prioridad baja: el formulario de "Contáctanos" del front hoy solo simula el envío (un toast).
-// Este endpoint es lo que le faltaría para que mande un mail real al equipo.
+// Formulario "Contáctanos": manda un mail real al equipo. Los datos adicionales (teléfono, departamento)
+// llegan en campos propios y el texto del mail lo arma el back.
 @RestController
 @RequestMapping("contacto")
 public class ContactoController {
@@ -32,7 +32,22 @@ public class ContactoController {
         emailService.enviarEmail(
                 emailDestino,
                 "Nuevo mensaje de contacto - EntreLibros",
-                "De: " + request.getNombre() + " (" + request.getEmail() + ")\n\n" + request.getMensaje());
+                armarTexto(request));
         return ResponseEntity.ok(Map.of("mensaje", "Mensaje enviado correctamente"));
+    }
+
+    private String armarTexto(ContactoRequest request) {
+        StringBuilder texto = new StringBuilder();
+        texto.append("De: ").append(request.getNombre()).append(' ').append(request.getApellido())
+                .append(" (").append(request.getEmail()).append(")\n");
+        String telefono = ((request.getArea() == null ? "" : request.getArea()) + " "
+                + (request.getTelefono() == null ? "" : request.getTelefono())).trim();
+        if (!telefono.isEmpty()) {
+            texto.append("Teléfono: ").append(telefono).append('\n');
+        }
+        if (request.getDepartamento() != null) {
+            texto.append("Departamento: ").append(request.getDepartamento()).append('\n');
+        }
+        return texto.append('\n').append(request.getMensaje()).toString();
     }
 }

@@ -36,6 +36,7 @@ public class AuthenticationController {
    @PostMapping("/register")
    public ResponseEntity<Map<String, String>> register(@Valid @RequestBody UsuarioRequest request)
         throws UsuarioDuplicadoException {
+        request.validarRepeticion();
         authenticationService.register(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(
             Map.of("mensaje", "Usuario registrado correctamente. Revisá tu email para verificar la cuenta."));
@@ -69,6 +70,7 @@ public class AuthenticationController {
 
     @PostMapping("/cambiar-contrasenia")
     public ResponseEntity<Map<String, String>> cambiarContrasenia(@Valid @RequestBody CambiarContraseniaRequest request) {
+        request.validarRepeticion();
         usuarioService.cambiarContrasenia(request.getEmail(), request.getCodigo(), request.getNuevaContrasenia());
         return ResponseEntity.ok(Map.of("mensaje", "Contraseña actualizada correctamente"));
     }
