@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -27,6 +28,9 @@ import com.uade.entrelibros.backend.service.CarritoService;
 import com.uade.entrelibros.backend.repository.ImagenLibroRepository;
 import com.uade.entrelibros.backend.exceptions.LibroNoDisponibleException;
 
+// Compran COMPRADOR y VENDEDOR (un vendedor puede comprar libros que no sean suyos: lo impide CompraPropiaException).
+// El ADMIN no compra.
+@PreAuthorize("hasAnyAuthority('COMPRADOR','VENDEDOR')")
 @RestController
 @RequestMapping("carrito")
 public class CarritoController {

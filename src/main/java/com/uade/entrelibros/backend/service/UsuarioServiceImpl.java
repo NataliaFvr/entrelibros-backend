@@ -69,23 +69,54 @@ public class UsuarioServiceImpl implements UsuarioService {
 
     public Usuario createUsuario(String nombreUsuario, String email, String contrasena, String nombre,
             String apellido, Rol rol) {
-        return crearUsuario(nombreUsuario, email, contrasena, nombre, apellido, rol, false);
+        return crearUsuario(nombreUsuario, email, contrasena, nombre, apellido, rol, false, null, null, null);
     }
 
     @Override
     public Usuario createUsuarioDesdeAdmin(String nombreUsuario, String email, String contrasena, String nombre,
             String apellido, Rol rol) {
-        return crearUsuario(nombreUsuario, email, contrasena, nombre, apellido, rol, true);
+        return createUsuarioDesdeAdmin(nombreUsuario, email, contrasena, nombre, apellido, rol, null, null, null);
+    }
+
+    @Override
+    public Usuario createUsuarioDesdeAdmin(String nombreUsuario, String email, String contrasena, String nombre,
+            String apellido, Rol rol, String nombreTienda, String provincia, String telefono) {
+        // El admin puede crear cualquier rol (incluso otro ADMIN). Sin rol se crea un comprador.
+        Rol rolFinal = rol != null ? rol : Rol.COMPRADOR;
+        // Mismo criterio que cambiarRol: un vendedor no puede existir sin tienda, provincia y telefono
+        if (rolFinal == Rol.VENDEDOR && (vacio(nombreTienda) || vacio(provincia) || vacio(telefono))) {
+            throw new DatosVendedorIncompletosException();
+        }
+        return crearUsuario(nombreUsuario, email, contrasena, nombre, apellido, rolFinal, true,
+                nombreTienda, provincia, telefono);
+    }
+
+    private static boolean vacio(String valor) {
+        return valor == null || valor.isBlank();
     }
 
     private Usuario crearUsuario(String nombreUsuario, String email, String contrasena, String nombre,
-            String apellido, Rol rol, boolean creadoPorAdmin) {
+            String apellido, Rol rol, boolean creadoPorAdmin, String nombreTienda, String provincia,
+            String telefono) {
         List<Usuario> existentes = usuarioRepository.findByEmailOrNombreUsuario(email, nombreUsuario);
         if (!existentes.isEmpty())
             throw new UsuarioDuplicadoException();
 
         String contrasenaHasheada = passwordEncoder.encode(contrasena);
         Usuario nuevoUsuario = new Usuario(nombreUsuario, email, contrasenaHasheada, nombre, apellido, rol);
+        if (rol == Rol.VENDEDOR) {
+            // Un vendedor nace aprobado: el estado de la solicitud sigue al rol
+            nuevoUsuario.setEstadoSolicitudVendedor(EstadoSolicitudVendedor.APROBADO);
+            if (!vacio(nombreTienda)) {
+                nuevoUsuario.setNombreTienda(nombreTienda.trim());
+            }
+            if (!vacio(provincia)) {
+                nuevoUsuario.setProvincia(provincia.trim());
+            }
+            if (!vacio(telefono)) {
+                nuevoUsuario.setTelefono(telefono.trim());
+            }
+        }
         if (creadoPorAdmin) {
             nuevoUsuario.setEmailVerificado(true);
         } else {
@@ -184,7 +215,14 @@ public class UsuarioServiceImpl implements UsuarioService {
             usuario.setProvincia(provincia.trim());
             usuario.setTelefono(telefono.trim());
         }
+        boolean eraVendedor = usuario.getRol() == Rol.VENDEDOR;
         usuario.setRol(nuevoRol);
+        // El estado de la solicitud sigue al rol: antes quedaba en NINGUNO (o PENDIENTE) aunque ya fuera vendedor
+        if (nuevoRol == Rol.VENDEDOR) {
+            usuario.setEstadoSolicitudVendedor(EstadoSolicitudVendedor.APROBADO);
+        } else if (eraVendedor) {
+            usuario.setEstadoSolicitudVendedor(EstadoSolicitudVendedor.NINGUNO);
+        }
         return usuarioRepository.save(usuario);
     }
 

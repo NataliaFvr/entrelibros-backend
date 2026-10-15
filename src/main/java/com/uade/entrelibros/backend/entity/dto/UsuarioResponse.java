@@ -1,5 +1,7 @@
 package com.uade.entrelibros.backend.entity.dto;
 
+import com.uade.entrelibros.backend.entity.EstadoSolicitudVendedor;
+import com.uade.entrelibros.backend.entity.Rol;
 import com.uade.entrelibros.backend.entity.Usuario;
 import lombok.Data;
 
@@ -34,8 +36,11 @@ public class UsuarioResponse {
         r.nombreTienda = usuario.getNombreTienda();
         r.telefono = usuario.getTelefono();
         r.descripcion = usuario.getDescripcion();
-        r.estadoSolicitudVendedor = usuario.getEstadoSolicitudVendedor() != null
-                ? usuario.getEstadoSolicitudVendedor().name() : null;
+        
+        // Un VENDEDOR siempre figura como APROBADO, aunque el dato guardado quede de antes de que
+        r.estadoSolicitudVendedor = usuario.getRol() == Rol.VENDEDOR
+                ? EstadoSolicitudVendedor.APROBADO.name()
+                : (usuario.getEstadoSolicitudVendedor() != null ? usuario.getEstadoSolicitudVendedor().name() : null);
         r.avatar = usuario.getAvatar();
         r.tieneFoto = Boolean.TRUE.equals(usuario.getTieneFoto());
         return r;

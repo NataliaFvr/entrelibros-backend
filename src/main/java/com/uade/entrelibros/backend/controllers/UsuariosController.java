@@ -59,13 +59,17 @@ public class UsuariosController {
     @PostMapping
     public ResponseEntity<UsuarioResponse> createUsuario(@Valid @RequestBody UsuarioRequest usuarioRequest)
             throws UsuarioDuplicadoException {
+        usuarioRequest.validarRepeticion();
         Usuario result = usuarioService.createUsuarioDesdeAdmin(
                 usuarioRequest.getNombreUsuario(),
                 usuarioRequest.getEmail(),
                 usuarioRequest.getContrasena(),
                 usuarioRequest.getNombre(),
                 usuarioRequest.getApellido(),
-                usuarioRequest.getRol());
+                usuarioRequest.getRol(),
+                usuarioRequest.getNombreTienda(),
+                usuarioRequest.getProvincia(),
+                usuarioRequest.getTelefono());
         return ResponseEntity.created(URI.create("/usuarios/" + result.getId()))
                 .body(UsuarioResponse.from(result));
     }
@@ -92,7 +96,7 @@ public class UsuariosController {
     @PatchMapping("/{usuarioId}/rol")
     public ResponseEntity<UsuarioResponse> cambiarRol(
             @PathVariable Long usuarioId,
-            @RequestBody RolUpdateRequest request)
+            @Valid @RequestBody RolUpdateRequest request)
             throws UsuarioNoEncontradoException {
         Usuario result = usuarioService.cambiarRol(
                 usuarioId, request.getRol(), request.getNombreTienda(), request.getProvincia(), request.getTelefono());
