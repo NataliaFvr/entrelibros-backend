@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.uade.entrelibros.backend.entity.EstadoModeracion;
 import com.uade.entrelibros.backend.entity.ImagenLibro;
 import com.uade.entrelibros.backend.entity.Libro;
 import com.uade.entrelibros.backend.entity.Usuario;
@@ -16,6 +17,7 @@ import com.uade.entrelibros.backend.exceptions.ImagenLibroNoEncontradaException;
 import com.uade.entrelibros.backend.exceptions.LibroNoEncontradoException;
 import com.uade.entrelibros.backend.exceptions.ListaVaciaException;
 import com.uade.entrelibros.backend.exceptions.TipoArchivoNoPermitidoException;
+import com.uade.entrelibros.backend.exceptions.UltimaFotoException;
 import com.uade.entrelibros.backend.repository.ImagenLibroRepository;
 import com.uade.entrelibros.backend.repository.LibroRepository;
 
@@ -75,6 +77,13 @@ public class ImagenLibroServiceImpl implements ImagenLibroService {
             throw new AccionNoPermitidaException();
         }
 
+        // Un libro aprobado (visible en el catalogo) no se puede quedar sin fotos. El front sube las nuevas
+        // antes de borrar las viejas, asi que ese flujo no se ve afectado.
+        Libro libro = imagen.getLibro();
+        if (libro.getEstadoModeracion() == EstadoModeracion.ACEPTADO
+                && imagenLibroRepository.countByLibroId(libro.getId()) <= ImagenValidator.MIN_FOTOS_POR_LIBRO) {
+            throw new UltimaFotoException();
+        }
         imagenLibroRepository.delete(imagen);
     }
 }
