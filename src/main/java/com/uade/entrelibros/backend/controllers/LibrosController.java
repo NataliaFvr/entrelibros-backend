@@ -30,6 +30,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Sort;
 import com.uade.entrelibros.backend.entity.dto.HistorialModeracionResponse;
 import com.uade.entrelibros.backend.service.HistorialModeracionService;
+import jakarta.validation.Valid;
 import com.uade.entrelibros.backend.entity.EstadoPublicacion;
 import com.uade.entrelibros.backend.entity.dto.LibroMioResponse;
 import com.uade.entrelibros.backend.repository.ImagenLibroRepository;
@@ -229,7 +230,7 @@ public class LibrosController {
     public ResponseEntity<LibroResponse> moderarLibro(
             @PathVariable Long libroId,
             @AuthenticationPrincipal Usuario moderador,
-            @RequestBody ModeracionRequest request)
+            @Valid @RequestBody ModeracionRequest request)
         throws LibroNoEncontradoException {
         Libro result = libroService.moderarLibro(
                 libroId, request.getEstadoModeracion(), request.getComentario(), moderador);
@@ -271,13 +272,10 @@ public class LibrosController {
         return ResponseEntity.ok(historialModeracionService.getHistorialCompleto(PageRequest.of(page, size)));
     }
 
-    // LibroResponse completo (categorias + portada) para un solo libro
     private LibroResponse respuesta(Libro libro) {
         return LibroResponse.from(libro, categoriasDe(libro)).conPortada(portadaDe(libro));
     }
 
-    // Una consulta que trae SOLO ids (nunca el LONGBLOB): filas ordenadas por libro y orden,
-    // asi que la primera de cada libro es su portada. Una consulta por pagina, no una por libro.
     private Map<Long, Long> portadasPorLibro(List<Libro> libros) {
         return portadasPorIds(libros.stream().map(Libro::getId).toList());
     }

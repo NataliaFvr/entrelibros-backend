@@ -1,5 +1,7 @@
 package com.uade.entrelibros.backend.service;
 
+import java.math.BigDecimal;
+import java.time.Year;
 import java.util.List;
 import java.util.function.Consumer;
 
@@ -21,13 +23,17 @@ import com.uade.entrelibros.backend.entity.dto.LibroRequest;
 import com.uade.entrelibros.backend.entity.dto.FiltrosDisponiblesResponse;
 import com.uade.entrelibros.backend.entity.dto.VendedorOptionResponse;
 import com.uade.entrelibros.backend.entity.dto.LibroMioResponse;
+import com.uade.entrelibros.backend.exceptions.CampoInvalidoException;
 import com.uade.entrelibros.backend.exceptions.EstadoLibroInvalidoException;
+import com.uade.entrelibros.backend.exceptions.LibroConDemasiadasFotosException;
+import com.uade.entrelibros.backend.exceptions.LibroSinFotosException;
 import com.uade.entrelibros.backend.exceptions.AccionNoPermitidaException;
 import com.uade.entrelibros.backend.exceptions.CategoriaNoEncontradaException;
 import com.uade.entrelibros.backend.exceptions.LibroNoEncontradoException;
 import com.uade.entrelibros.backend.exceptions.ListaVaciaException;
 import com.uade.entrelibros.backend.exceptions.RolInvalidoException;
 import com.uade.entrelibros.backend.repository.CategoriaRepository;
+import com.uade.entrelibros.backend.repository.ImagenLibroRepository;
 import com.uade.entrelibros.backend.repository.LibroCategoriaRepository;
 import com.uade.entrelibros.backend.repository.LibroRepository;
 import org.springframework.data.domain.Page;
@@ -52,6 +58,9 @@ public class LibroServiceImpl implements LibroService {
 
     @Autowired
     private HistorialModeracionRepository historialModeracionRepository;
+
+    @Autowired
+    private ImagenLibroRepository imagenLibroRepository;
 
     @Autowired
     private NotificacionService notificacionService;
@@ -139,10 +148,18 @@ public class LibroServiceImpl implements LibroService {
             throws CategoriaNoEncontradaException, RolInvalidoException {
 
         validarVendedor(vendedor);
+        validarReglasDeCarga(request, true);
+
+        EstadoLibro estado = parsearEstadoLibro(request.getEstadoLibro());
+        // Los usados son piezas unicas: siempre 1 unidad, sin importar lo que llegue
+        Integer stock = estado == EstadoLibro.USADO ? Integer.valueOf(1) : request.getStock();
+        if (stock == null) {
+            throw new CampoInvalidoException("stock", "Ingresá el stock.");
+        }
 
         Libro libro = new Libro(request.getTitulo(), request.getAutor(), request.getEditorial(), request.getAnio(),
-                request.getIdioma(), parsearEstadoLibro(request.getEstadoLibro()), request.getPrecio(),
-                request.getDescuentoPct(), request.getStock(), request.getDescripcion(), vendedor);
+                request.getIdioma(), estado, request.getPrecio(),
+                request.getDescuentoPct(), stock, request.getDescripcion(), vendedor);
         libro = libroRepository.save(libro);
 
         guardarCategorias(libro, request.getIdCategorias());
@@ -161,6 +178,7 @@ public class LibroServiceImpl implements LibroService {
         Libro libro = libroRepository.findById(libroId)
                 .orElseThrow(LibroNoEncontradoException::new);
         validarDuenio(libro, vendedor);
+        validarReglasDeCarga(request, false);
 
         // Si se edita, vuelve a revision del admin
         boolean vuelveARevision = libro.getEstadoModeracion() != EstadoModeracion.EN_REVISION;
@@ -188,6 +206,7 @@ public class LibroServiceImpl implements LibroService {
     }
 
     private void aplicarCambios(Libro libro, LibroRequest request) {
+        EstadoLibro estadoAnterior = libro.getEstadoLibro();
         setIfPresent(request.getTitulo(), libro::setTitulo);
         setIfPresent(request.getAutor(), libro::setAutor);
         setIfPresent(request.getEditorial(), libro::setEditorial);
@@ -198,6 +217,36 @@ public class LibroServiceImpl implements LibroService {
         setIfPresent(request.getDescuentoPct(), libro::setDescuentoPct);
         setIfPresent(request.getStock(), libro::setStock);
         setIfPresent(request.getDescripcion(), libro::setDescripcion);
+        // Los usados son piezas unicas: si pasa a USADO o se manda stock para un usado, queda en 1.
+        // (Si no se manda stock no se toca: un usado ya vendido no "revive" por editar otro dato.)
+        if (libro.getEstadoLibro() == EstadoLibro.USADO
+                && (estadoAnterior != EstadoLibro.USADO || request.getStock() != null)) {
+            libro.setStock(1);
+        }
+    }
+
+    // Reglas de carga que dependen de otros datos o de la fecha (las de formato estan en LibroRequest).
+    // Los errores salen como { campo: mensaje } para que el front los muestre debajo de cada input.
+    private void validarReglasDeCarga(LibroRequest request, boolean alta) {
+        int anioActual = Year.now().getValue();
+        if (request.getAnio() != null && request.getAnio() > anioActual) {
+            throw new CampoInvalidoException("anio", "El año debe estar entre 1900 y " + anioActual + ".");
+        }
+        if (request.getPrecio() != null && BigDecimal.valueOf(request.getPrecio()).scale() > 2) {
+            throw new CampoInvalidoException("precio", "El precio admite hasta 2 decimales.");
+        }
+        Double descuento = request.getDescuentoPct();
+        if (descuento != null && descuento % 1 != 0) {
+            throw new CampoInvalidoException("descuentoPct",
+                    "El descuento debe ser un entero entre 0 y 100, sin decimales.");
+        }
+        List<Long> categorias = request.getIdCategorias();
+        boolean sinCategorias = alta
+                ? (categorias == null || categorias.isEmpty())
+                : (categorias != null && categorias.isEmpty());
+        if (sinCategorias) {
+            throw new CampoInvalidoException("idCategorias", "Elegí al menos una categoría.");
+        }
     }
 
     private EstadoLibro parsearEstadoLibro(String valor) {
@@ -265,6 +314,11 @@ public class LibroServiceImpl implements LibroService {
         Libro libro = libroRepository.findById(libroId)
                 .orElseThrow(LibroNoEncontradoException::new);
 
+        validarMotivoDeRechazo(estadoModeracion, comentario);
+        if (estadoModeracion == EstadoModeracion.ACEPTADO) {
+            validarFotosParaAprobar(libroId);
+        }
+
         EstadoModeracion estadoAnterior = libro.getEstadoModeracion();
         libro.setEstadoModeracion(estadoModeracion);
         Libro libroActualizado = libroRepository.save(libro);
@@ -279,6 +333,25 @@ public class LibroServiceImpl implements LibroService {
         }
 
         return libroActualizado;
+    }
+
+    // El vendedor ve el motivo: sin el, el rechazo no le sirve para corregir nada
+    private void validarMotivoDeRechazo(EstadoModeracion estado, String comentario) {
+        if (estado == EstadoModeracion.RECHAZADO && (comentario == null || comentario.trim().length() < 3)) {
+            throw new CampoInvalidoException("comentario", "Escribí el motivo del rechazo (mínimo 3 caracteres).");
+        }
+    }
+
+    // Un libro solo se publica con entre 1 y 5 fotos. Se controla al aprobarlo y no en cada subida porque, al
+    // reordenar o reemplazar fotos, el front sube las nuevas ANTES de borrar las viejas y ahi hay mas de 5 un rato.
+    private void validarFotosParaAprobar(Long libroId) {
+        long fotos = imagenLibroRepository.countByLibroId(libroId);
+        if (fotos < ImagenValidator.MIN_FOTOS_POR_LIBRO) {
+            throw new LibroSinFotosException();
+        }
+        if (fotos > ImagenValidator.MAX_FOTOS_POR_LIBRO) {
+            throw new LibroConDemasiadasFotosException();
+        }
     }
 
     @Override
@@ -304,17 +377,14 @@ public class LibroServiceImpl implements LibroService {
     @Transactional(readOnly = true)
     public Page<LibroMioResponse> getLibrosMios(Usuario vendedor, EstadoModeracion estadoModeracion,
             EstadoPublicacion estadoPublicacion, Pageable pageable) {
-        // Una sola consulta para cualquier combinacion de filtros (vendedor viene en el mismo select: @EntityGraph)
-        Specification<Libro> spec = LibroSpecification.deVendedor(vendedor.getId())
+
+                Specification<Libro> spec = LibroSpecification.deVendedor(vendedor.getId())
                 .and(LibroSpecification.conEstadoModeracion(estadoModeracion))
                 .and(LibroSpecification.conEstadoPublicacion(estadoPublicacion));
         Page<Libro> pagina = libroRepository.findAll(spec, pageable);
 
         if (pagina.isEmpty()) {
             boolean hayFiltros = estadoModeracion != null || estadoPublicacion != null;
-            // "con ese estado" solo si hay filtros, ninguno coincide y el vendedor SI tiene libros.
-            // Pagina fuera de rango (totalElements > 0) o vendedor sin libros -> "publicados".
-            // El count extra corre solo en este camino de error.
             if (hayFiltros && pagina.getTotalElements() == 0
                     && libroRepository.countByVendedorId(vendedor.getId()) > 0) {
                 throw new ListaVaciaException("No tenés libros con ese estado");
