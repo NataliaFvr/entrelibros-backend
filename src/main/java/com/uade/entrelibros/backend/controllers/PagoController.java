@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.*;
 
 import com.uade.entrelibros.backend.entity.Pago;
 import com.uade.entrelibros.backend.entity.dto.PagoResponse;
+import com.uade.entrelibros.backend.entity.dto.PagosResumenResponse;
 import com.uade.entrelibros.backend.entity.Usuario;
 import com.uade.entrelibros.backend.entity.dto.PagoRequest;
 import com.uade.entrelibros.backend.exceptions.AccionNoPermitidaException;
@@ -35,6 +36,13 @@ public class PagoController {
         return ResponseEntity.ok(resultado);
     }
 
+    // Totales para el panel del admin (cobrado, aprobados, rechazados). Va antes de /{idPago}.
+    @PreAuthorize("hasAuthority('ADMIN')")
+    @GetMapping("/resumen")
+    public ResponseEntity<PagosResumenResponse> getResumen() {
+        return ResponseEntity.ok(pagoService.getResumen());
+    }
+
     @GetMapping("/{idPago}")
     public ResponseEntity<PagoResponse> getPagoById(
             @AuthenticationPrincipal Usuario comprador,
@@ -54,6 +62,8 @@ public class PagoController {
         return ResponseEntity.ok(resultado);
     }
 
+    // Pagan COMPRADOR y VENDEDOR (un vendedor puede comprar libros que no sean suyos). El ADMIN no compra.
+    @PreAuthorize("hasAnyAuthority('COMPRADOR','VENDEDOR')")
     @PostMapping
     public ResponseEntity<PagoResponse> crearPago(
             @AuthenticationPrincipal Usuario comprador,

@@ -15,6 +15,7 @@ import com.uade.entrelibros.backend.entity.OrdenItem;
 import com.uade.entrelibros.backend.entity.Pago;
 import com.uade.entrelibros.backend.entity.TipoNotificacion;
 import com.uade.entrelibros.backend.entity.Usuario;
+import com.uade.entrelibros.backend.entity.dto.PagosResumenResponse;
 import com.uade.entrelibros.backend.exceptions.AccionNoPermitidaException;
 import com.uade.entrelibros.backend.exceptions.ListaVaciaException;
 import com.uade.entrelibros.backend.exceptions.OrdenNoEncontradaException;
@@ -37,6 +38,15 @@ public class PagoServiceImpl implements PagoService {
     private NotificacionService notificacionService;
     @Autowired
     private OrdenItemRepository ordenItemRepository;
+
+    @Override
+    public PagosResumenResponse getResumen() {
+        long aprobados = pagoRepository.contarPorResultado(EstadoPago.SIMULADO_APROBADO);
+        long rechazados = pagoRepository.contarPorResultado(EstadoPago.RECHAZADO);
+        Double totalAprobado = pagoRepository.sumarTotalPorResultado(EstadoPago.SIMULADO_APROBADO);
+        return new PagosResumenResponse(totalAprobado != null ? totalAprobado : 0.0,
+                aprobados, rechazados, pagoRepository.count());
+    }
 
     public List<Pago> getPagos() {
         List<Pago> pagos = pagoRepository.findAll();
