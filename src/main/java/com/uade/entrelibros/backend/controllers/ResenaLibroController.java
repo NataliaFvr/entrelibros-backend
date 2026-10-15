@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -12,13 +13,17 @@ import org.springframework.web.bind.annotation.*;
 import com.uade.entrelibros.backend.entity.ResenaLibro;
 import com.uade.entrelibros.backend.entity.Usuario;
 import com.uade.entrelibros.backend.entity.dto.ResenaLibroRequest;
+import com.uade.entrelibros.backend.entity.dto.ResenaLibroEstadoResponse;
 import com.uade.entrelibros.backend.entity.dto.ResenaLibroResponse;
+import com.uade.entrelibros.backend.entity.dto.ResenaResumenResponse;
 import com.uade.entrelibros.backend.exceptions.AccionNoPermitidaException;
 import com.uade.entrelibros.backend.exceptions.CalificacionInvalidaException;
 import com.uade.entrelibros.backend.exceptions.OrdenItemNoEncontradoException;
 import com.uade.entrelibros.backend.exceptions.ResenaDuplicadaException;
 import com.uade.entrelibros.backend.exceptions.ResenaLibroNoEncontradaException;
 import com.uade.entrelibros.backend.service.ResenaLibroService;
+
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("resenas-libro")
@@ -64,10 +69,34 @@ public class ResenaLibroController {
         return ResponseEntity.ok(resultado);
     }
     
+    // ¿Puede la persona logueada reseñar este libro? ¿Cual es su reseña? Lo decide el back (el front solo muestra el formulario)
+    @PreAuthorize("isAuthenticated()")
+    @GetMapping("/libro/{idLibro}/estado")
+    public ResponseEntity<ResenaLibroEstadoResponse> getEstado(
+            @AuthenticationPrincipal Usuario usuario,
+            @PathVariable Long idLibro) {
+        ResenaLibroService.EstadoResena estado = resenaLibroService.getEstadoResena(usuario, idLibro);
+        return ResponseEntity.ok(new ResenaLibroEstadoResponse(
+                estado.puedeResenar(), estado.motivo(), estado.idOrdenItem(),
+                estado.miResena() != null ? ResenaLibroResponse.from(estado.miResena()) : null));
+    }
+
+    // Promedio, cantidad y reparto por estrellas, calculados en el back
+    @GetMapping("/libro/{idLibro}/resumen")
+    public ResponseEntity<ResenaResumenResponse> getResumenByLibro(@PathVariable Long idLibro) {
+        return ResponseEntity.ok(resenaLibroService.getResumenByLibro(idLibro));
+    }
+
+    @GetMapping("/vendedor/{idVendedor}/opiniones-libros/resumen")
+    public ResponseEntity<ResenaResumenResponse> getResumenOpinionesByVendedor(@PathVariable Long idVendedor) {
+        return ResponseEntity.ok(resenaLibroService.getResumenByVendedor(idVendedor));
+    }
+
+    @PreAuthorize("hasAnyAuthority('COMPRADOR','VENDEDOR')")
     @PostMapping
     public ResponseEntity<ResenaLibroResponse> crearResena(
             @AuthenticationPrincipal Usuario comprador,
-            @RequestBody ResenaLibroRequest request)
+            @Valid @RequestBody ResenaLibroRequest request)
             throws OrdenItemNoEncontradoException, CalificacionInvalidaException, ResenaDuplicadaException,
             AccionNoPermitidaException {
         ResenaLibro result = resenaLibroService.crearResena(
@@ -76,11 +105,12 @@ public class ResenaLibroController {
                 .body(ResenaLibroResponse.from(result));
     }
 
+    @PreAuthorize("hasAnyAuthority('COMPRADOR','VENDEDOR')")
     @PatchMapping("/{idResena}")
     public ResponseEntity<ResenaLibroResponse> modificarResena(
             @PathVariable Long idResena,
             @AuthenticationPrincipal Usuario comprador,
-            @RequestBody ResenaLibroRequest request) {
+            @Valid @RequestBody ResenaLibroRequest request) {
         ResenaLibro result = resenaLibroService.modificarResena(
                 idResena, comprador, request.getCalificacion(), request.getComentario());
         return ResponseEntity.ok(ResenaLibroResponse.from(result));

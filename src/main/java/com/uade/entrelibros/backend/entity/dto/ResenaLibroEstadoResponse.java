@@ -1,0 +1,15 @@
+package com.uade.entrelibros.backend.entity.dto;
+
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+public class ResenaLibroEstadoResponse {
+    private boolean puedeResenar;
+    private String motivo;
+    private Long idOrdenItem;
+    private ResenaLibroResponse miResena;
+}

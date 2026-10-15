@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -12,6 +13,8 @@ import org.springframework.web.bind.annotation.*;
 import com.uade.entrelibros.backend.entity.ResenaVendedor;
 import com.uade.entrelibros.backend.entity.Usuario;
 import com.uade.entrelibros.backend.entity.dto.ResenaVendedorRequest;
+import com.uade.entrelibros.backend.entity.dto.ResenaResumenResponse;
+import com.uade.entrelibros.backend.entity.dto.ResenaVendedorEstadoResponse;
 import com.uade.entrelibros.backend.entity.dto.ResenaVendedorResponse;
 import com.uade.entrelibros.backend.exceptions.AccionNoPermitidaException;
 import com.uade.entrelibros.backend.exceptions.CalificacionInvalidaException;
@@ -19,6 +22,8 @@ import com.uade.entrelibros.backend.exceptions.PagoNoEncontradoException;
 import com.uade.entrelibros.backend.exceptions.ResenaDuplicadaException;
 import com.uade.entrelibros.backend.exceptions.ResenaVendedorNoEncontradaException;
 import com.uade.entrelibros.backend.service.ResenaVendedorService;
+
+import jakarta.validation.Valid;
 import com.uade.entrelibros.backend.repository.OrdenItemRepository;
 import com.uade.entrelibros.backend.entity.OrdenItem;
 
@@ -55,10 +60,27 @@ public class ResenaVendedorController {
         return ResponseEntity.ok(resultado);
     }
 
+    @PreAuthorize("isAuthenticated()")
+    @GetMapping("/vendedor/{idVendedor}/estado")
+    public ResponseEntity<ResenaVendedorEstadoResponse> getEstado(
+            @AuthenticationPrincipal Usuario usuario,
+            @PathVariable Long idVendedor) {
+        ResenaVendedorService.EstadoResena estado = resenaVendedorService.getEstadoResena(usuario, idVendedor);
+        return ResponseEntity.ok(new ResenaVendedorEstadoResponse(
+                estado.puedeResenar(), estado.motivo(), estado.idPago(),
+                estado.miResena() != null ? toResponse(estado.miResena()) : null));
+    }
+
+    @GetMapping("/vendedor/{idVendedor}/resumen")
+    public ResponseEntity<ResenaResumenResponse> getResumenByVendedor(@PathVariable Long idVendedor) {
+        return ResponseEntity.ok(resenaVendedorService.getResumenByVendedor(idVendedor));
+    }
+
+    @PreAuthorize("hasAnyAuthority('COMPRADOR','VENDEDOR')")
     @PostMapping
     public ResponseEntity<ResenaVendedorResponse> crearResena(
             @AuthenticationPrincipal Usuario comprador,
-            @RequestBody ResenaVendedorRequest request)
+            @Valid @RequestBody ResenaVendedorRequest request)
             throws PagoNoEncontradoException, CalificacionInvalidaException, ResenaDuplicadaException,
             AccionNoPermitidaException {
         ResenaVendedor result = resenaVendedorService.crearResena(
@@ -68,11 +90,12 @@ public class ResenaVendedorController {
                 .body(toResponse(result));
     }
 
+    @PreAuthorize("hasAnyAuthority('COMPRADOR','VENDEDOR')")
     @PatchMapping("/{idResena}")
     public ResponseEntity<ResenaVendedorResponse> modificarResena(
             @PathVariable Long idResena,
             @AuthenticationPrincipal Usuario comprador,
-            @RequestBody ResenaVendedorRequest request) {
+            @Valid @RequestBody ResenaVendedorRequest request) {
         ResenaVendedor result = resenaVendedorService.modificarResena(
                 idResena, comprador, request.getClasificacion(), request.getComentario());
         return ResponseEntity.ok(toResponse(result));

@@ -4,6 +4,7 @@ import java.util.List;
 
 import com.uade.entrelibros.backend.entity.ResenaLibro;
 import com.uade.entrelibros.backend.entity.Usuario;
+import com.uade.entrelibros.backend.entity.dto.ResenaResumenResponse;
 import com.uade.entrelibros.backend.exceptions.AccionNoPermitidaException;
 import com.uade.entrelibros.backend.exceptions.CalificacionInvalidaException;
 import com.uade.entrelibros.backend.exceptions.OrdenItemNoEncontradoException;
@@ -27,4 +28,15 @@ public interface ResenaLibroService {
     ResenaLibro modificarResena(Long idResena, Usuario comprador, Integer calificacion, String comentario);
 
     void eliminarResena(Long idResena, Usuario usuario);
+
+    // Lo que el front necesita para habilitar (o no) el formulario de reseña, decidido por el back
+    EstadoResena getEstadoResena(Usuario usuario, Long idLibro);
+
+    ResenaResumenResponse getResumenByLibro(Long idLibro);
+
+    // Resumen de las reseñas de los libros de un vendedor
+    ResenaResumenResponse getResumenByVendedor(Long idVendedor);
+
+    record EstadoResena(boolean puedeResenar, String motivo, Long idOrdenItem, ResenaLibro miResena) {
+    }
 }

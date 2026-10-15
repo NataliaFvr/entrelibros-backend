@@ -4,6 +4,7 @@ import java.util.List;
 
 import com.uade.entrelibros.backend.entity.ResenaVendedor;
 import com.uade.entrelibros.backend.entity.Usuario;
+import com.uade.entrelibros.backend.entity.dto.ResenaResumenResponse;
 import com.uade.entrelibros.backend.exceptions.AccionNoPermitidaException;
 import com.uade.entrelibros.backend.exceptions.CalificacionInvalidaException;
 import com.uade.entrelibros.backend.exceptions.PagoNoEncontradoException;
@@ -26,4 +27,12 @@ public interface ResenaVendedorService {
     ResenaVendedor modificarResena(Long idResena, Usuario comprador, Integer clasificacion, String comentario);
 
     void eliminarResena(Long idResena, Usuario usuario);
+
+    // Lo que el front necesita para habilitar (o no) el formulario de calificacion, decidido por el back
+    EstadoResena getEstadoResena(Usuario usuario, Long idVendedor);
+
+    ResenaResumenResponse getResumenByVendedor(Long idVendedor);
+
+    record EstadoResena(boolean puedeResenar, String motivo, Long idPago, ResenaVendedor miResena) {
+    }
 }

@@ -1,5 +1,6 @@
 package com.uade.entrelibros.backend.service;
 
+import java.util.Comparator;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -7,18 +8,22 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.uade.entrelibros.backend.entity.EstadoPago;
+import com.uade.entrelibros.backend.entity.Orden;
 import com.uade.entrelibros.backend.entity.Pago;
 import com.uade.entrelibros.backend.entity.ResenaVendedor;
 import com.uade.entrelibros.backend.entity.OrdenVendedor;
 import com.uade.entrelibros.backend.entity.Rol;
 import com.uade.entrelibros.backend.entity.Usuario;
+import com.uade.entrelibros.backend.entity.dto.ResenaResumenResponse;
 import com.uade.entrelibros.backend.exceptions.AccionNoPermitidaException;
 import com.uade.entrelibros.backend.exceptions.CalificacionInvalidaException;
+import com.uade.entrelibros.backend.exceptions.CampoInvalidoException;
 import com.uade.entrelibros.backend.exceptions.CompraNoPagadaException;
 import com.uade.entrelibros.backend.exceptions.ListaVaciaException;
 import com.uade.entrelibros.backend.exceptions.ResenaDuplicadaException;
 import com.uade.entrelibros.backend.exceptions.ResenaVendedorNoEncontradaException;
 import com.uade.entrelibros.backend.exceptions.PagoNoEncontradoException;
+import com.uade.entrelibros.backend.repository.OrdenRepository;
 import com.uade.entrelibros.backend.repository.PagoRepository;
 import com.uade.entrelibros.backend.repository.OrdenVendedorRepository;
 import com.uade.entrelibros.backend.repository.ResenaVendedorRepository;
@@ -32,6 +37,9 @@ public class ResenaVendedorServiceImpl implements ResenaVendedorService {
     private PagoRepository pagoRepository;
     @Autowired
     private OrdenVendedorRepository ordenVendedorRepository;
+
+    @Autowired
+    private OrdenRepository ordenRepository;
 
     public List<ResenaVendedor> getResenas() {
         List<ResenaVendedor> resenas = resenaVendedorRepository.findAll();
@@ -62,6 +70,10 @@ public class ResenaVendedorServiceImpl implements ResenaVendedorService {
 
         if (clasificacion == null || clasificacion < 1 || clasificacion > 5)
             throw new CalificacionInvalidaException();
+        validarComentario(comentario);
+        // Un vendedor puede comprar y calificar a otros vendedores, nunca a si mismo
+        if (idVendedor != null && idVendedor.equals(comprador.getId()))
+            throw new AccionNoPermitidaException();
 
         Pago pago = pagoRepository.findById(idPago)
                 .orElseThrow(PagoNoEncontradoException::new);
@@ -93,6 +105,58 @@ public class ResenaVendedorServiceImpl implements ResenaVendedorService {
                 new ResenaVendedor(pago, vendedor, comprador, clasificacion, comentario));
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public EstadoResena getEstadoResena(Usuario usuario, Long idVendedor) {
+        ResenaVendedor miResena = resenaVendedorRepository.findByVendedorId(idVendedor).stream()
+                .filter(r -> r.getComprador() != null && r.getComprador().getId().equals(usuario.getId()))
+                .max(Comparator.comparing(ResenaVendedor::getFecha).thenComparing(ResenaVendedor::getId))
+                .orElse(null);
+
+        if (usuario.getRol() == Rol.ADMIN) {
+            return new EstadoResena(false, "Los administradores no pueden dejar reseñas.", null, miResena);
+        }
+        if (usuario.getId().equals(idVendedor)) {
+            return new EstadoResena(false, "No podés calificarte a vos mismo.", null, miResena);
+        }
+
+        // Compras pagadas en las que participa este vendedor
+        List<Long> idsOrdenes = ordenRepository.findByCompradorId(usuario.getId()).stream()
+                .filter(o -> o.getEstadoPago() == EstadoPago.SIMULADO_APROBADO)
+                .filter(o -> ordenVendedorRepository.findByOrdenIdAndVendedorId(o.getId(), idVendedor).isPresent())
+                .map(Orden::getId)
+                .toList();
+        List<Pago> pagosAprobados = idsOrdenes.isEmpty()
+                ? List.of()
+                : pagoRepository.findByOrdenIdIn(idsOrdenes).stream()
+                        .filter(p -> p.getResultado() == EstadoPago.SIMULADO_APROBADO)
+                        .toList();
+
+        for (Pago pago : pagosAprobados) {
+            if (resenaVendedorRepository
+                    .findByPagoIdAndVendedorIdAndCompradorId(pago.getId(), idVendedor, usuario.getId()).isEmpty()) {
+                return new EstadoResena(true, null, pago.getId(), miResena);
+            }
+        }
+        String motivo = pagosAprobados.isEmpty()
+                ? "Solo pueden calificar al vendedor quienes le compraron y pagaron."
+                : "Ya calificaste a este vendedor.";
+        return new EstadoResena(false, motivo, null, miResena);
+    }
+
+    @Override
+    public ResenaResumenResponse getResumenByVendedor(Long idVendedor) {
+        return ResenaResumenResponse.de(resenaVendedorRepository.findByVendedorId(idVendedor).stream()
+                .map(ResenaVendedor::getClasificacion)
+                .toList());
+    }
+
+    private void validarComentario(String comentario) {
+        if (comentario == null || comentario.trim().length() < 3) {
+            throw new CampoInvalidoException("comentario", "Contanos brevemente cómo fue tu experiencia (mínimo 3 caracteres).");
+        }
+    }
+
     @Transactional
     public ResenaVendedor modificarResena(Long idResena, Usuario comprador, Integer clasificacion,
             String comentario) {
@@ -104,6 +168,7 @@ public class ResenaVendedorServiceImpl implements ResenaVendedorService {
             resena.setClasificacion(clasificacion);
         }
         if (comentario != null) {
+            validarComentario(comentario);
             resena.setComentario(comentario);
         }
 

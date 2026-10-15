@@ -7,18 +7,25 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.uade.entrelibros.backend.entity.EstadoPago;
+import com.uade.entrelibros.backend.entity.Libro;
+import com.uade.entrelibros.backend.entity.Orden;
 import com.uade.entrelibros.backend.entity.OrdenItem;
 import com.uade.entrelibros.backend.entity.ResenaLibro;
 import com.uade.entrelibros.backend.entity.Rol;
 import com.uade.entrelibros.backend.entity.Usuario;
+import com.uade.entrelibros.backend.entity.dto.ResenaResumenResponse;
 import com.uade.entrelibros.backend.exceptions.AccionNoPermitidaException;
 import com.uade.entrelibros.backend.exceptions.CalificacionInvalidaException;
+import com.uade.entrelibros.backend.exceptions.CampoInvalidoException;
 import com.uade.entrelibros.backend.exceptions.CompraNoPagadaException;
+import com.uade.entrelibros.backend.exceptions.LibroNoEncontradoException;
 import com.uade.entrelibros.backend.exceptions.ListaVaciaException;
 import com.uade.entrelibros.backend.exceptions.OrdenItemNoEncontradoException;
 import com.uade.entrelibros.backend.exceptions.ResenaDuplicadaException;
 import com.uade.entrelibros.backend.exceptions.ResenaLibroNoEncontradaException;
+import com.uade.entrelibros.backend.repository.LibroRepository;
 import com.uade.entrelibros.backend.repository.OrdenItemRepository;
+import com.uade.entrelibros.backend.repository.OrdenRepository;
 import com.uade.entrelibros.backend.repository.ResenaLibroRepository;
 import java.util.Comparator;
 
@@ -29,6 +36,12 @@ public class ResenaLibroServiceImpl implements ResenaLibroService {
     private ResenaLibroRepository resenaLibroRepository;
     @Autowired
     private OrdenItemRepository ordenItemRepository;
+
+    @Autowired
+    private OrdenRepository ordenRepository;
+
+    @Autowired
+    private LibroRepository libroRepository;
 
     public List<ResenaLibro> getResenas() {
         List<ResenaLibro> resenas = resenaLibroRepository.findAll();
@@ -71,6 +84,7 @@ public class ResenaLibroServiceImpl implements ResenaLibroService {
 
         if (calificacion == null || calificacion < 1 || calificacion > 5)
             throw new CalificacionInvalidaException();
+        validarComentario(comentario);
 
         OrdenItem ordenItem = ordenItemRepository.findById(idOrdenItem)
                 .orElseThrow(OrdenItemNoEncontradoException::new);
@@ -79,6 +93,11 @@ public class ResenaLibroServiceImpl implements ResenaLibroService {
         if (ordenItem.getOrden() == null
                 || ordenItem.getOrden().getComprador() == null
                 || !ordenItem.getOrden().getComprador().getId().equals(comprador.getId())) {
+            throw new AccionNoPermitidaException();
+        }
+
+        // Un vendedor puede comprar y reseñar, pero nunca un libro suyo
+        if (ordenItem.getVendedor() != null && ordenItem.getVendedor().getId().equals(comprador.getId())) {
             throw new AccionNoPermitidaException();
         }
 
@@ -93,6 +112,73 @@ public class ResenaLibroServiceImpl implements ResenaLibroService {
         return resenaLibroRepository.save(new ResenaLibro(ordenItem, calificacion, comentario));
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public EstadoResena getEstadoResena(Usuario usuario, Long idLibro) {
+        Libro libro = libroRepository.findById(idLibro).orElseThrow(LibroNoEncontradoException::new);
+
+        ResenaLibro miResena = resenaLibroRepository.findByLibroId(idLibro).stream()
+                .filter(r -> esDelComprador(r, usuario))
+                .max(Comparator.comparing(ResenaLibro::getFecha).thenComparing(ResenaLibro::getId))
+                .orElse(null);
+
+        if (usuario.getRol() == Rol.ADMIN) {
+            return new EstadoResena(false, "Los administradores no pueden dejar reseñas.", null, miResena);
+        }
+        if (libro.getVendedor() != null && libro.getVendedor().getId().equals(usuario.getId())) {
+            return new EstadoResena(false, "No podés reseñar tu propio libro.", null, miResena);
+        }
+
+        // Compras pagadas de este libro (los usados tambien se pueden reseñar)
+        List<Long> idsOrdenes = ordenRepository.findByCompradorId(usuario.getId()).stream()
+                .filter(o -> o.getEstadoPago() == EstadoPago.SIMULADO_APROBADO)
+                .map(Orden::getId)
+                .toList();
+        List<OrdenItem> comprados = idsOrdenes.isEmpty()
+                ? List.of()
+                : ordenItemRepository.findByOrdenIdIn(idsOrdenes).stream()
+                        .filter(i -> i.getLibro().getId().equals(idLibro))
+                        .toList();
+
+        for (OrdenItem item : comprados) {
+            if (resenaLibroRepository.findByOrdenItemId(item.getId()).isEmpty()) {
+                return new EstadoResena(true, null, item.getId(), miResena);
+            }
+        }
+        String motivo = comprados.isEmpty()
+                ? "Solo pueden opinar quienes compraron y pagaron este libro."
+                : "Ya opinaste sobre este libro.";
+        return new EstadoResena(false, motivo, null, miResena);
+    }
+
+    @Override
+    public ResenaResumenResponse getResumenByLibro(Long idLibro) {
+        libroRepository.findById(idLibro).orElseThrow(LibroNoEncontradoException::new);
+        return ResenaResumenResponse.de(resenaLibroRepository.findByLibroId(idLibro).stream()
+                .map(ResenaLibro::getCalificacion)
+                .toList());
+    }
+
+    @Override
+    public ResenaResumenResponse getResumenByVendedor(Long idVendedor) {
+        return ResenaResumenResponse.de(resenaLibroRepository.findByVendedorIdOrderByFechaDesc(idVendedor).stream()
+                .map(ResenaLibro::getCalificacion)
+                .toList());
+    }
+
+    private boolean esDelComprador(ResenaLibro resena, Usuario usuario) {
+        return resena.getOrdenItem() != null
+                && resena.getOrdenItem().getOrden() != null
+                && resena.getOrdenItem().getOrden().getComprador() != null
+                && resena.getOrdenItem().getOrden().getComprador().getId().equals(usuario.getId());
+    }
+
+    private void validarComentario(String comentario) {
+        if (comentario == null || comentario.trim().length() < 3) {
+            throw new CampoInvalidoException("comentario", "Contanos brevemente qué te pareció (mínimo 3 caracteres).");
+        }
+    }
+
     @Transactional
     public ResenaLibro modificarResena(Long idResena, Usuario comprador, Integer calificacion, String comentario) {
         ResenaLibro resena = getResenaById(idResena);
@@ -103,6 +189,7 @@ public class ResenaLibroServiceImpl implements ResenaLibroService {
             resena.setCalificacion(calificacion);
         }
         if (comentario != null) {
+            validarComentario(comentario);
             resena.setComentario(comentario);
         }
 
