@@ -38,6 +38,10 @@ public class OrdenServiceImpl implements OrdenService {
     @Autowired
     private LibroRepository libroRepository;
 
+    // Las lecturas de ordenes son transaccionales (de escritura) porque resuelven los vencimientos al consultar:
+    // una reserva pasada se libera (y devuelve el stock) en el momento, sin esperar al temporizador de 60 s.
+    // Asi el estado que se devuelve es el definitivo y el front no tiene que deducirlo.
+    @Transactional
     public List<Orden> getOrdenes(Usuario usuario) {
         if (usuario.getRol() != Rol.ADMIN) {
             throw new AccionNoPermitidaException();
@@ -46,8 +50,10 @@ public class OrdenServiceImpl implements OrdenService {
         if (ordenes.isEmpty()) {
             throw new ListaVaciaException("No hay órdenes registradas");
         }
+        ordenes.forEach(this::resolverVencimiento);
         return ordenes;
     }
+    @Transactional
     public Orden getOrdenById(Long idOrden, Usuario usuario) {
         Orden orden = ordenRepository.findById(idOrden)
                 .orElseThrow(OrdenNoEncontradaException::new);
@@ -60,6 +66,7 @@ public class OrdenServiceImpl implements OrdenService {
             throw new AccionNoPermitidaException();
         }
 
+        resolverVencimiento(orden);
         return orden;
     }
 
@@ -67,20 +74,24 @@ public class OrdenServiceImpl implements OrdenService {
         return ordenItemRepository.findByOrdenId(idOrden);
     }
 
+    @Transactional
     public List<Orden> getOrdenesByComprador(Usuario comprador) {
         List<Orden> ordenes = ordenRepository.findByCompradorId(comprador.getId());
         if (ordenes.isEmpty()) {
             throw new ListaVaciaException("No tenés órdenes registradas");
         }
+        ordenes.forEach(this::resolverVencimiento);
         return ordenes;
     }
 
+    @Transactional
     public List<OrdenVendedor> getOrdenesDelVendedor(Usuario vendedor) {
         validarVendedor(vendedor);
         List<OrdenVendedor> ordenes = ordenVendedorRepository.findByVendedorId(vendedor.getId());
         if (ordenes.isEmpty()) {
             throw new ListaVaciaException("No tenés órdenes como vendedor");
         }
+        ordenes.forEach(ordenVendedor -> resolverVencimiento(ordenVendedor.getOrden()));
         return ordenes;
     }
 
@@ -141,6 +152,15 @@ public class OrdenServiceImpl implements OrdenService {
         List<Orden> vencidas = ordenRepository.findByEstadoPagoAndReservaHastaLessThanEqual(
                 EstadoPago.PENDIENTE, LocalDateTime.now());
         for (Orden orden : vencidas) {
+            liberarReservaVencida(orden.getId());
+        }
+    }
+
+    private void resolverVencimiento(Orden orden) {
+        if (orden != null
+                && orden.getEstadoPago() == EstadoPago.PENDIENTE
+                && orden.getReservaHasta() != null
+                && !orden.getReservaHasta().isAfter(LocalDateTime.now())) {
             liberarReservaVencida(orden.getId());
         }
     }

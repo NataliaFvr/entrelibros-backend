@@ -1,9 +1,11 @@
 package com.uade.entrelibros.backend.entity.dto;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
+import com.uade.entrelibros.backend.entity.EstadoPago;
 import com.uade.entrelibros.backend.entity.Orden;
 import com.uade.entrelibros.backend.entity.OrdenItem;
 import lombok.Data;
@@ -24,6 +26,10 @@ public class OrdenResponse {
     private String proveedor;
     private List<OrdenItemResponse> items;
     private LocalDateTime venceEn;
+    
+    // Segundos que le quedan a la reserva, calculados con el reloj del servidor: el contador del front no depende
+    // de la zona horaria del navegador. Solo viene en ordenes pendientes (null en las demas).
+    private Long segundosRestantes;
     private String calleDestino;
     private String ciudadDestino;
     private String cpDestino;
@@ -52,6 +58,9 @@ public class OrdenResponse {
         r.id = orden.getId();
         r.fecha = orden.getFecha();
         r.venceEn = orden.getReservaHasta();
+        if (orden.getEstadoPago() == EstadoPago.PENDIENTE && orden.getReservaHasta() != null) {
+            r.segundosRestantes = Math.max(0L, Duration.between(LocalDateTime.now(), orden.getReservaHasta()).getSeconds());
+        }
         r.provinciaDestino = orden.getProvinciaDestino();
         r.calleDestino = orden.getCalleDestino();
         r.ciudadDestino = orden.getCiudadDestino();
