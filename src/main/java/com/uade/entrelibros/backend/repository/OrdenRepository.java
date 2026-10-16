@@ -16,6 +16,9 @@ public interface OrdenRepository extends JpaRepository<Orden, Long> {
     @Query(value = "select o from Orden o where o.comprador.id = ?1")
     List<Orden> findByCompradorId(Long idComprador);
 
+    // Las compras de una persona, de la mas nueva a la mas vieja (el id crece con cada orden)
+    List<Orden> findByCompradorIdOrderByIdDesc(Long idComprador);
+
     List<Orden> findByEstadoPagoAndReservaHastaLessThanEqual(
             com.uade.entrelibros.backend.entity.EstadoPago estadoPago, LocalDateTime fecha);
 

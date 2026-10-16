@@ -5,6 +5,7 @@ import java.time.LocalDateTime;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -47,7 +48,7 @@ public class OrdenServiceImpl implements OrdenService {
         if (usuario.getRol() != Rol.ADMIN) {
             throw new AccionNoPermitidaException();
         }
-        List<Orden> ordenes = ordenRepository.findAll();
+        List<Orden> ordenes = ordenRepository.findAll(Sort.by(Sort.Direction.DESC, "id")); // la mas nueva primero
         if (ordenes.isEmpty()) {
             throw new ListaVaciaException("No hay órdenes registradas");
         }
@@ -77,7 +78,7 @@ public class OrdenServiceImpl implements OrdenService {
 
     @Transactional
     public List<Orden> getOrdenesByComprador(Usuario comprador) {
-        List<Orden> ordenes = ordenRepository.findByCompradorId(comprador.getId());
+        List<Orden> ordenes = ordenRepository.findByCompradorIdOrderByIdDesc(comprador.getId());
         if (ordenes.isEmpty()) {
             throw new ListaVaciaException("No tenés órdenes registradas");
         }
