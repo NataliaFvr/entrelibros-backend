@@ -21,6 +21,7 @@ import com.uade.entrelibros.backend.exceptions.OrdenNoEncontradaException;
 import com.uade.entrelibros.backend.exceptions.OrdenVendedorNoEncontradaException;
 import com.uade.entrelibros.backend.exceptions.OrdenNoCancelableException;
 import com.uade.entrelibros.backend.exceptions.RolInvalidoException;
+import com.uade.entrelibros.backend.exceptions.VentaPagadaNoCancelableException;
 import com.uade.entrelibros.backend.repository.OrdenRepository;
 import com.uade.entrelibros.backend.repository.OrdenVendedorRepository;
 import com.uade.entrelibros.backend.repository.OrdenItemRepository;
@@ -107,6 +108,11 @@ public class OrdenServiceImpl implements OrdenService {
 
         if (ordenVendedor.getEstado() == EstadoOrdenVendedor.CANCELADA) {
             return ordenVendedor;
+        }
+
+        // Si el comprador ya pagó, devolver el stock lo dejaría cobrado sin libros
+        if (ordenVendedor.getOrden().getEstadoPago() == EstadoPago.SIMULADO_APROBADO) {
+            throw new VentaPagadaNoCancelableException();
         }
 
         devolverStock(ordenItemRepository.findByOrdenIdAndVendedorId(

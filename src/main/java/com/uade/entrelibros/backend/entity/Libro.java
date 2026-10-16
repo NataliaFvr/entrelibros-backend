@@ -47,6 +47,11 @@ public class Libro {
 
     private Double precio;
     private Double descuentoPct;
+
+    // Precio con descuento, calculado por la base (no es una columna): lo usan el filtro y el orden por precio del catalogo
+    @org.hibernate.annotations.Formula("ROUND(precio * (1 - COALESCE(descuento_pct, 0) / 100), 2)")
+    private Double precioFinal;
+
     private Integer stock;
 
     @Column(columnDefinition = "TEXT")

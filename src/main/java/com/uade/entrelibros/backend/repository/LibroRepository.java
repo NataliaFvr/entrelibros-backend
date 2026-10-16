@@ -66,9 +66,9 @@ public interface LibroRepository extends JpaRepository<Libro, Long>, JpaSpecific
     @Query("select distinct l.vendedor from Libro l where l.estadoPublicacion = com.uade.entrelibros.backend.entity.EstadoPublicacion.ACTIVA and l.estadoModeracion = com.uade.entrelibros.backend.entity.EstadoModeracion.ACEPTADO")
     List<Usuario> findVendedoresConLibrosVisibles();
 
-    @Query("select min(l.precio) from Libro l where l.estadoPublicacion = com.uade.entrelibros.backend.entity.EstadoPublicacion.ACTIVA and l.estadoModeracion = com.uade.entrelibros.backend.entity.EstadoModeracion.ACEPTADO")
+    @Query("select min(l.precioFinal) from Libro l where l.estadoPublicacion = com.uade.entrelibros.backend.entity.EstadoPublicacion.ACTIVA and l.estadoModeracion = com.uade.entrelibros.backend.entity.EstadoModeracion.ACEPTADO")
     Double findPrecioMinimoVisible();
 
-    @Query("select max(l.precio) from Libro l where l.estadoPublicacion = com.uade.entrelibros.backend.entity.EstadoPublicacion.ACTIVA and l.estadoModeracion = com.uade.entrelibros.backend.entity.EstadoModeracion.ACEPTADO")
+    @Query("select max(l.precioFinal) from Libro l where l.estadoPublicacion = com.uade.entrelibros.backend.entity.EstadoPublicacion.ACTIVA and l.estadoModeracion = com.uade.entrelibros.backend.entity.EstadoModeracion.ACEPTADO")
     Double findPrecioMaximoVisible();
 }

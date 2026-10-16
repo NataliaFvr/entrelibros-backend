@@ -64,11 +64,11 @@ public class LibroSpecification {
     }
  
     public static Specification<Libro> precioMinimo(Double min) {
-        return (root, query, cb) -> min == null ? cb.conjunction() : cb.greaterThanOrEqualTo(root.get("precio"), min);
+        return (root, query, cb) -> min == null ? cb.conjunction() : cb.greaterThanOrEqualTo(root.get("precioFinal"), min);
     }
  
     public static Specification<Libro> precioMaximo(Double max) {
-        return (root, query, cb) -> max == null ? cb.conjunction() : cb.lessThanOrEqualTo(root.get("precio"), max);
+        return (root, query, cb) -> max == null ? cb.conjunction() : cb.lessThanOrEqualTo(root.get("precioFinal"), max);
     }
 
     public static Specification<Libro> anioMinimo(Integer min) {

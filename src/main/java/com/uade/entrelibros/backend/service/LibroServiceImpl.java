@@ -99,8 +99,8 @@ public class LibroServiceImpl implements LibroService {
     // preservando la pagina/tamanio que ya traia el Pageable original.
     private Pageable aplicarSort(Pageable pageable, String sort) {
         Sort ordenamiento = switch (sort == null ? "" : sort.trim()) {
-            case "precioAsc" -> Sort.by("precio").ascending();
-            case "precioDesc" -> Sort.by("precio").descending();
+            case "precioAsc" -> Sort.by("precioFinal").ascending();
+            case "precioDesc" -> Sort.by("precioFinal").descending();
             case "descuento" -> Sort.by("descuentoPct").descending();
             case "nuevo" -> Sort.by("fechaPublicacion").descending();
             // Los usados son piezas únicas: no participan del ranking de bestsellers.
