@@ -24,7 +24,8 @@ public class ContactoController {
     @Autowired
     private EmailService emailService;
 
-    @Value("${app.contacto.email:soporte@entrelibros.com}")
+    // Si no se configura otro, los mensajes llegan a la casilla del proyecto (la misma que manda los mails)
+    @Value("${app.contacto.email:${spring.mail.username}}")
     private String emailDestino;
 
     @PostMapping

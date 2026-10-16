@@ -48,7 +48,6 @@ public class SecurityConfig {
                         .permitAll()
                         // foto de perfil publica: un <img> no puede mandar el token
                         .requestMatchers(HttpMethod.GET, "/usuarios/*/foto").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/usuarios").permitAll()
                         .requestMatchers(HttpMethod.POST, "/contacto").permitAll()
                         .anyRequest().authenticated())
                 .sessionManagement(session -> session.sessionCreationPolicy(STATELESS))
