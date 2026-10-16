@@ -62,6 +62,7 @@ public class LibroRequest {
     @Min(value = 1, message = "El stock debe ser al menos 1.", groups = {Crear.class, Actualizar.class})
     private Integer stock;
 
+    @Size(max = 1000, message = "Máximo 1000 caracteres.", groups = {Crear.class, Actualizar.class})
     private String descripcion;
 
     private List<Long> idCategorias;

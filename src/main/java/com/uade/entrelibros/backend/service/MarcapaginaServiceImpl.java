@@ -17,6 +17,7 @@ import com.uade.entrelibros.backend.exceptions.LibroNoEncontradoException;
 import com.uade.entrelibros.backend.exceptions.ListaVaciaException;
 import com.uade.entrelibros.backend.exceptions.MarcapaginaDuplicadaException;
 import com.uade.entrelibros.backend.exceptions.MarcapaginaNoEncontradaException;
+import com.uade.entrelibros.backend.exceptions.AccionNoPermitidaException;
 import com.uade.entrelibros.backend.repository.LibroRepository;
 import com.uade.entrelibros.backend.repository.MarcapaginaRepository;
 
@@ -52,6 +53,10 @@ public class MarcapaginaServiceImpl implements MarcapaginaService {
         if (libro.getEstadoPublicacion() != EstadoPublicacion.ACTIVA
                 || libro.getEstadoModeracion() != EstadoModeracion.ACEPTADO) {
             throw new LibroNoDisponibleException();
+        }
+
+        if (libro.getVendedor() != null && libro.getVendedor().getId().equals(usuario.getId())) {
+            throw new AccionNoPermitidaException();
         }
 
         if (marcapaginaRepository.existsByUsuarioIdAndLibroId(usuario.getId(), idLibro)) {
