@@ -15,6 +15,7 @@ import com.uade.entrelibros.backend.entity.Usuario;
 import com.uade.entrelibros.backend.entity.dto.AgregarItemCarritoRequest;
 import com.uade.entrelibros.backend.entity.dto.CarritoItemResponse;
 import com.uade.entrelibros.backend.entity.dto.CheckoutRequest;
+import com.uade.entrelibros.backend.entity.dto.CotizacionEnvioResponse;
 import com.uade.entrelibros.backend.entity.dto.ModificarCantidadCarritoRequest;
 import com.uade.entrelibros.backend.entity.dto.OrdenResponse;
 import com.uade.entrelibros.backend.exceptions.AccionNoPermitidaException;
@@ -85,6 +86,14 @@ public class CarritoController {
             throws ItemCarritoNoEncontradoException, AccionNoPermitidaException {
         carritoService.quitarItem(usuario.getId(), idItem);
         return ResponseEntity.ok(Map.of("mensaje", "Libro quitado del carrito"));
+    }
+
+    // Cotiza el envio del carrito para una direccion, sin crear la orden ni reservar stock
+    @GetMapping("/envio")
+    public ResponseEntity<CotizacionEnvioResponse> cotizarEnvio(
+            @AuthenticationPrincipal Usuario usuario,
+            @RequestParam Long idDireccion) {
+        return ResponseEntity.ok(carritoService.cotizarEnvio(usuario.getId(), idDireccion));
     }
 
     @PostMapping("/checkout")

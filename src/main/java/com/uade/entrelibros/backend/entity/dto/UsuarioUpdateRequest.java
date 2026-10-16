@@ -22,6 +22,9 @@ public class UsuarioUpdateRequest {
     )
     private String contrasena;
 
+    // Obligatoria cuando el propio usuario cambia su contrasena (el admin no la necesita)
+    private String contrasenaActual;
+
     @Size(min = 2, max = 50, message = "Debe tener entre 2 y 50 caracteres.")
     @Pattern(regexp = "^[\\p{L}][\\p{L}\\s'\\u2019.-]*$", message = "Usá solo letras, espacios, apóstrofe o guion.")
     private String nombre;

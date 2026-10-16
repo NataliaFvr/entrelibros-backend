@@ -26,6 +26,7 @@ import com.uade.entrelibros.backend.exceptions.ListaVaciaException;
 import com.uade.entrelibros.backend.exceptions.RolInvalidoException;
 import com.uade.entrelibros.backend.exceptions.SolicitudPendienteExistenteException;
 import com.uade.entrelibros.backend.exceptions.SolicitudVendedorNoEncontradaException;
+import com.uade.entrelibros.backend.exceptions.ContrasenaActualIncorrectaException;
 import com.uade.entrelibros.backend.exceptions.UsuarioDuplicadoException;
 import com.uade.entrelibros.backend.exceptions.UsuarioNoEncontradoException;
 import com.uade.entrelibros.backend.exceptions.YaEsVendedorException;
@@ -136,7 +137,7 @@ public class UsuarioServiceImpl implements UsuarioService {
     }
 
     @Override
-    public Usuario updateUsuario(Long usuarioId, UsuarioUpdateRequest request) {
+    public Usuario updateUsuario(Long usuarioId, UsuarioUpdateRequest request, boolean esPropio) {
         Usuario usuario = usuarioRepository.findById(usuarioId)
                 .orElseThrow(UsuarioNoEncontradoException::new);
 
@@ -170,8 +171,14 @@ public class UsuarioServiceImpl implements UsuarioService {
             usuario.setDescripcion(request.getDescripcion());
         if (request.getAvatar() != null)
             usuario.setAvatar(request.getAvatar().isBlank() ? null : request.getAvatar());
-        if (request.getContrasena() != null && !request.getContrasena().isBlank())
+        if (request.getContrasena() != null && !request.getContrasena().isBlank()) {
+            // Quien cambia su propia contrasena tiene que demostrar que conoce la actual
+            if (esPropio && (request.getContrasenaActual() == null
+                    || !passwordEncoder.matches(request.getContrasenaActual(), usuario.getContrasenaHash()))) {
+                throw new ContrasenaActualIncorrectaException();
+            }
             usuario.setContrasenaHash(passwordEncoder.encode(request.getContrasena()));
+        }
 
         return usuarioRepository.save(usuario);
     }

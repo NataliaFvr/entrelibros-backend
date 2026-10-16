@@ -24,7 +24,7 @@ public interface UsuarioService {
             // Alta desde el panel admin: con rol VENDEDOR exige nombre de tienda, provincia y telefono
     public Usuario createUsuarioDesdeAdmin(String nombreUsuario, String email, String contrasena, String nombre,
             String apellido, Rol rol, String nombreTienda, String provincia, String telefono);
-    public Usuario updateUsuario(Long usuarioId, UsuarioUpdateRequest request);
+    public Usuario updateUsuario(Long usuarioId, UsuarioUpdateRequest request, boolean esPropio);
     public Usuario darDeBajaUsuario(Long usuarioId);
     public Usuario cambiarRol(Long usuarioId, Rol nuevoRol, String nombreTienda, String provincia, String telefono);
     public Usuario reactivarUsuario(Long usuarioId);

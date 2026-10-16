@@ -23,7 +23,7 @@ public class LibroMioResponse extends LibroResponse {
 
     public static LibroMioResponse from(Libro libro, List<String> categorias, String motivoRechazo) {
         LibroMioResponse response = new LibroMioResponse();
-        BeanUtils.copyProperties(LibroResponse.from(libro, categorias), response);
+        BeanUtils.copyProperties(LibroResponse.from(libro, categorias).conSnapshot(libro), response);
         response.setMotivoRechazo(motivoRechazo);
         return response;
     }

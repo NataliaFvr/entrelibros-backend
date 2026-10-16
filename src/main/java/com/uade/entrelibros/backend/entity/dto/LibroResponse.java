@@ -2,6 +2,7 @@ package com.uade.entrelibros.backend.entity.dto;
 
 import com.uade.entrelibros.backend.entity.Libro;
 import java.util.List;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Data;
 
 @Data
@@ -28,17 +29,30 @@ public class LibroResponse {
     private String provinciaVendedor;
     private Integer vendidos;
     private String envio;
+    // Datos de moderacion: solo los completa conSnapshot() (admin y "Mis libros"); en el catalogo no se mandan
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     private String snapshotTitulo;
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     private String snapshotAutor;
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     private String snapshotEditorial;
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     private Integer snapshotAnio;
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     private String snapshotIdioma;
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     private String snapshotEstadoLibro;
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     private Double snapshotPrecio;
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     private Double snapshotPrecioFinal;
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     private Double snapshotDescuentoPct;
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     private Integer snapshotStock;
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     private String snapshotDescripcion;
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     private java.time.LocalDateTime fechaSolicitudRevision;
     // URL relativa de la imagen de portada (la primera por orden), con la misma forma que CarritoItemResponse.portada.
     // null si el libro no tiene imagenes.
@@ -100,6 +114,12 @@ public class LibroResponse {
                     == com.uade.entrelibros.backend.entity.ZonaEnvio.MISMA_PROVINCIA
                     ? "misma" : "distinta";
         }
+        return r;
+    }
+
+    // Agrega como estaba el libro antes de la ultima edicion (lo que compara el admin al moderar)
+    public LibroResponse conSnapshot(Libro libro) {
+        LibroResponse r = this;
         r.snapshotTitulo = libro.getSnapshotTitulo();
         r.snapshotAutor = libro.getSnapshotAutor();
         r.snapshotEditorial = libro.getSnapshotEditorial();
@@ -121,6 +141,6 @@ public class LibroResponse {
         r.snapshotStock = libro.getSnapshotStock();
         r.snapshotDescripcion = libro.getSnapshotDescripcion();
         r.fechaSolicitudRevision = libro.getFechaSolicitudRevision();
-        return r;
+        return this;
     }
 }

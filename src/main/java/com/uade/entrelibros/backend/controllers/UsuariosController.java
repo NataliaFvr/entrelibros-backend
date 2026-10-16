@@ -78,9 +78,11 @@ public class UsuariosController {
     @PatchMapping("/{usuarioId}")
     public ResponseEntity<UsuarioResponse> updateUsuario(
             @PathVariable Long usuarioId,
-            @Valid @RequestBody UsuarioUpdateRequest usuarioUpdateRequest)
+            @Valid @RequestBody UsuarioUpdateRequest usuarioUpdateRequest,
+            @AuthenticationPrincipal Usuario autenticado)
             throws UsuarioDuplicadoException, UsuarioNoEncontradoException {
-        Usuario result = usuarioService.updateUsuario(usuarioId, usuarioUpdateRequest);
+        boolean esPropio = autenticado != null && autenticado.getId().equals(usuarioId);
+        Usuario result = usuarioService.updateUsuario(usuarioId, usuarioUpdateRequest, esPropio);
         return ResponseEntity.ok(UsuarioResponse.from(result));
     }
 

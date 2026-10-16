@@ -1,5 +1,6 @@
 package com.uade.entrelibros.backend.service;
 
+import com.uade.entrelibros.backend.entity.dto.CotizacionEnvioResponse;
 import java.util.List;
 
 import com.uade.entrelibros.backend.entity.Carrito;
@@ -26,4 +27,6 @@ public interface CarritoService {
     void quitarItem(Long idUsuario, Long idItem);
 
     Orden checkout(Long idUsuario, Long idDireccion, String provinciaDestino);
+
+    CotizacionEnvioResponse cotizarEnvio(Long idUsuario, Long idDireccion);
 }

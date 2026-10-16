@@ -251,7 +251,8 @@ public class LibrosController {
         Map<Long, Long> portadas = portadasPorLibro(libros.getContent());
         return ResponseEntity.ok(libros.map(libro -> LibroResponse.from(
                 libro, categorias.getOrDefault(libro.getId(), List.of()))
-                .conPortada(portadas.get(libro.getId()))));
+                .conPortada(portadas.get(libro.getId()))
+                .conSnapshot(libro)));
     }
 
     @PreAuthorize("hasAuthority('ADMIN')")

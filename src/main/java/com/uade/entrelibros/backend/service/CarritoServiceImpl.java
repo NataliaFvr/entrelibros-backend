@@ -1,5 +1,6 @@
 package com.uade.entrelibros.backend.service;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -20,6 +21,7 @@ import com.uade.entrelibros.backend.entity.Orden;
 import com.uade.entrelibros.backend.entity.OrdenItem;
 import com.uade.entrelibros.backend.entity.OrdenVendedor;
 import com.uade.entrelibros.backend.entity.Usuario;
+import com.uade.entrelibros.backend.entity.dto.CotizacionEnvioResponse;
 import com.uade.entrelibros.backend.exceptions.CarritoVacioException;
 import com.uade.entrelibros.backend.exceptions.AccionNoPermitidaException;
 import com.uade.entrelibros.backend.exceptions.CantidadInvalidaException;
@@ -242,6 +244,31 @@ public class CarritoServiceImpl implements CarritoService {
             throw new LibroNoDisponibleException();
         }
 
+    }
+
+    // Mismo calculo que el checkout (subtotal con descuento + un envio por vendedor), pero sin crear la orden
+    // ni reservar stock: sirve para mostrar el total antes de confirmar la compra.
+    @Override
+    @Transactional
+    public CotizacionEnvioResponse cotizarEnvio(Long idUsuario, Long idDireccion) {
+        Direccion direccion = direccionRepository.findByIdAndUsuarioId(idDireccion, idUsuario)
+                .orElseThrow(DireccionNoEncontradaException::new);
+        Carrito carrito = getOrCrearCarrito(idUsuario);
+        List<CarritoItem> items = carritoItemRepository.findByCarritoId(carrito.getId());
+        if (items.isEmpty()) {
+            throw new CarritoVacioException();
+        }
+        List<Libro> libros = new ArrayList<>();
+        double subtotal = 0.0;
+        for (CarritoItem item : items) {
+            libros.add(item.getLibro());
+            subtotal += precioConDescuento(item.getLibro()) * item.getCantidad();
+        }
+        subtotal = EnvioPolicy.redondear(subtotal);
+        Map<Long, EnvioPolicy.EnvioVendedor> envios = envioPolicy.enviosPorVendedor(libros, direccion.getProvincia());
+        double costoEnvio = EnvioPolicy.redondear(envios.values().stream()
+                .mapToDouble(EnvioPolicy.EnvioVendedor::costo).sum());
+        return new CotizacionEnvioResponse(subtotal, costoEnvio, EnvioPolicy.redondear(subtotal + costoEnvio), envios.size());
     }
 
     private int maxCantidad(Libro libro) {
