@@ -76,6 +76,7 @@ public class LibroServiceImpl implements LibroService {
     @Override
     public Page<Libro> buscarLibros(LibroFiltroRequest filtro, Pageable pageable) {
         Specification<Libro> spec = Specification.where(LibroSpecification.visibles())
+            .and(LibroSpecification.conStock())
             .and(LibroSpecification.contieneTexto(filtro.getTexto()))
             .and(LibroSpecification.tieneCategorias(filtro.getIdCategorias()))
             .and(LibroSpecification.precioMinimo(filtro.getPrecioMin()))

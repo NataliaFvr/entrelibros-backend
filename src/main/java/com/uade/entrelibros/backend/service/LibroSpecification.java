@@ -13,6 +13,11 @@ import com.uade.entrelibros.backend.entity.LibroCategoria;
  
 public class LibroSpecification {
  
+    // Catalogo: un libro agotado no se lista (como una publicacion pausada). Su ficha sigue existiendo y muestra "Sin stock".
+    public static Specification<Libro> conStock() {
+        return (root, query, cb) -> cb.greaterThan(root.get("stock"), 0);
+    }
+
     // se aplica siempre, sea cual sea el resto de los filtros: solo libros publicados y aceptados por moderación
     public static Specification<Libro> visibles() {
         return (root, query, cb) -> cb.and(
