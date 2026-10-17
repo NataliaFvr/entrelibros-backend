@@ -14,6 +14,7 @@ public class CarritoItemResponse {
     private Long idLibro;
     private String tituloLibro;
     private String autor;
+    private Double precioOriginal; // precio de lista, sin descuento: el front lo muestra tachado
     private Double precioUnitario;
     private Double subtotal;
     private String nombreTienda;
@@ -35,6 +36,7 @@ public class CarritoItemResponse {
             r.tituloLibro = item.getLibro().getTitulo();
             r.autor = item.getLibro().getAutor();
             Double precio = item.getLibro().getPrecio();
+            r.precioOriginal = precio;
             Double descuento = item.getLibro().getDescuentoPct() != null
                     ? item.getLibro().getDescuentoPct() : 0.0;
             if (precio != null) {
