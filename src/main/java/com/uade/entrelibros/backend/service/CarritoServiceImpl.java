@@ -268,7 +268,20 @@ public class CarritoServiceImpl implements CarritoService {
         Map<Long, EnvioPolicy.EnvioVendedor> envios = envioPolicy.enviosPorVendedor(libros, direccion.getProvincia());
         double costoEnvio = EnvioPolicy.redondear(envios.values().stream()
                 .mapToDouble(EnvioPolicy.EnvioVendedor::costo).sum());
-        return new CotizacionEnvioResponse(subtotal, costoEnvio, EnvioPolicy.redondear(subtotal + costoEnvio), envios.size());
+        // Nombre visible de cada vendedor (la tienda o, si no tiene, su nombre), en el orden de los envios
+        Map<Long, String> nombres = new HashMap<>();
+        for (Libro libro : libros) {
+            Usuario vendedor = libro.getVendedor();
+            String tienda = vendedor.getNombreTienda();
+            nombres.putIfAbsent(vendedor.getId(), tienda != null && !tienda.isBlank() ? tienda : vendedor.getNombre());
+        }
+        List<CotizacionEnvioResponse.EnvioVendedor> detalle = envios.values().stream()
+                .map(e -> new CotizacionEnvioResponse.EnvioVendedor(e.idVendedor(), nombres.get(e.idVendedor()),
+                        e.zona() == com.uade.entrelibros.backend.entity.ZonaEnvio.MISMA_PROVINCIA ? "misma" : "distinta",
+                        e.costo()))
+                .toList();
+        return new CotizacionEnvioResponse(subtotal, costoEnvio, EnvioPolicy.redondear(subtotal + costoEnvio),
+                envios.size(), detalle);
     }
 
     private int maxCantidad(Libro libro) {
