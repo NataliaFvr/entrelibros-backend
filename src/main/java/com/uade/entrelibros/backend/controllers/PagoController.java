@@ -19,6 +19,7 @@ import com.uade.entrelibros.backend.exceptions.OrdenNoEncontradaException;
 import com.uade.entrelibros.backend.exceptions.OrdenNoPagableException;
 import com.uade.entrelibros.backend.exceptions.PagoNoEncontradoException;
 import com.uade.entrelibros.backend.service.PagoService;
+import com.uade.entrelibros.backend.service.ValidadorTarjeta;
 
 @RestController
 @RequestMapping("pagos")
@@ -69,6 +70,7 @@ public class PagoController {
             @AuthenticationPrincipal Usuario comprador,
             @RequestBody PagoRequest request)
             throws OrdenNoEncontradaException, AccionNoPermitidaException, OrdenNoPagableException {
+        ValidadorTarjeta.validar(request); // si paga con tarjeta, los datos tienen que ser validos
         Pago result = pagoService.crearPago(comprador, request.getIdOrden(), request.getProveedor());
         return ResponseEntity.created(URI.create("/pagos/" + result.getId()))
                 .body(PagoResponse.from(result));

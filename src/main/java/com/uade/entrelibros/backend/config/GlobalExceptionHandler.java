@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.security.authentication.DisabledException;
 import com.uade.entrelibros.backend.exceptions.CampoInvalidoException;
+import com.uade.entrelibros.backend.exceptions.CamposInvalidosException;
 import com.uade.entrelibros.backend.exceptions.EntreLibrosException;
 import com.uade.entrelibros.backend.exceptions.ListaVaciaException;
 import com.uade.entrelibros.backend.exceptions.CuentaDadaDeBajaException;
@@ -57,6 +58,11 @@ public class GlobalExceptionHandler {
     }
 
     // Validacion de un solo campo lanzada desde un service: mismo formato { campo: mensaje } que @Valid
+    @ExceptionHandler(CamposInvalidosException.class)
+    public ResponseEntity<Map<String, String>> handleCamposInvalidos(CamposInvalidosException ex) {
+        return ResponseEntity.badRequest().body(ex.getErrores());
+    }
+
     @ExceptionHandler(CampoInvalidoException.class)
     public ResponseEntity<Map<String, String>> handleCampoInvalido(CampoInvalidoException ex) {
         return ResponseEntity.badRequest().body(Map.of(ex.getCampo(), ex.getMensaje()));
