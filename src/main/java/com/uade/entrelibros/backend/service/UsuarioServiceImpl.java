@@ -207,6 +207,7 @@ public class UsuarioServiceImpl implements UsuarioService {
 
     }
     @Override
+    @Transactional // el rol y la baja de sus libros se guardan juntos o no se guarda nada
     public Usuario cambiarRol(Long usuarioId, Rol nuevoRol, String nombreTienda, String provincia, String telefono) {
         if (nuevoRol == null) {
             throw new RolInvalidoException();
@@ -223,6 +224,10 @@ public class UsuarioServiceImpl implements UsuarioService {
             usuario.setTelefono(telefono.trim());
         }
         boolean eraVendedor = usuario.getRol() == Rol.VENDEDOR;
+        // Si deja de ser vendedor, sus libros salen del catalogo: ya no podria ver sus ventas ni darlos de baja
+        if (eraVendedor && nuevoRol != Rol.VENDEDOR) {
+            darDeBajaLibrosYCarritos(usuario);
+        }
         usuario.setRol(nuevoRol);
         // El estado de la solicitud sigue al rol: antes quedaba en NINGUNO (o PENDIENTE) aunque ya fuera vendedor
         if (nuevoRol == Rol.VENDEDOR) {
