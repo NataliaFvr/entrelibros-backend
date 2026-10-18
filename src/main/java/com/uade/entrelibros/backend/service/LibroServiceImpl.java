@@ -150,6 +150,7 @@ public class LibroServiceImpl implements LibroService {
 
         validarVendedor(vendedor);
         validarReglasDeCarga(request, true);
+        validarCategoriasActivas(request.getIdCategorias(), List.of());
 
         EstadoLibro estado = parsearEstadoLibro(request.getEstadoLibro());
         // Los usados son piezas unicas: siempre 1 unidad, sin importar lo que llegue
@@ -180,9 +181,15 @@ public class LibroServiceImpl implements LibroService {
                 .orElseThrow(LibroNoEncontradoException::new);
         validarDuenio(libro, vendedor);
         validarReglasDeCarga(request, false);
+        List<Long> categoriasActuales = libroCategoriaRepository.findByLibroId(libroId).stream()
+                .map(lc -> lc.getCategoria().getId())
+                .toList();
+        validarCategoriasActivas(request.getIdCategorias(), categoriasActuales);
 
-        // Si se edita, vuelve a revision del admin
-        boolean vuelveARevision = libro.getEstadoModeracion() != EstadoModeracion.EN_REVISION;
+        // Vuelve a revision del admin solo si cambia lo que el admin revisa (los datos del libro). Precio, descuento y
+        // stock se aplican directo: reponer stock o poner una oferta no saca el libro del catalogo.
+        boolean vuelveARevision = libro.getEstadoModeracion() != EstadoModeracion.EN_REVISION
+                && cambiaContenido(libro, request, categoriasActuales);
         if (vuelveARevision) {
             libro.guardarSnapshotActual();
         }
@@ -204,6 +211,41 @@ public class LibroServiceImpl implements LibroService {
         }
 
         return actualizado;
+    }
+
+    private boolean cambiaContenido(Libro libro, LibroRequest r, List<Long> categoriasActuales) {
+        String descripcionNueva = r.getDescripcion() == null ? null : r.getDescripcion().strip();
+        String descripcionActual = libro.getDescripcion() == null ? "" : libro.getDescripcion().strip();
+        return distinto(r.getTitulo(), libro.getTitulo())
+                || distinto(r.getAutor(), libro.getAutor())
+                || distinto(r.getEditorial(), libro.getEditorial())
+                || distinto(r.getAnio(), libro.getAnio())
+                || distinto(r.getIdioma(), libro.getIdioma())
+                || (r.getEstadoLibro() != null && parsearEstadoLibro(r.getEstadoLibro()) != libro.getEstadoLibro())
+                || distinto(descripcionNueva, descripcionActual)
+                || (r.getIdCategorias() != null
+                        && !new java.util.HashSet<>(r.getIdCategorias()).equals(new java.util.HashSet<>(categoriasActuales)));
+    }
+
+    private static boolean distinto(Object nuevo, Object actual) {
+        return nuevo != null && !nuevo.equals(actual);
+    }
+
+    // Una categoria desactivada por el admin no se puede elegir. Las que el libro ya tenia se conservan al editar.
+    private void validarCategoriasActivas(List<Long> idCategorias, List<Long> yaTenia) {
+        if (idCategorias == null) {
+            return;
+        }
+        for (Long id : idCategorias) {
+            if (yaTenia.contains(id)) {
+                continue;
+            }
+            Categoria categoria = categoriaRepository.findById(id).orElseThrow(CategoriaNoEncontradaException::new);
+            if (!categoria.isActiva()) {
+                throw new CampoInvalidoException("idCategorias",
+                        "La categoría \"" + categoria.getNombre() + "\" no está disponible. Elegí otra.");
+            }
+        }
     }
 
     private void aplicarCambios(Libro libro, LibroRequest request) {

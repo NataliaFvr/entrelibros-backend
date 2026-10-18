@@ -52,13 +52,19 @@ public class SecurityConfig {
                         .anyRequest().authenticated())
                 .sessionManagement(session -> session.sessionCreationPolicy(STATELESS))
                 .exceptionHandling(exceptions -> exceptions
-                        .authenticationEntryPoint((request, response, exception) -> response.sendError(
-                                HttpServletResponse.SC_UNAUTHORIZED,
-                                "Se requiere un token de acceso valido")))
+                        .authenticationEntryPoint((request, response, exception) -> responderError(
+                                response, HttpServletResponse.SC_UNAUTHORIZED, "Iniciá sesión para continuar")))
                 .authenticationProvider(authenticationProvider)
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
+    }
+
+    // Mismo formato { error } que el GlobalExceptionHandler (los filtros de seguridad corren antes que el)
+    static void responderError(HttpServletResponse response, int status, String mensaje) throws java.io.IOException {
+        response.setStatus(status);
+        response.setContentType("application/json;charset=UTF-8");
+        response.getWriter().write("{\"error\":\"" + mensaje + "\"}");
     }
 
     @Bean

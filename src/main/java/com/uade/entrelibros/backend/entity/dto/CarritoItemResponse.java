@@ -22,6 +22,8 @@ public class CarritoItemResponse {
     private Integer maxCantidad;
     private Double descuentoPct;
     private String portada;
+    // false si el libro se dio de baja, volvio a revision o se agoto: el front lo marca en la estanteria
+    private Boolean disponible;
 
     public static CarritoItemResponse from(CarritoItem item) {
         return from(item, null);
@@ -54,6 +56,9 @@ public class CarritoItemResponse {
             }
             r.descuentoPct = descuento;
             r.stock = item.getLibro().getStock();
+            r.disponible = item.getLibro().getEstadoPublicacion() == com.uade.entrelibros.backend.entity.EstadoPublicacion.ACTIVA
+                    && item.getLibro().getEstadoModeracion() == com.uade.entrelibros.backend.entity.EstadoModeracion.ACEPTADO
+                    && item.getLibro().getStock() != null && item.getLibro().getStock() > 0;
             r.maxCantidad = item.getLibro().getEstadoLibro() != null
                     && item.getLibro().getEstadoLibro().name().equals("USADO")
                     ? 1 : item.getLibro().getStock();

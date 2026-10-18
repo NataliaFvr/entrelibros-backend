@@ -16,6 +16,7 @@ import com.uade.entrelibros.backend.entity.dto.SolicitudVendedorRequest;
 import com.uade.entrelibros.backend.entity.dto.UsuarioRequest;
 import com.uade.entrelibros.backend.entity.dto.UsuarioResponse;
 import com.uade.entrelibros.backend.entity.dto.UsuarioUpdateRequest;
+import com.uade.entrelibros.backend.exceptions.AccionSobreUnoMismoException;
 import com.uade.entrelibros.backend.exceptions.RolInvalidoException;
 import com.uade.entrelibros.backend.exceptions.SolicitudPendienteExistenteException;
 import com.uade.entrelibros.backend.exceptions.SolicitudVendedorNoEncontradaException;
@@ -88,8 +89,11 @@ public class UsuariosController {
 
     @PreAuthorize("hasAuthority('ADMIN')")
     @PatchMapping("/{usuarioId}/baja")
-    public ResponseEntity<UsuarioResponse> darDeBajaUsuario(@PathVariable Long usuarioId)
+    public ResponseEntity<UsuarioResponse> darDeBajaUsuario(
+            @PathVariable Long usuarioId,
+            @AuthenticationPrincipal Usuario autenticado)
             throws UsuarioNoEncontradoException {
+        validarQueNoSeaUnoMismo(usuarioId, autenticado);
         Usuario result = usuarioService.darDeBajaUsuario(usuarioId);
         return ResponseEntity.ok(UsuarioResponse.from(result));
     }
@@ -98,8 +102,10 @@ public class UsuariosController {
     @PatchMapping("/{usuarioId}/rol")
     public ResponseEntity<UsuarioResponse> cambiarRol(
             @PathVariable Long usuarioId,
-            @Valid @RequestBody RolUpdateRequest request)
+            @Valid @RequestBody RolUpdateRequest request,
+            @AuthenticationPrincipal Usuario autenticado)
             throws UsuarioNoEncontradoException {
+        validarQueNoSeaUnoMismo(usuarioId, autenticado);
         Usuario result = usuarioService.cambiarRol(
                 usuarioId, request.getRol(), request.getNombreTienda(), request.getProvincia(), request.getTelefono());
         return ResponseEntity.ok(UsuarioResponse.from(result));
@@ -148,5 +154,11 @@ public class UsuariosController {
             throws UsuarioNoEncontradoException, YaEsVendedorException, SolicitudVendedorNoEncontradaException {
         Usuario result = usuarioService.resolverSolicitudVendedor(usuarioId, aprobar, comentario);
         return ResponseEntity.ok(UsuarioResponse.from(result));
+    }
+
+    private void validarQueNoSeaUnoMismo(Long usuarioId, Usuario autenticado) {
+        if (autenticado != null && autenticado.getId().equals(usuarioId)) {
+            throw new AccionSobreUnoMismoException();
+        }
     }
 }

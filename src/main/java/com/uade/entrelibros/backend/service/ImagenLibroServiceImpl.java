@@ -6,10 +6,12 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.uade.entrelibros.backend.entity.EstadoModeracion;
 import com.uade.entrelibros.backend.entity.ImagenLibro;
 import com.uade.entrelibros.backend.entity.Libro;
+import com.uade.entrelibros.backend.entity.TipoNotificacion;
 import com.uade.entrelibros.backend.entity.Usuario;
 import com.uade.entrelibros.backend.exceptions.AccionNoPermitidaException;
 import com.uade.entrelibros.backend.exceptions.ArchivoDemasiadoGrandeException;
@@ -30,6 +32,9 @@ public class ImagenLibroServiceImpl implements ImagenLibroService {
     @Autowired
     private LibroRepository libroRepository;
 
+    @Autowired
+    private NotificacionService notificacionService;
+
     public List<ImagenLibro> getImagenesByLibroId(Long libroId) throws LibroNoEncontradoException {
         libroRepository.findById(libroId).orElseThrow(LibroNoEncontradoException::new);
         List<ImagenLibro> imagenes = imagenLibroRepository.findByLibroId(libroId);
@@ -45,6 +50,7 @@ public class ImagenLibroServiceImpl implements ImagenLibroService {
     }
 
     @Override
+    @Transactional
     public ImagenLibro createImagenLibro(Usuario vendedor, MultipartFile archivo, Integer orden, Long idLibro)
             throws LibroNoEncontradoException, ArchivoDemasiadoGrandeException,
             TipoArchivoNoPermitidoException, IOException, AccionNoPermitidaException {
@@ -58,6 +64,17 @@ public class ImagenLibroServiceImpl implements ImagenLibroService {
         }
 
         ImagenValidator.validar(archivo);
+
+        // Una foto nueva vuelve a revision (igual que editar los datos): el admin tiene que ver lo que se publica.
+        // Un libro nuevo ya esta EN_REVISION, asi que publicar con fotos no notifica dos veces.
+        if (libro.getEstadoModeracion() != EstadoModeracion.EN_REVISION) {
+            libro.guardarSnapshotActual();
+            libro.setEstadoModeracion(EstadoModeracion.EN_REVISION);
+            libroRepository.save(libro);
+            notificacionService.notificarAdmins(TipoNotificacion.LIBRO_PENDIENTE_REVISION,
+                    vendedor.getNombre() + " " + vendedor.getApellido() + " cambio las fotos del libro \""
+                            + libro.getTitulo() + "\" para su revision", libro);
+        }
 
         byte[] bytes = archivo.getBytes();
         ImagenLibro imagenLibro = new ImagenLibro(bytes, archivo.getContentType(), orden, libro);

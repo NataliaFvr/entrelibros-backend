@@ -63,7 +63,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             }
         } catch (JwtException | UsernameNotFoundException | IllegalArgumentException ex) {
             SecurityContextHolder.clearContext();
-            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Token invalido o vencido");
+            SecurityConfig.responderError(response, HttpServletResponse.SC_UNAUTHORIZED,
+                    "Tu sesión venció. Volvé a iniciar sesión.");
             return;
         }
 

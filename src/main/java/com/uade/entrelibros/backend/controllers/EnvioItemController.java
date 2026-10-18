@@ -27,6 +27,7 @@ public class EnvioItemController {
     @Autowired
     private EnvioItemService envioItemService;
 
+    @PreAuthorize("hasAuthority('ADMIN')") // tienen datos de ordenes de otros usuarios
     @GetMapping
     public ResponseEntity<List<EnvioItemResponse>> getEnvioItems() {
         List<EnvioItemResponse> resultado = envioItemService.getEnvioItems().stream()
@@ -35,6 +36,7 @@ public class EnvioItemController {
         return ResponseEntity.ok(resultado);
     }
 
+    @PreAuthorize("hasAuthority('ADMIN')")
     @GetMapping("/{idEnvioItem}")
     public ResponseEntity<EnvioItemResponse> getEnvioItemById(@PathVariable Long idEnvioItem)
             throws EnvioItemNoEncontradoException {
@@ -42,6 +44,7 @@ public class EnvioItemController {
         return ResponseEntity.ok(EnvioItemResponse.from(envioItem));
     }
 
+    @PreAuthorize("hasAuthority('ADMIN')")
     @GetMapping("/orden-vendedor/{idOrdenVendedor}")
     public ResponseEntity<List<EnvioItemResponse>> getEnvioItemsByOrdenVendedor(@PathVariable Long idOrdenVendedor) {
         List<EnvioItemResponse> resultado = envioItemService.getEnvioItemsByOrdenVendedor(idOrdenVendedor).stream()

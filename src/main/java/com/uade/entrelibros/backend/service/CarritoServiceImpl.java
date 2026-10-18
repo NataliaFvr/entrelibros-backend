@@ -22,6 +22,7 @@ import com.uade.entrelibros.backend.entity.OrdenItem;
 import com.uade.entrelibros.backend.entity.OrdenVendedor;
 import com.uade.entrelibros.backend.entity.Usuario;
 import com.uade.entrelibros.backend.entity.dto.CotizacionEnvioResponse;
+import com.uade.entrelibros.backend.exceptions.CampoInvalidoException;
 import com.uade.entrelibros.backend.exceptions.CarritoVacioException;
 import com.uade.entrelibros.backend.exceptions.AccionNoPermitidaException;
 import com.uade.entrelibros.backend.exceptions.CantidadInvalidaException;
@@ -150,12 +151,13 @@ public class CarritoServiceImpl implements CarritoService {
 
     @Transactional
     public Orden checkout(Long idUsuario, Long idDireccion, String provinciaDestino) {
-        Direccion direccion = null;
-        if (idDireccion != null) {
-            direccion = direccionRepository.findByIdAndUsuarioId(idDireccion, idUsuario)
-                    .orElseThrow(DireccionNoEncontradaException::new);
-            provinciaDestino = direccion.getProvincia();
+        // Sin direccion no hay a donde mandar los libros ni con que calcular el envio
+        if (idDireccion == null) {
+            throw new CampoInvalidoException("idDireccion", "Elegí una dirección de envío.");
         }
+        Direccion direccion = direccionRepository.findByIdAndUsuarioId(idDireccion, idUsuario)
+                .orElseThrow(DireccionNoEncontradaException::new);
+        provinciaDestino = direccion.getProvincia();
 
         Carrito carrito = getOrCrearCarrito(idUsuario);
         List<CarritoItem> items = carritoItemRepository.findByCarritoId(carrito.getId());
@@ -177,7 +179,7 @@ public class CarritoServiceImpl implements CarritoService {
             }
             validarLibroDisponible(libro);
             if (libro.getStock() < item.getCantidad()) {
-                throw new StockInsuficienteException();
+                throw new StockInsuficienteException(libro.getTitulo());
             }
         }
 
@@ -195,11 +197,9 @@ public class CarritoServiceImpl implements CarritoService {
         double total = EnvioPolicy.redondear(subtotal + costoEnvio);
 
         Orden orden = new Orden(carrito.getUsuario(), provinciaDestino, subtotal, costoEnvio, total);
-        if (direccion != null) {
-            orden.setCalleDestino(direccion.getCalle());
-            orden.setCiudadDestino(direccion.getCiudad());
-            orden.setCpDestino(direccion.getCp());
-        }
+        orden.setCalleDestino(direccion.getCalle());
+        orden.setCiudadDestino(direccion.getCiudad());
+        orden.setCpDestino(direccion.getCp());
         orden = ordenRepository.save(orden);
 
         Map<Long, OrdenVendedor> ordenVendedorPorVendedor = new HashMap<>();
@@ -241,9 +241,8 @@ public class CarritoServiceImpl implements CarritoService {
     private void validarLibroDisponible(Libro libro) {
         if (libro.getEstadoPublicacion() != EstadoPublicacion.ACTIVA
                 || libro.getEstadoModeracion() != EstadoModeracion.ACEPTADO) {
-            throw new LibroNoDisponibleException();
+            throw new LibroNoDisponibleException(libro.getTitulo());
         }
-
     }
 
     // Mismo calculo que el checkout (subtotal con descuento + un envio por vendedor), pero sin crear la orden

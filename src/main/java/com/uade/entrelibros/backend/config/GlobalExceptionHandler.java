@@ -10,6 +10,12 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
+import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -28,7 +34,9 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Map<String, String>> handleEntreLibrosException(EntreLibrosException ex) {
         ResponseStatus anotacion = AnnotatedElementUtils.findMergedAnnotation(ex.getClass(), ResponseStatus.class);
         HttpStatus status = anotacion != null ? anotacion.code() : HttpStatus.BAD_REQUEST;
-        String mensaje = anotacion != null && !anotacion.reason().isBlank() ? anotacion.reason() : "Error en la solicitud";
+        // Algunas excepciones traen un mensaje propio (ej.: el titulo del libro); si no, el de @ResponseStatus
+        String mensaje = ex.getMessage() != null ? ex.getMessage()
+                : anotacion != null && !anotacion.reason().isBlank() ? anotacion.reason() : "Error en la solicitud";
         return ResponseEntity
                 .status(status)
                 .body(Map.of("error", mensaje));
@@ -96,6 +104,40 @@ public class GlobalExceptionHandler {
                 .body(Map.of(
                         "error", "Tenés que verificar tu email antes de iniciar sesión",
                         "codigo", "email_no_verificado"));
+    }
+
+    // Errores del propio Spring (un id que no es numero, JSON mal escrito, falta un parametro, ruta inexistente,
+    // metodo no permitido): mismo formato { error } que el resto y sin mostrar el stack de Java.
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<Map<String, String>> handleTipoInvalido(MethodArgumentTypeMismatchException ex) {
+        return ResponseEntity.badRequest().body(Map.of("error", "El dato \"" + ex.getName() + "\" no es válido"));
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<Map<String, String>> handleCuerpoIlegible(HttpMessageNotReadableException ex) {
+        return ResponseEntity.badRequest().body(Map.of("error", "Los datos enviados no tienen un formato válido"));
+    }
+
+    @ExceptionHandler(MissingServletRequestParameterException.class)
+    public ResponseEntity<Map<String, String>> handleParametroFaltante(MissingServletRequestParameterException ex) {
+        return ResponseEntity.badRequest().body(Map.of("error", "Falta el dato \"" + ex.getParameterName() + "\""));
+    }
+
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<Map<String, String>> handleRutaInexistente(NoResourceFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", "No existe esa dirección en la API"));
+    }
+
+    @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
+    public ResponseEntity<Map<String, String>> handleMetodoNoPermitido(HttpRequestMethodNotSupportedException ex) {
+        return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED)
+                .body(Map.of("error", "Esa acción no se puede hacer con " + ex.getMethod()));
+    }
+
+    // @PreAuthorize rechaza por rol: 403 con el mismo formato
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<Map<String, String>> handleSinPermiso(AccessDeniedException ex) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", "No tenés permiso para hacer esto"));
     }
 
     @ExceptionHandler(CuentaDadaDeBajaException.class)
