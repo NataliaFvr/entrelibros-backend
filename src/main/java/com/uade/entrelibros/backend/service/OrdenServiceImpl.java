@@ -89,7 +89,7 @@ public class OrdenServiceImpl implements OrdenService {
     @Transactional
     public List<OrdenVendedor> getOrdenesDelVendedor(Usuario vendedor) {
         validarVendedor(vendedor);
-        List<OrdenVendedor> ordenes = ordenVendedorRepository.findByVendedorId(vendedor.getId());
+        List<OrdenVendedor> ordenes = ordenVendedorRepository.findByVendedorIdOrderByIdDesc(vendedor.getId()); // la mas nueva primero
         if (ordenes.isEmpty()) {
             throw new ListaVaciaException("No tenés órdenes como vendedor");
         }

@@ -20,6 +20,8 @@ public class OrdenVendedorResponse {
     private String nombreComprador;
     private String apellidoComprador;
     private String estadoPago;
+    // Hasta cuando el comprador tiene reservados los libros (solo importa si la venta esta pendiente de pago)
+    private LocalDateTime venceEn;
     private String proveedor;
     private String provinciaDestino;
     private String calleDestino;
@@ -46,6 +48,7 @@ public class OrdenVendedorResponse {
         if (ov.getOrden() != null) {
             r.idOrden = ov.getOrden().getId();
             r.fecha = ov.getOrden().getFecha();
+            r.venceEn = ov.getOrden().getReservaHasta();
             r.estadoPago = ov.getOrden().getEstadoPago() != null
                     ? ov.getOrden().getEstadoPago().name() : null;
             r.proveedor = proveedor;

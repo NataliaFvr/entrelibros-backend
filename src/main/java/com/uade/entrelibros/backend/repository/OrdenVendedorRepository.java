@@ -20,5 +20,7 @@ public interface OrdenVendedorRepository extends JpaRepository<OrdenVendedor, Lo
     @Query(value = "select ov from OrdenVendedor ov where ov.vendedor.id = ?1")
     List<OrdenVendedor> findByVendedorId(Long idVendedor);
 
+    List<OrdenVendedor> findByVendedorIdOrderByIdDesc(Long idVendedor);
+
     Optional<OrdenVendedor> findByOrdenIdAndVendedorId(Long idOrden, Long idVendedor);
 }
