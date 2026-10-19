@@ -18,6 +18,8 @@ public class OrdenItemResponse {
     private Double subtotal;
     private Long idVendedor;
     private String nombreVendedor;
+    // Nombre visible del vendedor: su tienda o, si no tiene, su nombre
+    private String nombreTienda;
     // true si el vendedor cancelo su parte de una orden que sigue en pie: el front lo muestra tachado
     private Boolean cancelado;
     // Contacto del vendedor: lo completa OrdenResponse solo si la compra esta pagada
@@ -46,6 +48,8 @@ public class OrdenItemResponse {
         if (item.getVendedor() != null) {
             r.idVendedor = item.getVendedor().getId();
             r.nombreVendedor = item.getVendedor().getNombre();
+            String tienda = item.getVendedor().getNombreTienda();
+            r.nombreTienda = tienda != null && !tienda.isBlank() ? tienda : item.getVendedor().getNombre();
         }
         return r;
     }
