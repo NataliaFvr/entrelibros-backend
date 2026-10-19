@@ -91,6 +91,7 @@ public class ResenaVendedorServiceImpl implements ResenaVendedorService {
 
         List<OrdenVendedor> ordenesVendedor = ordenVendedorRepository.findByOrdenId(pago.getOrden().getId());
         Usuario vendedor = ordenesVendedor.stream()
+                .filter(ov -> ov.getEstado() == com.uade.entrelibros.backend.entity.EstadoOrdenVendedor.ACTIVA)
                 .map(OrdenVendedor::getVendedor)
                 .filter(v -> v != null && v.getId().equals(idVendedor))
                 .findFirst()
@@ -123,7 +124,9 @@ public class ResenaVendedorServiceImpl implements ResenaVendedorService {
         // Compras pagadas en las que participa este vendedor
         List<Long> idsOrdenes = ordenRepository.findByCompradorId(usuario.getId()).stream()
                 .filter(o -> o.getEstadoPago() == EstadoPago.SIMULADO_APROBADO)
-                .filter(o -> ordenVendedorRepository.findByOrdenIdAndVendedorId(o.getId(), idVendedor).isPresent())
+                .filter(o -> ordenVendedorRepository.findByOrdenIdAndVendedorId(o.getId(), idVendedor)
+                        .filter(ov -> ov.getEstado() == com.uade.entrelibros.backend.entity.EstadoOrdenVendedor.ACTIVA)
+                        .isPresent())
                 .map(Orden::getId)
                 .toList();
         List<Pago> pagosAprobados = idsOrdenes.isEmpty()

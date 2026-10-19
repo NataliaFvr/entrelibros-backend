@@ -43,6 +43,9 @@ public class ResenaLibroServiceImpl implements ResenaLibroService {
     @Autowired
     private LibroRepository libroRepository;
 
+    @Autowired
+    private com.uade.entrelibros.backend.repository.OrdenVendedorRepository ordenVendedorRepository;
+
     public List<ResenaLibro> getResenas() {
         List<ResenaLibro> resenas = resenaLibroRepository.findAll();
         if (resenas.isEmpty()) {
@@ -104,6 +107,10 @@ public class ResenaLibroServiceImpl implements ResenaLibroService {
         if (ordenItem.getOrden().getEstadoPago() != EstadoPago.SIMULADO_APROBADO) {
             throw new CompraNoPagadaException();
         }
+        // Si el vendedor cancelo su parte, ese libro no se compro
+        if (!parteActiva(ordenItem)) {
+            throw new AccionNoPermitidaException();
+        }
 
         // Un libro comprado se puede resenar una sola vez por item de la orden
         if (!resenaLibroRepository.findByOrdenItemId(idOrdenItem).isEmpty())
@@ -138,6 +145,7 @@ public class ResenaLibroServiceImpl implements ResenaLibroService {
                 ? List.of()
                 : ordenItemRepository.findByOrdenIdIn(idsOrdenes).stream()
                         .filter(i -> i.getLibro().getId().equals(idLibro))
+                        .filter(this::parteActiva)
                         .toList();
 
         for (OrdenItem item : comprados) {
@@ -164,6 +172,12 @@ public class ResenaLibroServiceImpl implements ResenaLibroService {
         return ResenaResumenResponse.de(resenaLibroRepository.findByVendedorIdOrderByFechaDesc(idVendedor).stream()
                 .map(ResenaLibro::getCalificacion)
                 .toList());
+    }
+
+    private boolean parteActiva(OrdenItem item) {
+        return ordenVendedorRepository.findByOrdenIdAndVendedorId(item.getOrden().getId(), item.getVendedor().getId())
+                .map(ov -> ov.getEstado() == com.uade.entrelibros.backend.entity.EstadoOrdenVendedor.ACTIVA)
+                .orElse(true);
     }
 
     private boolean esDelComprador(ResenaLibro resena, Usuario usuario) {

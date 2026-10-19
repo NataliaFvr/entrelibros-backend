@@ -42,6 +42,9 @@ public class OrdenController {
     @Autowired
     private LibroCategoriaRepository libroCategoriaRepository;
 
+    @Autowired
+    private com.uade.entrelibros.backend.repository.OrdenVendedorRepository ordenVendedorRepository;
+
     @GetMapping
     public ResponseEntity<List<OrdenResponse>> getOrdenes(@AuthenticationPrincipal Usuario usuario)
             throws AccionNoPermitidaException {
@@ -65,8 +68,8 @@ public class OrdenController {
                             && item.getVendedor().getId().equals(usuario.getId()))
                     .toList();
         }
-        return ResponseEntity.ok(OrdenResponse.from(
-                orden, items, proveedorDe(orden.getId()), categoriasPorLibro(items)));
+        return ResponseEntity.ok(OrdenResponse.from(orden, items, proveedorDe(orden.getId()), categoriasPorLibro(items),
+                vendedoresCancelados(List.of(orden.getId())).getOrDefault(orden.getId(), java.util.Set.of())));
     }
 
     @GetMapping("/comprador")
@@ -132,8 +135,18 @@ public class OrdenController {
         Map<Long, List<String>> categorias = categoriasPorLibro(items);
         Map<Long, String> proveedores = pagoRepository.findByOrdenIdIn(idsOrden).stream()
                 .collect(Collectors.toMap(pago -> pago.getOrden().getId(), Pago::getProveedor, (a, b) -> a));
+        Map<Long, java.util.Set<Long>> cancelados = vendedoresCancelados(idsOrden);
         return ordenes.stream().map(orden -> OrdenResponse.from(orden,
-                itemsPorOrden.getOrDefault(orden.getId(), List.of()), proveedores.get(orden.getId()), categorias)).toList();
+                itemsPorOrden.getOrDefault(orden.getId(), List.of()), proveedores.get(orden.getId()), categorias,
+                cancelados.getOrDefault(orden.getId(), java.util.Set.of()))).toList();
+    }
+
+    // Por orden, los vendedores que cancelaron su parte
+    private Map<Long, java.util.Set<Long>> vendedoresCancelados(List<Long> idsOrden) {
+        return ordenVendedorRepository.findByOrdenIdIn(idsOrden).stream()
+                .filter(ov -> ov.getEstado() == com.uade.entrelibros.backend.entity.EstadoOrdenVendedor.CANCELADA)
+                .collect(Collectors.groupingBy(ov -> ov.getOrden().getId(),
+                        Collectors.mapping(ov -> ov.getVendedor().getId(), Collectors.toSet())));
     }
 
     private Map<Long, List<String>> categoriasPorLibro(List<OrdenItem> items) {

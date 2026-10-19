@@ -107,19 +107,63 @@ public class OrdenServiceImpl implements OrdenService {
             throw new AccionNoPermitidaException();
         }
 
+        // Candado sobre la orden: si el comprador esta pagando en este momento, uno espera al otro
+        Orden orden = ordenRepository.findByIdConCandado(ordenVendedor.getOrden().getId())
+                .orElseThrow(OrdenNoEncontradaException::new);
+
         if (ordenVendedor.getEstado() == EstadoOrdenVendedor.CANCELADA) {
             return ordenVendedor;
         }
 
         // Si el comprador ya pagó, devolver el stock lo dejaría cobrado sin libros
-        if (ordenVendedor.getOrden().getEstadoPago() == EstadoPago.SIMULADO_APROBADO) {
+        if (orden.getEstadoPago() == EstadoPago.SIMULADO_APROBADO) {
             throw new VentaPagadaNoCancelableException();
         }
+        if (orden.getEstadoPago() != EstadoPago.PENDIENTE) {
+            return ordenVendedor; // cancelada o vencida: su stock ya se devolvio
+        }
 
-        devolverStock(ordenItemRepository.findByOrdenIdAndVendedorId(
-                ordenVendedor.getOrden().getId(), vendedor.getId()));
+        cancelarParte(orden, ordenVendedor);
+        return ordenVendedor;
+    }
+
+    @Transactional
+    public void cancelarVentasPendientes(Usuario vendedor) {
+        for (OrdenVendedor ordenVendedor : ordenVendedorRepository.findByVendedorId(vendedor.getId())) {
+            if (ordenVendedor.getEstado() != EstadoOrdenVendedor.ACTIVA) {
+                continue;
+            }
+            Orden orden = ordenRepository.findByIdConCandado(ordenVendedor.getOrden().getId()).orElse(null);
+            if (orden != null && orden.getEstadoPago() == EstadoPago.PENDIENTE) {
+                cancelarParte(orden, ordenVendedor);
+            }
+        }
+    }
+
+    // Saca de una orden PENDIENTE la parte de un vendedor: devuelve su stock y le resta a la orden sus libros y su
+    // envio, asi el comprador paga solo lo que le van a mandar. Si no queda ningun vendedor, la orden se cancela
+    // (con el ultimo total, para que el historial muestre lo que era).
+    private void cancelarParte(Orden orden, OrdenVendedor ordenVendedor) {
+        List<OrdenItem> items = ordenItemRepository.findByOrdenIdAndVendedorId(
+                orden.getId(), ordenVendedor.getVendedor().getId());
+        devolverStock(items);
         ordenVendedor.setEstado(EstadoOrdenVendedor.CANCELADA);
-        return ordenVendedorRepository.save(ordenVendedor);
+        ordenVendedorRepository.save(ordenVendedor);
+
+        boolean quedanVendedores = ordenVendedorRepository.findByOrdenId(orden.getId()).stream()
+                .anyMatch(ov -> ov.getEstado() == EstadoOrdenVendedor.ACTIVA);
+        if (!quedanVendedores) {
+            orden.setEstadoPago(EstadoPago.CANCELADO);
+        } else {
+            double libros = items.stream().mapToDouble(i -> i.getPrecioUnitario() * i.getCantidad()).sum();
+            double envio = ordenVendedor.getCostoEnvio() != null ? ordenVendedor.getCostoEnvio() : 0.0;
+            double subtotal = EnvioPolicy.redondear(orden.getSubtotal() - libros);
+            double costoEnvio = EnvioPolicy.redondear(orden.getCostoEnvio() - envio);
+            orden.setSubtotal(subtotal);
+            orden.setCostoEnvio(costoEnvio);
+            orden.setTotal(EnvioPolicy.redondear(subtotal + costoEnvio));
+        }
+        ordenRepository.save(orden);
     }
 
     @Transactional

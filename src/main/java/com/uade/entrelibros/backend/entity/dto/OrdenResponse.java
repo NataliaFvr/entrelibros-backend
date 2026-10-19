@@ -44,11 +44,25 @@ public class OrdenResponse {
 
     public static OrdenResponse from(Orden orden, List<OrdenItem> ordenItems, String proveedor,
             Map<Long, List<String>> categoriasPorLibro) {
+        return from(orden, ordenItems, proveedor, categoriasPorLibro, java.util.Set.of());
+    }
+
+    // `vendedoresCancelados`: los que cancelaron su parte. Solo se marca si la orden sigue en pie (pendiente o
+    // pagada); si la orden entera se cancelo o vencio, la etiqueta de la orden ya lo dice.
+    public static OrdenResponse from(Orden orden, List<OrdenItem> ordenItems, String proveedor,
+            Map<Long, List<String>> categoriasPorLibro, java.util.Set<Long> vendedoresCancelados) {
         OrdenResponse r = from(orden);
         r.proveedor = proveedor;
+        boolean enPie = orden.getEstadoPago() == EstadoPago.PENDIENTE
+                || orden.getEstadoPago() == EstadoPago.SIMULADO_APROBADO;
         r.items = ordenItems.stream()
-                .map(item -> OrdenItemResponse.from(item,
-                        categoriasPorLibro.getOrDefault(item.getLibro().getId(), List.of())))
+                .map(item -> {
+                    OrdenItemResponse i = OrdenItemResponse.from(item,
+                            categoriasPorLibro.getOrDefault(item.getLibro().getId(), List.of()));
+                    i.setCancelado(enPie && item.getVendedor() != null
+                            && vendedoresCancelados.contains(item.getVendedor().getId()));
+                    return i;
+                })
                 .toList();
         return r;
     }

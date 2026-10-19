@@ -18,6 +18,8 @@ public class OrdenItemResponse {
     private Double subtotal;
     private Long idVendedor;
     private String nombreVendedor;
+    // true si el vendedor cancelo su parte de una orden que sigue en pie: el front lo muestra tachado
+    private Boolean cancelado;
 
     public static OrdenItemResponse from(OrdenItem item) {
         return from(item, List.of());

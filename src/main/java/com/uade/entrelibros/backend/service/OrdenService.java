@@ -26,6 +26,9 @@ public interface OrdenService {
 
     OrdenVendedor cancelarOrdenVendedor(Long idOrdenVendedor, Usuario vendedor);
 
+    // Cancela las partes sin pagar de un vendedor que deja de vender (baja o cambio de rol)
+    void cancelarVentasPendientes(Usuario vendedor);
+
     Orden cancelarOrden(Long idOrden, Usuario comprador);
 
     boolean liberarReservaVencida(Long idOrden);

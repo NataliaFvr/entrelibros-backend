@@ -38,6 +38,8 @@ public class PagoServiceImpl implements PagoService {
     private NotificacionService notificacionService;
     @Autowired
     private OrdenItemRepository ordenItemRepository;
+    @Autowired
+    private com.uade.entrelibros.backend.repository.OrdenVendedorRepository ordenVendedorRepository;
 
     @Override
     public PagosResumenResponse getResumen() {
@@ -105,8 +107,16 @@ public class PagoServiceImpl implements PagoService {
 
     // Una notificacion por vendedor (no por item): una orden puede tener varios libros del mismo vendedor
     private void notificarVendedores(Orden orden) {
+        // Un vendedor que cancelo su parte no vendio nada en esta compra
+        java.util.Set<Long> activos = ordenVendedorRepository.findByOrdenId(orden.getId()).stream()
+                .filter(ov -> ov.getEstado() == com.uade.entrelibros.backend.entity.EstadoOrdenVendedor.ACTIVA)
+                .map(ov -> ov.getVendedor().getId())
+                .collect(java.util.stream.Collectors.toSet());
         Map<Long, List<OrdenItem>> itemsPorVendedor = new LinkedHashMap<>();
         for (OrdenItem item : ordenItemRepository.findByOrdenId(orden.getId())) {
+            if (!activos.contains(item.getVendedor().getId())) {
+                continue;
+            }
             itemsPorVendedor.computeIfAbsent(item.getVendedor().getId(), id -> new java.util.ArrayList<>()).add(item);
         }
 

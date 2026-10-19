@@ -55,6 +55,9 @@ public class UsuarioServiceImpl implements UsuarioService {
     @Autowired
     private EmailService emailService;
 
+    @Autowired
+    private OrdenService ordenService;
+
     public Page<Usuario> getUsuarios(PageRequest pageable) {
         return usuarioRepository.findAll(pageable);
     }
@@ -203,6 +206,8 @@ public class UsuarioServiceImpl implements UsuarioService {
             libro.setEstadoPublicacion(EstadoPublicacion.DADA_DE_BAJA);
         }
         libroRepository.saveAll(librosDelVendedor);
+        // Sus ventas sin pagar se cancelan: nadie se las va a mandar al comprador
+        ordenService.cancelarVentasPendientes(vendedor);
 
 
     }
