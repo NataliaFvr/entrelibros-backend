@@ -14,6 +14,9 @@ public interface OrdenItemRepository extends JpaRepository<OrdenItem, Long> {
     @Query(value = "select oi from OrdenItem oi where oi.orden.id = ?1")
     List<OrdenItem> findByOrdenId(Long idOrden);
 
+    // Si el libro esta en una compra sin pagar (reservado)
+    boolean existsByLibroIdAndOrdenEstadoPago(Long idLibro, com.uade.entrelibros.backend.entity.EstadoPago estadoPago);
+
     List<OrdenItem> findByOrdenIdAndVendedorId(Long idOrden, Long idVendedor);
 
     List<OrdenItem> findByOrdenIdIn(List<Long> idsOrden);

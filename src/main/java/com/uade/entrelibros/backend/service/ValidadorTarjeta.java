@@ -14,8 +14,15 @@ public final class ValidadorTarjeta {
     private ValidadorTarjeta() {
     }
 
+    // Los medios que ofrece la pantalla de pago (todos simulados)
+    private static final java.util.List<String> MEDIOS = java.util.List.of("tarjeta", "mercadopago", "transferencia");
+
     public static void validar(PagoRequest request) {
-        if (!"tarjeta".equalsIgnoreCase(request.getProveedor())) {
+        String proveedor = request.getProveedor() == null ? "" : request.getProveedor().trim().toLowerCase();
+        if (!MEDIOS.contains(proveedor)) {
+            throw new CamposInvalidosException(Map.of("proveedor", "Elegí un medio de pago: tarjeta, Mercado Pago o transferencia."));
+        }
+        if (!"tarjeta".equals(proveedor)) {
             return;
         }
         Map<String, String> errores = new LinkedHashMap<>();

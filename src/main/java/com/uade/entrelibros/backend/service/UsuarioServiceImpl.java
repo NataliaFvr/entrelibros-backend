@@ -243,10 +243,21 @@ public class UsuarioServiceImpl implements UsuarioService {
         return usuarioRepository.save(usuario);
     }
 
+    @Transactional
     public Usuario reactivarUsuario(Long usuarioId) {
         Usuario usuario = usuarioRepository.findById(usuarioId)
             .orElseThrow(UsuarioNoEncontradoException::new);
+        boolean estabaDeBaja = usuario.getEstado() == EstadoUsuario.DADO_DE_BAJA;
         usuario.setEstado(EstadoUsuario.ACTIVO);
+        // Un vendedor reactivado recupera sus publicaciones: vuelven las que se bajaron junto con su cuenta
+        // (las que ya estaban rechazadas o en revision siguen esperando al admin, como antes)
+        if (estabaDeBaja && usuario.getRol() == Rol.VENDEDOR) {
+            List<Libro> libros = libroRepository.findByVendedorId(usuario.getId());
+            for (Libro libro : libros) {
+                libro.setEstadoPublicacion(EstadoPublicacion.ACTIVA);
+            }
+            libroRepository.saveAll(libros);
+        }
         return usuarioRepository.save(usuario);
     }
 

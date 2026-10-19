@@ -233,6 +233,10 @@ public class OrdenServiceImpl implements OrdenService {
         for (OrdenItem item : items) {
             libroRepository.findByIdConCandado(item.getLibro().getId()).ifPresent(libro -> {
                 libro.setStock(libro.getStock() + item.getCantidad());
+                // Un usado es un ejemplar unico: nunca vuelve con mas de 1
+                if (libro.getEstadoLibro() == com.uade.entrelibros.backend.entity.EstadoLibro.USADO && libro.getStock() > 1) {
+                    libro.setStock(1);
+                }
                 // Espejo del incremento en CarritoServiceImpl.checkout: si la venta se cancela o
                 // vence, esas unidades dejan de contar como "vendidas" para el ranking de bestsellers.
                 int vendidosActuales = libro.getVendidos() != null ? libro.getVendidos() : 0;

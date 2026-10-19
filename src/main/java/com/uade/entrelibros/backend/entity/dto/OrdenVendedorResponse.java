@@ -19,6 +19,8 @@ public class OrdenVendedorResponse {
     private Long idComprador;
     private String nombreComprador;
     private String apellidoComprador;
+    // Solo con la venta pagada y activa: para coordinar la entrega con el comprador
+    private String emailComprador;
     private String estadoPago;
     // Hasta cuando el comprador tiene reservados los libros (solo importa si la venta esta pendiente de pago)
     private LocalDateTime venceEn;
@@ -60,6 +62,11 @@ public class OrdenVendedorResponse {
                 r.idComprador = ov.getOrden().getComprador().getId();
                 r.nombreComprador = ov.getOrden().getComprador().getNombre();
                 r.apellidoComprador = ov.getOrden().getComprador().getApellido();
+                boolean pagadaYActiva = ov.getOrden().getEstadoPago() == com.uade.entrelibros.backend.entity.EstadoPago.SIMULADO_APROBADO
+                        && ov.getEstado() == com.uade.entrelibros.backend.entity.EstadoOrdenVendedor.ACTIVA;
+                if (pagadaYActiva) {
+                    r.emailComprador = ov.getOrden().getComprador().getEmail();
+                }
             }
         }
         if (ov.getVendedor() != null) {

@@ -65,6 +65,9 @@ public class LibroServiceImpl implements LibroService {
     @Autowired
     private NotificacionService notificacionService;
 
+    @Autowired
+    private com.uade.entrelibros.backend.repository.OrdenItemRepository ordenItemRepository;
+
     public Page<Libro> getLibros(PageRequest pageRequest) {
         Page<Libro> libros = libroRepository.findVisibles(pageRequest);
         if (libros.isEmpty()) {
@@ -181,6 +184,7 @@ public class LibroServiceImpl implements LibroService {
                 .orElseThrow(LibroNoEncontradoException::new);
         validarDuenio(libro, vendedor);
         validarReglasDeCarga(request, false);
+        validarUsadoReservado(libro, request);
         List<Long> categoriasActuales = libroCategoriaRepository.findByLibroId(libroId).stream()
                 .map(lc -> lc.getCategoria().getId())
                 .toList();
@@ -211,6 +215,18 @@ public class LibroServiceImpl implements LibroService {
         }
 
         return actualizado;
+    }
+
+    // Un usado con stock 0 puede estar vendido (se puede reponer si se consiguio otro ejemplar) o reservado en una
+    // compra sin pagar: ahi el mismo ejemplar no se puede volver a poner a la venta.
+    private void validarUsadoReservado(Libro libro, LibroRequest request) {
+        boolean pideStock = request.getStock() != null && request.getStock() > (libro.getStock() == null ? 0 : libro.getStock());
+        if (libro.getEstadoLibro() == EstadoLibro.USADO && pideStock
+                && ordenItemRepository.existsByLibroIdAndOrdenEstadoPago(libro.getId(),
+                        com.uade.entrelibros.backend.entity.EstadoPago.PENDIENTE)) {
+            throw new CampoInvalidoException("stock",
+                    "Este ejemplar está reservado en una compra sin pagar. Podés reponerlo si se cancela o vence.");
+        }
     }
 
     private boolean cambiaContenido(Libro libro, LibroRequest r, List<Long> categoriasActuales) {

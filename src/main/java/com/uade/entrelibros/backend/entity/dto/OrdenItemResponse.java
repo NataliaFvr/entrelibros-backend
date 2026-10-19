@@ -20,6 +20,9 @@ public class OrdenItemResponse {
     private String nombreVendedor;
     // true si el vendedor cancelo su parte de una orden que sigue en pie: el front lo muestra tachado
     private Boolean cancelado;
+    // Contacto del vendedor: lo completa OrdenResponse solo si la compra esta pagada
+    private String emailVendedor;
+    private String telefonoVendedor;
 
     public static OrdenItemResponse from(OrdenItem item) {
         return from(item, List.of());

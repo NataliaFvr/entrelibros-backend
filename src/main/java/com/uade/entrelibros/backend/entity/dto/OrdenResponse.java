@@ -61,6 +61,12 @@ public class OrdenResponse {
                             categoriasPorLibro.getOrDefault(item.getLibro().getId(), List.of()));
                     i.setCancelado(enPie && item.getVendedor() != null
                             && vendedoresCancelados.contains(item.getVendedor().getId()));
+                    // Con la compra pagada, el comprador puede escribirle al vendedor para coordinar la entrega
+                    if (orden.getEstadoPago() == EstadoPago.SIMULADO_APROBADO && !Boolean.TRUE.equals(i.getCancelado())
+                            && item.getVendedor() != null) {
+                        i.setEmailVendedor(item.getVendedor().getEmail());
+                        i.setTelefonoVendedor(item.getVendedor().getTelefono());
+                    }
                     return i;
                 })
                 .toList();
