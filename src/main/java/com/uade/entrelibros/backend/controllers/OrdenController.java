@@ -7,24 +7,19 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import com.uade.entrelibros.backend.entity.OrdenItem;
+import com.uade.entrelibros.backend.entity.OrdenVendedor;
+import com.uade.entrelibros.backend.entity.Rol;
 import com.uade.entrelibros.backend.entity.Usuario;
-import com.uade.entrelibros.backend.entity.Orden;
 import com.uade.entrelibros.backend.entity.dto.OrdenResponse;
 import com.uade.entrelibros.backend.entity.dto.OrdenVendedorResponse;
 import com.uade.entrelibros.backend.exceptions.AccionNoPermitidaException;
+import com.uade.entrelibros.backend.exceptions.OrdenNoCancelableException;
 import com.uade.entrelibros.backend.exceptions.OrdenNoEncontradaException;
 import com.uade.entrelibros.backend.exceptions.OrdenVendedorNoEncontradaException;
 import com.uade.entrelibros.backend.exceptions.RolInvalidoException;
-import com.uade.entrelibros.backend.exceptions.OrdenNoCancelableException;
+import com.uade.entrelibros.backend.service.OrdenRespuestas;
 import com.uade.entrelibros.backend.service.OrdenService;
-import com.uade.entrelibros.backend.repository.PagoRepository;
-import com.uade.entrelibros.backend.repository.OrdenItemRepository;
-import com.uade.entrelibros.backend.repository.LibroCategoriaRepository;
-import com.uade.entrelibros.backend.entity.OrdenItem;
-import com.uade.entrelibros.backend.entity.Pago;
-import java.util.Map;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("ordenes")
@@ -33,22 +28,14 @@ public class OrdenController {
     @Autowired
     private OrdenService ordenService;
 
+    // Arma las respuestas completas (libros, medio de pago, categorias y partes canceladas)
     @Autowired
-    private PagoRepository pagoRepository;
-
-    @Autowired
-    private OrdenItemRepository ordenItemRepository;
-
-    @Autowired
-    private LibroCategoriaRepository libroCategoriaRepository;
-
-    @Autowired
-    private com.uade.entrelibros.backend.repository.OrdenVendedorRepository ordenVendedorRepository;
+    private OrdenRespuestas respuestas;
 
     @GetMapping
     public ResponseEntity<List<OrdenResponse>> getOrdenes(@AuthenticationPrincipal Usuario usuario)
             throws AccionNoPermitidaException {
-        return ResponseEntity.ok(respuestasConItems(ordenService.getOrdenes(usuario)));
+        return ResponseEntity.ok(respuestas.lista(ordenService.getOrdenes(usuario)));
     }
 
     @GetMapping("/{idOrden}")
@@ -60,107 +47,44 @@ public class OrdenController {
         List<OrdenItem> items = ordenService.getItemsDeOrden(idOrden);
         boolean esComprador = orden.getComprador() != null
                 && orden.getComprador().getId().equals(usuario.getId());
-        boolean esAdmin = usuario.getRol() == com.uade.entrelibros.backend.entity.Rol.ADMIN;
-        if (!esComprador && !esAdmin
-                && usuario.getRol() == com.uade.entrelibros.backend.entity.Rol.VENDEDOR) {
+        boolean esAdmin = usuario.getRol() == Rol.ADMIN;
+        // El vendedor de la orden ve solo sus libros
+        if (!esComprador && !esAdmin && usuario.getRol() == Rol.VENDEDOR) {
             items = items.stream()
                     .filter(item -> item.getVendedor() != null
                             && item.getVendedor().getId().equals(usuario.getId()))
                     .toList();
         }
-        return ResponseEntity.ok(OrdenResponse.from(orden, items, proveedorDe(orden.getId()), categoriasPorLibro(items),
-                vendedoresCancelados(List.of(orden.getId())).getOrDefault(orden.getId(), java.util.Set.of())));
+        return ResponseEntity.ok(respuestas.conItems(orden, items));
     }
 
     @GetMapping("/comprador")
     public ResponseEntity<List<OrdenResponse>> getOrdenesByComprador(@AuthenticationPrincipal Usuario comprador) {
-        return ResponseEntity.ok(respuestasConItems(ordenService.getOrdenesByComprador(comprador)));
+        return ResponseEntity.ok(respuestas.lista(ordenService.getOrdenesByComprador(comprador)));
     }
 
     @GetMapping("/vendedor")
     public ResponseEntity<List<OrdenVendedorResponse>> getOrdenesDelVendedor(@AuthenticationPrincipal Usuario vendedor)
             throws RolInvalidoException {
-        List<com.uade.entrelibros.backend.entity.OrdenVendedor> ventas =
-                ordenService.getOrdenesDelVendedor(vendedor);
-        List<Long> idsOrden = ventas.stream().map(venta -> venta.getOrden().getId()).toList();
-        List<OrdenItem> itemsDelVendedor = ordenItemRepository
-                .findByOrdenIdInAndVendedorId(idsOrden, vendedor.getId()).stream()
-                .toList();
-        Map<Long, List<OrdenItem>> itemsPorOrden = itemsDelVendedor.stream()
-                .collect(Collectors.groupingBy(item -> item.getOrden().getId()));
-        Map<Long, List<String>> categoriasPorLibro = categoriasPorLibro(itemsDelVendedor);
-        Map<Long, String> proveedores = pagoRepository.findByOrdenIdIn(idsOrden).stream()
-                .collect(Collectors.toMap(pago -> pago.getOrden().getId(), Pago::getProveedor, (a, b) -> a));
-        List<OrdenVendedorResponse> resultado = ventas.stream()
-                .map(venta -> OrdenVendedorResponse.from(
-                        venta,
-                        itemsPorOrden.getOrDefault(venta.getOrden().getId(), List.of()),
-                        proveedores.get(venta.getOrden().getId()),
-                        categoriasPorLibro))
-                .toList();
-        return ResponseEntity.ok(resultado);
+        List<OrdenVendedor> ventas = ordenService.getOrdenesDelVendedor(vendedor);
+        return ResponseEntity.ok(respuestas.ventas(ventas, vendedor.getId()));
     }
 
+    // Devuelve la venta completa (con sus libros): el front la reemplaza en su lista sin volver a pedirla
     @PatchMapping("/vendedor/{idOrdenVendedor}/cancelar")
     public ResponseEntity<OrdenVendedorResponse> cancelarOrdenVendedor(
             @AuthenticationPrincipal Usuario vendedor,
             @PathVariable Long idOrdenVendedor)
             throws OrdenVendedorNoEncontradaException, RolInvalidoException, AccionNoPermitidaException {
-        return ResponseEntity.ok(
-                OrdenVendedorResponse.from(ordenService.cancelarOrdenVendedor(idOrdenVendedor, vendedor)));
+        return ResponseEntity.ok(respuestas.venta(ordenService.cancelarOrdenVendedor(idOrdenVendedor, vendedor)));
     }
 
+    // Devuelve la orden completa (con sus libros): el front la reemplaza en su lista sin volver a pedirla
     @PatchMapping("/{idOrden}/cancelar")
     public ResponseEntity<OrdenResponse> cancelarOrden(
             @AuthenticationPrincipal Usuario comprador,
             @PathVariable Long idOrden)
             throws OrdenNoEncontradaException, AccionNoPermitidaException, OrdenNoCancelableException {
-        return ResponseEntity.ok(OrdenResponse.from(ordenService.cancelarOrden(idOrden, comprador)));
-    }
-
-    private String proveedorDe(Long idOrden) {
-        return pagoRepository.findByOrdenId(idOrden).stream()
-                .findFirst()
-                .map(Pago::getProveedor)
-                .orElse(null);
-    }
-
-    // Las listas de órdenes incluyen los ítems en lote, evitando que el cliente deba pedir el detalle una por una.
-    private List<OrdenResponse> respuestasConItems(List<Orden> ordenes) {
-        List<Long> idsOrden = ordenes.stream().map(Orden::getId).toList();
-        if (idsOrden.isEmpty()) return List.of();
-        List<OrdenItem> items = ordenItemRepository.findByOrdenIdIn(idsOrden);
-        Map<Long, List<OrdenItem>> itemsPorOrden = items.stream()
-                .collect(Collectors.groupingBy(item -> item.getOrden().getId()));
-        Map<Long, List<String>> categorias = categoriasPorLibro(items);
-        Map<Long, String> proveedores = pagoRepository.findByOrdenIdIn(idsOrden).stream()
-                .collect(Collectors.toMap(pago -> pago.getOrden().getId(), Pago::getProveedor, (a, b) -> a));
-        Map<Long, java.util.Set<Long>> cancelados = vendedoresCancelados(idsOrden);
-        return ordenes.stream().map(orden -> OrdenResponse.from(orden,
-                itemsPorOrden.getOrDefault(orden.getId(), List.of()), proveedores.get(orden.getId()), categorias,
-                cancelados.getOrDefault(orden.getId(), java.util.Set.of()))).toList();
-    }
-
-    // Por orden, los vendedores que cancelaron su parte
-    private Map<Long, java.util.Set<Long>> vendedoresCancelados(List<Long> idsOrden) {
-        return ordenVendedorRepository.findByOrdenIdIn(idsOrden).stream()
-                .filter(ov -> ov.getEstado() == com.uade.entrelibros.backend.entity.EstadoOrdenVendedor.CANCELADA)
-                .collect(Collectors.groupingBy(ov -> ov.getOrden().getId(),
-                        Collectors.mapping(ov -> ov.getVendedor().getId(), Collectors.toSet())));
-    }
-
-    private Map<Long, List<String>> categoriasPorLibro(List<OrdenItem> items) {
-        List<Long> idsLibro = items.stream()
-                .filter(item -> item.getLibro() != null)
-                .map(item -> item.getLibro().getId())
-                .distinct()
-                .toList();
-        if (idsLibro.isEmpty()) {
-            return Map.of();
-        }
-        return libroCategoriaRepository.findByLibroIdIn(idsLibro).stream()
-                .collect(Collectors.groupingBy(
-                        lc -> lc.getLibro().getId(),
-                        Collectors.mapping(lc -> lc.getCategoria().getNombre(), Collectors.toList())));
+        return ResponseEntity.ok(respuestas.completa(ordenService.cancelarOrden(idOrden, comprador)));
     }
 }

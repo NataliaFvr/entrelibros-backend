@@ -26,6 +26,7 @@ import com.uade.entrelibros.backend.exceptions.ItemCarritoNoEncontradoException;
 import com.uade.entrelibros.backend.exceptions.LibroNoEncontradoException;
 import com.uade.entrelibros.backend.exceptions.StockInsuficienteException;
 import com.uade.entrelibros.backend.service.CarritoService;
+import com.uade.entrelibros.backend.service.OrdenRespuestas;
 import com.uade.entrelibros.backend.repository.ImagenLibroRepository;
 import com.uade.entrelibros.backend.exceptions.LibroNoDisponibleException;
 
@@ -41,6 +42,9 @@ public class CarritoController {
 
     @Autowired
     private ImagenLibroRepository imagenLibroRepository;
+
+    @Autowired
+    private OrdenRespuestas respuestas;
 
     @GetMapping
     public ResponseEntity<List<CarritoItemResponse>> getCarrito(@AuthenticationPrincipal Usuario usuario) {
@@ -96,6 +100,7 @@ public class CarritoController {
         return ResponseEntity.ok(carritoService.cotizarEnvio(usuario.getId(), idDireccion));
     }
 
+    // Devuelve la orden completa (con sus libros): el front la agrega a su lista sin volver a pedirla
     @PostMapping("/checkout")
     public ResponseEntity<OrdenResponse> checkout(
             @AuthenticationPrincipal Usuario usuario,
@@ -103,6 +108,6 @@ public class CarritoController {
             throws CarritoVacioException, StockInsuficienteException, LibroNoDisponibleException,
             CompraPropiaException, LibroNoEncontradoException {
         Orden orden = carritoService.checkout(usuario.getId(), request.getIdDireccion(), request.getProvinciaDestino());
-        return ResponseEntity.ok(OrdenResponse.from(orden));
+        return ResponseEntity.ok(respuestas.completa(orden));
     }
 }

@@ -18,8 +18,8 @@ import com.uade.entrelibros.backend.exceptions.AccionNoPermitidaException;
 import com.uade.entrelibros.backend.exceptions.OrdenNoEncontradaException;
 import com.uade.entrelibros.backend.exceptions.OrdenNoPagableException;
 import com.uade.entrelibros.backend.exceptions.PagoNoEncontradoException;
+import com.uade.entrelibros.backend.service.OrdenRespuestas;
 import com.uade.entrelibros.backend.service.PagoService;
-import com.uade.entrelibros.backend.service.ValidadorTarjeta;
 
 @RestController
 @RequestMapping("pagos")
@@ -27,6 +27,9 @@ public class PagoController {
 
     @Autowired
     private PagoService pagoService;
+
+    @Autowired
+    private OrdenRespuestas respuestas;
 
     @PreAuthorize("hasAuthority('ADMIN')")
     @GetMapping
@@ -70,9 +73,10 @@ public class PagoController {
             @AuthenticationPrincipal Usuario comprador,
             @RequestBody PagoRequest request)
             throws OrdenNoEncontradaException, AccionNoPermitidaException, OrdenNoPagableException {
-        ValidadorTarjeta.validar(request); // si paga con tarjeta, los datos tienen que ser validos
         Pago result = pagoService.crearPago(comprador, request.getIdOrden(), request.getProveedor());
-        return ResponseEntity.created(URI.create("/pagos/" + result.getId()))
-                .body(PagoResponse.from(result));
+        // Junto con el pago va la orden completa ya pagada: el front la reemplaza en su lista sin volver a pedirla
+        PagoResponse respuesta = PagoResponse.from(result);
+        respuesta.setOrden(respuestas.completa(result.getOrden()));
+        return ResponseEntity.created(URI.create("/pagos/" + result.getId())).body(respuesta);
     }
 }

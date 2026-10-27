@@ -17,6 +17,7 @@ import com.uade.entrelibros.backend.entity.TipoNotificacion;
 import com.uade.entrelibros.backend.entity.Usuario;
 import com.uade.entrelibros.backend.entity.dto.PagosResumenResponse;
 import com.uade.entrelibros.backend.exceptions.AccionNoPermitidaException;
+import com.uade.entrelibros.backend.exceptions.CamposInvalidosException;
 import com.uade.entrelibros.backend.exceptions.ListaVaciaException;
 import com.uade.entrelibros.backend.exceptions.OrdenNoEncontradaException;
 import com.uade.entrelibros.backend.exceptions.PagoNoEncontradoException;
@@ -75,8 +76,15 @@ public class PagoServiceImpl implements PagoService {
         return pagos;
     }
 
+    // Los medios que ofrece la pantalla de pago (todos simulados)
+    private static final List<String> MEDIOS = List.of("tarjeta", "mercadopago", "transferencia");
+
     @Transactional
     public Pago crearPago(Usuario comprador, Long idOrden, String proveedor) {
+        // El pago es simulado: solo se pide un medio de pago valido. Los datos de la tarjeta no viajan ni se validan.
+        if (proveedor == null || !MEDIOS.contains(proveedor.trim().toLowerCase())) {
+            throw new CamposInvalidosException(Map.of("proveedor", "Elegí un medio de pago: tarjeta, Mercado Pago o transferencia."));
+        }
         if (ordenService.liberarReservaVencida(idOrden)) {
             throw new OrdenNoPagableException();
         }

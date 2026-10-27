@@ -11,6 +11,8 @@ public class PagoResponse {
     private String resultado;
     private Long idOrden;
     private Double totalOrden;
+    // Solo al crear el pago: la orden completa como quedo, para actualizar el historial del front
+    private OrdenResponse orden;
 
     public static PagoResponse from(Pago pago) {
         PagoResponse r = new PagoResponse();
