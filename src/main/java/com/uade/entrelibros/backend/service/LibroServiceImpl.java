@@ -350,6 +350,11 @@ public class LibroServiceImpl implements LibroService {
         for (Long idCategoria : idCategorias) {
             Categoria categoria = categoriaRepository.findById(idCategoria)
                     .orElseThrow(CategoriaNoEncontradaException::new);
+            // Una categoria dada de baja no se puede asignar (el front ni siquiera la ofrece como opcion)
+            if (!categoria.isActiva()) {
+                throw new CampoInvalidoException("idCategorias",
+                        "La categoría \"" + categoria.getNombre() + "\" no está disponible. Elegí otra.");
+            }
             libroCategoriaRepository.save(new LibroCategoria(libro, categoria));
         }
     }

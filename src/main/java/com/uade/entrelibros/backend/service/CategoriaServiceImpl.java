@@ -4,18 +4,28 @@ import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.uade.entrelibros.backend.entity.Categoria;
+import com.uade.entrelibros.backend.entity.Libro;
+import com.uade.entrelibros.backend.entity.TipoNotificacion;
 import com.uade.entrelibros.backend.exceptions.CategoriaDuplicadaException;
 import com.uade.entrelibros.backend.exceptions.CategoriaNoEncontradaException;
 import com.uade.entrelibros.backend.exceptions.ListaVaciaException;
 import com.uade.entrelibros.backend.repository.CategoriaRepository;
+import com.uade.entrelibros.backend.repository.LibroCategoriaRepository;
 
 @Service
 public class CategoriaServiceImpl implements CategoriaService {
 
     @Autowired
     private CategoriaRepository categoriaRepository;
+
+    @Autowired
+    private LibroCategoriaRepository libroCategoriaRepository;
+
+    @Autowired
+    private NotificacionService notificacionService;
 
     public List<Categoria> getCategorias() {
         List<Categoria> categorias = categoriaRepository.findByActivaTrueOrderByNombreAsc();
@@ -56,9 +66,25 @@ public class CategoriaServiceImpl implements CategoriaService {
     }
 
     @Override
+    @Transactional
     public Categoria cambiarEstado(Long categoriaId, boolean activa) {
         Categoria categoria = getCategoriaById(categoriaId);
+        boolean seDaDeBaja = categoria.isActiva() && !activa;
         categoria.setActiva(activa);
-        return categoriaRepository.save(categoria);
+        Categoria guardada = categoriaRepository.save(categoria);
+        if (seDaDeBaja) {
+            notificarLibrosSinCategoria(guardada);
+        }
+        return guardada;
+    }
+
+    // Avisa al vendedor de cada libro que, con esta baja, se queda sin ninguna categoria activa.
+    private void notificarLibrosSinCategoria(Categoria categoria) {
+        for (Libro libro : libroCategoriaRepository.findLibrosSinOtraCategoriaActiva(categoria.getId())) {
+            notificacionService.crear(libro.getVendedor(), TipoNotificacion.LIBRO_SIN_CATEGORIA,
+                    "La categoría \"" + categoria.getNombre() + "\" se dio de baja y tu libro \"" + libro.getTitulo()
+                            + "\" quedó sin categoría. Editalo para elegir otra.",
+                    libro);
+        }
     }
 }
