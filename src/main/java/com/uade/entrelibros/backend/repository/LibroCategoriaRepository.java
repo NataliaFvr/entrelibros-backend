@@ -19,7 +19,6 @@ public interface LibroCategoriaRepository extends JpaRepository<LibroCategoria, 
     List<LibroCategoria> findByLibroIdIn(List<Long> libroIds);
 
     // Solo categorias activas: una categoria dada de baja deja de mostrarse en los libros (catalogo, ficha y "Mis libros")
-    @Query("select lc.libro.id, lc.categoria.nombre from LibroCategoria lc where lc.libro.id in :ids and lc.categoria.activa = true")
     // Libros de esta categoria que no tienen OTRA categoria activa: al darla de baja se quedan sin categoria
     @Query("select distinct lc.libro from LibroCategoria lc where lc.categoria.id = :idCategoria "
             + "and not exists (select otra.id from LibroCategoria otra where otra.libro.id = lc.libro.id "
@@ -27,5 +26,7 @@ public interface LibroCategoriaRepository extends JpaRepository<LibroCategoria, 
     List<Libro> findLibrosSinOtraCategoriaActiva(
             @org.springframework.data.repository.query.Param("idCategoria") Long idCategoria);
 
+    @Query("select lc.libro.id, lc.categoria.nombre from LibroCategoria lc "
+            + "where lc.libro.id in :ids and lc.categoria.activa = true")
     List<Object[]> findNombresPorLibroIds(@org.springframework.data.repository.query.Param("ids") List<Long> idsLibros);
 }
