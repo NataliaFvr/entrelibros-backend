@@ -29,4 +29,9 @@ public interface LibroCategoriaRepository extends JpaRepository<LibroCategoria, 
     @Query("select lc.libro.id, lc.categoria.nombre from LibroCategoria lc "
             + "where lc.libro.id in :ids and lc.categoria.activa = true")
     List<Object[]> findNombresPorLibroIds(@org.springframework.data.repository.query.Param("ids") List<Long> idsLibros);
+
+    // Para moderacion: incluye las categorias dadas de baja (con su estado) para que el admin las vea marcadas
+    @Query("select lc.libro.id, lc.categoria.nombre, lc.categoria.activa from LibroCategoria lc "
+            + "where lc.libro.id in :ids order by lc.id")
+    List<Object[]> findNombresYEstadoPorLibroIds(@org.springframework.data.repository.query.Param("ids") List<Long> idsLibros);
 }

@@ -1,23 +1,38 @@
 package com.uade.entrelibros.backend.controllers;
 
 import java.net.URI;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
+import com.uade.entrelibros.backend.entity.EstadoModeracion;
+import com.uade.entrelibros.backend.entity.EstadoPublicacion;
 import com.uade.entrelibros.backend.entity.Libro;
 import com.uade.entrelibros.backend.entity.Usuario;
+import com.uade.entrelibros.backend.entity.dto.FiltrosDisponiblesResponse;
+import com.uade.entrelibros.backend.entity.dto.HistorialModeracionResponse;
 import com.uade.entrelibros.backend.entity.dto.LibroFiltroRequest;
+import com.uade.entrelibros.backend.entity.dto.LibroMioResponse;
 import com.uade.entrelibros.backend.entity.dto.LibroRequest;
 import com.uade.entrelibros.backend.entity.dto.LibroResponse;
-import com.uade.entrelibros.backend.entity.dto.FiltrosDisponiblesResponse;
-import com.uade.entrelibros.backend.entity.EstadoModeracion;
 import com.uade.entrelibros.backend.entity.dto.ModeracionRequest;
 import com.uade.entrelibros.backend.exceptions.AccionNoPermitidaException;
 import com.uade.entrelibros.backend.exceptions.CategoriaNoEncontradaException;
@@ -25,19 +40,12 @@ import com.uade.entrelibros.backend.exceptions.EstadoFiltroInvalidoException;
 import com.uade.entrelibros.backend.exceptions.LibroNoEncontradoException;
 import com.uade.entrelibros.backend.exceptions.ListaVaciaException;
 import com.uade.entrelibros.backend.exceptions.RolInvalidoException;
-import com.uade.entrelibros.backend.service.LibroService;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Sort;
-import com.uade.entrelibros.backend.entity.dto.HistorialModeracionResponse;
-import com.uade.entrelibros.backend.service.HistorialModeracionService;
-import jakarta.validation.Valid;
-import com.uade.entrelibros.backend.entity.EstadoPublicacion;
-import com.uade.entrelibros.backend.entity.dto.LibroMioResponse;
 import com.uade.entrelibros.backend.repository.ImagenLibroRepository;
 import com.uade.entrelibros.backend.repository.LibroCategoriaRepository;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.stream.Collectors;
+import com.uade.entrelibros.backend.service.HistorialModeracionService;
+import com.uade.entrelibros.backend.service.LibroService;
+
+import jakarta.validation.Valid;
 
 
 @RestController
@@ -249,9 +257,12 @@ public class LibrosController {
         Page<Libro> libros = libroService.getLibrosPorEstadoModeracion(estado, PageRequest.of(page, size));
         Map<Long, List<String>> categorias = categoriasPorLibro(libros.getContent());
         Map<Long, Long> portadas = portadasPorLibro(libros.getContent());
+        Map<Long, List<LibroResponse.CategoriaModeracion>> categoriasModeracion =
+                categoriasModeracionPorLibro(libros.getContent());
         return ResponseEntity.ok(libros.map(libro -> LibroResponse.from(
                 libro, categorias.getOrDefault(libro.getId(), List.of()))
                 .conPortada(portadas.get(libro.getId()))
+                .conCategoriasModeracion(categoriasModeracion.getOrDefault(libro.getId(), List.of()))
                 .conSnapshot(libro)));
     }
 
@@ -308,5 +319,15 @@ public class LibrosController {
         return libroCategoriaRepository.findNombresPorLibroIds(libros.stream().map(Libro::getId).toList()).stream()
                 .collect(Collectors.groupingBy(fila -> (Long) fila[0],
                         Collectors.mapping(fila -> (String) fila[1], Collectors.toList())));
+    }
+
+    private Map<Long, List<LibroResponse.CategoriaModeracion>> categoriasModeracionPorLibro(List<Libro> libros) {
+        if (libros.isEmpty()) {
+            return Map.of();
+        }
+        return libroCategoriaRepository.findNombresYEstadoPorLibroIds(libros.stream().map(Libro::getId).toList()).stream()
+                .collect(Collectors.groupingBy(fila -> (Long) fila[0],
+                        Collectors.mapping(fila -> new LibroResponse.CategoriaModeracion((String) fila[1], (Boolean) fila[2]),
+                                Collectors.toList())));
     }
 }

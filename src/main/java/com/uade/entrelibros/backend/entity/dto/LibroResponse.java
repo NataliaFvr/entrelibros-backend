@@ -1,8 +1,10 @@
 package com.uade.entrelibros.backend.entity.dto;
 
-import com.uade.entrelibros.backend.entity.Libro;
 import java.util.List;
+
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.uade.entrelibros.backend.entity.Libro;
+
 import lombok.Data;
 
 @Data
@@ -57,6 +59,17 @@ public class LibroResponse {
     // URL relativa de la imagen de portada (la primera por orden), con la misma forma que CarritoItemResponse.portada.
     // null si el libro no tiene imagenes.
     private String portada;
+    // Solo en la cola de moderacion: todas las categorias del libro, con su estado (una dada de baja se avisa al admin)
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private List<CategoriaModeracion> categoriasModeracion;
+
+    public record CategoriaModeracion(String nombre, boolean activa) {
+    }
+
+    public LibroResponse conCategoriasModeracion(List<CategoriaModeracion> categorias) {
+        this.categoriasModeracion = categorias;
+        return this;
+    }
 
     public LibroResponse conPortada(Long idImagen) {
         if (idImagen != null) {
