@@ -6,6 +6,11 @@ import java.util.List;
 import java.util.function.Consumer;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -13,36 +18,32 @@ import com.uade.entrelibros.backend.entity.Categoria;
 import com.uade.entrelibros.backend.entity.EstadoLibro;
 import com.uade.entrelibros.backend.entity.EstadoModeracion;
 import com.uade.entrelibros.backend.entity.EstadoPublicacion;
+import com.uade.entrelibros.backend.entity.HistorialModeracion;
 import com.uade.entrelibros.backend.entity.Libro;
 import com.uade.entrelibros.backend.entity.LibroCategoria;
 import com.uade.entrelibros.backend.entity.Rol;
 import com.uade.entrelibros.backend.entity.TipoNotificacion;
 import com.uade.entrelibros.backend.entity.Usuario;
-import com.uade.entrelibros.backend.entity.dto.LibroFiltroRequest;
-import com.uade.entrelibros.backend.entity.dto.LibroRequest;
 import com.uade.entrelibros.backend.entity.dto.FiltrosDisponiblesResponse;
-import com.uade.entrelibros.backend.entity.dto.VendedorOptionResponse;
+import com.uade.entrelibros.backend.entity.dto.LibroFiltroRequest;
 import com.uade.entrelibros.backend.entity.dto.LibroMioResponse;
+import com.uade.entrelibros.backend.entity.dto.LibroRequest;
+import com.uade.entrelibros.backend.entity.dto.VendedorOptionResponse;
+import com.uade.entrelibros.backend.exceptions.AccionNoPermitidaException;
 import com.uade.entrelibros.backend.exceptions.CampoInvalidoException;
+import com.uade.entrelibros.backend.exceptions.CategoriaNoEncontradaException;
 import com.uade.entrelibros.backend.exceptions.EstadoLibroInvalidoException;
 import com.uade.entrelibros.backend.exceptions.LibroConDemasiadasFotosException;
-import com.uade.entrelibros.backend.exceptions.LibroSinFotosException;
-import com.uade.entrelibros.backend.exceptions.AccionNoPermitidaException;
-import com.uade.entrelibros.backend.exceptions.CategoriaNoEncontradaException;
 import com.uade.entrelibros.backend.exceptions.LibroNoEncontradoException;
+import com.uade.entrelibros.backend.exceptions.LibroSinCategoriaActivaException;
+import com.uade.entrelibros.backend.exceptions.LibroSinFotosException;
 import com.uade.entrelibros.backend.exceptions.ListaVaciaException;
 import com.uade.entrelibros.backend.exceptions.RolInvalidoException;
 import com.uade.entrelibros.backend.repository.CategoriaRepository;
+import com.uade.entrelibros.backend.repository.HistorialModeracionRepository;
 import com.uade.entrelibros.backend.repository.ImagenLibroRepository;
 import com.uade.entrelibros.backend.repository.LibroCategoriaRepository;
 import com.uade.entrelibros.backend.repository.LibroRepository;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
-import org.springframework.data.jpa.domain.Specification;
-import org.springframework.data.domain.Pageable;
-import com.uade.entrelibros.backend.entity.HistorialModeracion;
-import com.uade.entrelibros.backend.repository.HistorialModeracionRepository;
 
 @Service
 public class LibroServiceImpl implements LibroService {
@@ -189,17 +190,25 @@ public class LibroServiceImpl implements LibroService {
                 .map(lc -> lc.getCategoria().getId())
                 .toList();
         validarCategoriasActivas(request.getIdCategorias(), categoriasActuales);
+        validarAlMenosUnaActiva(request.getIdCategorias());
+        // Libro que se quedo sin categoria activa (lo dio de baja el sistema al darse de baja su categoria): al elegir
+        // una nueva vuelve a la cola del admin. Se vuelve a publicar (ACTIVA) porque la cola solo lista publicados,
+        // pero no se ve en el catalogo hasta que el admin lo apruebe.
+        boolean eligeCategoriaNueva = request.getIdCategorias() != null && !tieneCategoriaActiva(libroId);
 
         // Vuelve a revision del admin solo si cambia lo que el admin revisa (los datos del libro). Precio, descuento y
         // stock se aplican directo: reponer stock o poner una oferta no saca el libro del catalogo.
         boolean vuelveARevision = libro.getEstadoModeracion() != EstadoModeracion.EN_REVISION
-                && cambiaContenido(libro, request, categoriasActuales);
+                && (eligeCategoriaNueva || cambiaContenido(libro, request, categoriasActuales));
         if (vuelveARevision) {
             libro.guardarSnapshotActual();
         }
         aplicarCambios(libro, request);
-        if (vuelveARevision) {
+        if (vuelveARevision || eligeCategoriaNueva) {
             libro.setEstadoModeracion(EstadoModeracion.EN_REVISION);
+        }
+        if (eligeCategoriaNueva) {
+            libro.setEstadoPublicacion(EstadoPublicacion.ACTIVA);
         }
 
         Libro actualizado = libroRepository.save(libro);
@@ -210,7 +219,8 @@ public class LibroServiceImpl implements LibroService {
         }
 
         // Si ya estaba EN_REVISION los admins ya tienen su notificacion: no se duplica
-        if (vuelveARevision) {
+        // (salvo un libro que estaba dado de baja sin categoria: no figuraba en su cola)
+        if (vuelveARevision || eligeCategoriaNueva) {
             notificarEnvioARevision(actualizado, vendedor, true);
         }
 
@@ -262,6 +272,25 @@ public class LibroServiceImpl implements LibroService {
                         "La categoría \"" + categoria.getNombre() + "\" no está disponible. Elegí otra.");
             }
         }
+    }
+
+    // El libro tiene que quedar con al menos una categoria activa: las que ya tenia y se dieron de baja se conservan
+    // al editar, pero no alcanzan por si solas (si no, volveria a revision sin ninguna categoria para mostrar).
+    private void validarAlMenosUnaActiva(List<Long> idCategorias) {
+        if (idCategorias == null) {
+            return;
+        }
+        boolean hayActiva = idCategorias.stream()
+                .map(id -> categoriaRepository.findById(id).orElseThrow(CategoriaNoEncontradaException::new))
+                .anyMatch(Categoria::isActiva);
+        if (!hayActiva) {
+            throw new CampoInvalidoException("idCategorias", "Elegí al menos una categoría disponible.");
+        }
+    }
+
+    private boolean tieneCategoriaActiva(Long libroId) {
+        return libroCategoriaRepository.findByLibroId(libroId).stream()
+                .anyMatch(lc -> lc.getCategoria().isActiva());
     }
 
     private void aplicarCambios(Libro libro, LibroRequest request) {
@@ -334,13 +363,17 @@ public class LibroServiceImpl implements LibroService {
     }
 
     private Libro cambiarEstadoPublicacion(Long libroId, Usuario vendedor, EstadoPublicacion estado) {
-        validarVendedor(vendedor);
-        Libro libro = libroRepository.findById(libroId)
-                .orElseThrow(LibroNoEncontradoException::new);
-        validarDuenio(libro, vendedor);
-        libro.setEstadoPublicacion(estado);
-        return libroRepository.save(libro);
+    validarVendedor(vendedor);
+    Libro libro = libroRepository.findById(libroId)
+            .orElseThrow(LibroNoEncontradoException::new);
+    validarDuenio(libro, vendedor);
+    // Un libro dado de baja por quedarse sin categoria no se reactiva hasta que el vendedor elija una activa
+    if (estado == EstadoPublicacion.ACTIVA && !tieneCategoriaActiva(libroId)) {
+        throw new LibroSinCategoriaActivaException();
     }
+    libro.setEstadoPublicacion(estado);
+    return libroRepository.save(libro);
+}
 
     private void guardarCategorias(Libro libro, List<Long> idCategorias) throws CategoriaNoEncontradaException {
         if (idCategorias == null) {
@@ -381,6 +414,9 @@ public class LibroServiceImpl implements LibroService {
         validarMotivoDeRechazo(estadoModeracion, comentario);
         if (estadoModeracion == EstadoModeracion.ACEPTADO) {
             validarFotosParaAprobar(libroId);
+            if (!tieneCategoriaActiva(libroId)) {
+                throw new LibroSinCategoriaActivaException();
+            }
         }
 
         EstadoModeracion estadoAnterior = libro.getEstadoModeracion();

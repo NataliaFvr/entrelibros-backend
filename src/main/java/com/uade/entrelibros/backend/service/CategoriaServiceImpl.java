@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.uade.entrelibros.backend.entity.Categoria;
+import com.uade.entrelibros.backend.entity.EstadoPublicacion;
 import com.uade.entrelibros.backend.entity.Libro;
 import com.uade.entrelibros.backend.entity.TipoNotificacion;
 import com.uade.entrelibros.backend.exceptions.CategoriaDuplicadaException;
@@ -14,6 +15,7 @@ import com.uade.entrelibros.backend.exceptions.CategoriaNoEncontradaException;
 import com.uade.entrelibros.backend.exceptions.ListaVaciaException;
 import com.uade.entrelibros.backend.repository.CategoriaRepository;
 import com.uade.entrelibros.backend.repository.LibroCategoriaRepository;
+import com.uade.entrelibros.backend.repository.LibroRepository;
 
 @Service
 public class CategoriaServiceImpl implements CategoriaService {
@@ -23,6 +25,9 @@ public class CategoriaServiceImpl implements CategoriaService {
 
     @Autowired
     private LibroCategoriaRepository libroCategoriaRepository;
+
+    @Autowired
+    private LibroRepository libroRepository;
 
     @Autowired
     private NotificacionService notificacionService;
@@ -78,12 +83,18 @@ public class CategoriaServiceImpl implements CategoriaService {
         return guardada;
     }
 
-    // Avisa al vendedor de cada libro que, con esta baja, se queda sin ninguna categoria activa.
+    // Los libros que se quedan sin ninguna categoria activa con esta baja se dan de baja (salen del catalogo) y se avisa
+    // al vendedor. Puede editarlos para elegir otra categoria, pero no reactivarlos hasta que tengan una activa
+    // (ver LibroServiceImpl.reactivarLibro). La moderacion no se toca: siguen aceptados/en revision/rechazados.
     private void notificarLibrosSinCategoria(Categoria categoria) {
         for (Libro libro : libroCategoriaRepository.findLibrosSinOtraCategoriaActiva(categoria.getId())) {
+            if (libro.getEstadoPublicacion() == EstadoPublicacion.ACTIVA) {
+                libro.setEstadoPublicacion(EstadoPublicacion.DADA_DE_BAJA);
+                libroRepository.save(libro);
+            }
             notificacionService.crear(libro.getVendedor(), TipoNotificacion.LIBRO_SIN_CATEGORIA,
                     "La categoría \"" + categoria.getNombre() + "\" se dio de baja y tu libro \"" + libro.getTitulo()
-                            + "\" quedó sin categoría. Editalo para elegir otra.",
+                            + "\" quedó dado de baja. Editalo para elegir otra categoría y poder reactivarlo.",
                     libro);
         }
     }
