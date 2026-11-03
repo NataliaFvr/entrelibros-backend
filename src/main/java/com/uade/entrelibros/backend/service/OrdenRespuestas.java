@@ -13,8 +13,10 @@ import com.uade.entrelibros.backend.entity.Orden;
 import com.uade.entrelibros.backend.entity.OrdenItem;
 import com.uade.entrelibros.backend.entity.OrdenVendedor;
 import com.uade.entrelibros.backend.entity.Pago;
+import com.uade.entrelibros.backend.entity.dto.OrdenItemResponse;
 import com.uade.entrelibros.backend.entity.dto.OrdenResponse;
 import com.uade.entrelibros.backend.entity.dto.OrdenVendedorResponse;
+import com.uade.entrelibros.backend.repository.ImagenLibroRepository;
 import com.uade.entrelibros.backend.repository.LibroCategoriaRepository;
 import com.uade.entrelibros.backend.repository.OrdenItemRepository;
 import com.uade.entrelibros.backend.repository.OrdenVendedorRepository;
@@ -34,6 +36,8 @@ public class OrdenRespuestas {
     private LibroCategoriaRepository libroCategoriaRepository;
     @Autowired
     private OrdenVendedorRepository ordenVendedorRepository;
+    @Autowired
+    private ImagenLibroRepository imagenLibroRepository;
 
     // Una orden con todos sus libros
     public OrdenResponse completa(Orden orden) {
@@ -42,8 +46,10 @@ public class OrdenRespuestas {
 
     // Una orden con los libros que se le pasan (el vendedor ve solo los suyos)
     public OrdenResponse conItems(Orden orden, List<OrdenItem> items) {
-        return OrdenResponse.from(orden, items, proveedorDe(orden.getId()), categoriasPorLibro(items),
+        OrdenResponse r = OrdenResponse.from(orden, items, proveedorDe(orden.getId()), categoriasPorLibro(items),
                 vendedoresCancelados(List.of(orden.getId())).getOrDefault(orden.getId(), Set.of()));
+        conPortadas(r.getItems(), items);
+        return r;
     }
 
     // Las listas incluyen los libros en lote, para que el front no tenga que pedir el detalle una por una
@@ -58,9 +64,11 @@ public class OrdenRespuestas {
         Map<Long, List<String>> categorias = categoriasPorLibro(items);
         Map<Long, String> proveedores = proveedores(idsOrden);
         Map<Long, Set<Long>> cancelados = vendedoresCancelados(idsOrden);
-        return ordenes.stream().map(orden -> OrdenResponse.from(orden,
+        List<OrdenResponse> respuestas = ordenes.stream().map(orden -> OrdenResponse.from(orden,
                 itemsPorOrden.getOrDefault(orden.getId(), List.of()), proveedores.get(orden.getId()), categorias,
                 cancelados.getOrDefault(orden.getId(), Set.of()))).toList();
+        respuestas.forEach(r -> conPortadas(r.getItems(), items));
+        return respuestas;
     }
 
     // Una venta (la parte de un vendedor) con sus libros
@@ -78,13 +86,15 @@ public class OrdenRespuestas {
                 .collect(Collectors.groupingBy(item -> item.getOrden().getId()));
         Map<Long, List<String>> categorias = categoriasPorLibro(itemsDelVendedor);
         Map<Long, String> proveedores = proveedores(idsOrden);
-        return ventas.stream()
+        List<OrdenVendedorResponse> respuestas = ventas.stream()
                 .map(venta -> OrdenVendedorResponse.from(
                         venta,
                         itemsPorOrden.getOrDefault(venta.getOrden().getId(), List.of()),
                         proveedores.get(venta.getOrden().getId()),
                         categorias))
                 .toList();
+        respuestas.forEach(r -> conPortadas(r.getItems(), itemsDelVendedor));
+        return respuestas;
     }
 
     private String proveedorDe(Long idOrden) {
@@ -120,5 +130,30 @@ public class OrdenRespuestas {
                 .collect(Collectors.groupingBy(
                         lc -> lc.getLibro().getId(),
                         Collectors.mapping(lc -> lc.getCategoria().getNombre(), Collectors.toList())));
+    }
+
+    // Completa la portada de cada libro de la respuesta (una sola consulta para todos los libros)
+    private void conPortadas(List<OrdenItemResponse> respuestas, List<OrdenItem> items) {
+        if (respuestas == null || respuestas.isEmpty()) {
+            return;
+        }
+        List<Long> idsLibro = items.stream()
+                .filter(item -> item.getLibro() != null)
+                .map(item -> item.getLibro().getId())
+                .distinct()
+                .toList();
+        if (idsLibro.isEmpty()) {
+            return;
+        }
+        Map<Long, Long> portadas = new java.util.HashMap<>();
+        for (Object[] fila : imagenLibroRepository.findIdsPorLibroIds(idsLibro)) {
+            portadas.putIfAbsent((Long) fila[0], (Long) fila[1]);
+        }
+        for (OrdenItemResponse r : respuestas) {
+            Long idImagen = r.getIdLibro() != null ? portadas.get(r.getIdLibro()) : null;
+            if (idImagen != null) {
+                r.setPortada("/imagenes-libro/" + idImagen + "/contenido");
+            }
+        }
     }
 }

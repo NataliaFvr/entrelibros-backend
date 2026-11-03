@@ -3,6 +3,7 @@ package com.uade.entrelibros.backend.entity.dto;
 import java.util.List;
 
 import com.uade.entrelibros.backend.entity.OrdenItem;
+
 import lombok.Data;
 
 @Data
@@ -25,6 +26,8 @@ public class OrdenItemResponse {
     // Contacto del vendedor: lo completa OrdenResponse solo si la compra esta pagada
     private String emailVendedor;
     private String telefonoVendedor;
+    // URL relativa de la portada del libro (primera imagen); null si no tiene fotos
+    private String portada;
 
     public static OrdenItemResponse from(OrdenItem item) {
         return from(item, List.of());
