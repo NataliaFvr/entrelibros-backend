@@ -33,10 +33,7 @@ public class ContactoRequest {
     private String departamento;
 
     @NotBlank(message = "Escribí tu mensaje.")
-    @Size.List({
-        @Size(min = 10, message = "Contanos un poco más (mínimo 10 caracteres)."),
-        @Size(max = 1000, message = "Máximo 1000 caracteres.")
-    })
+    @Size(min = 10, max = 1000, message = "El mensaje debe tener entre 10 y 1000 caracteres.")
     private String mensaje;
 
     public void setNombre(String nombre) {
