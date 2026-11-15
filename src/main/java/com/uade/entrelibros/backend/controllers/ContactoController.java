@@ -24,8 +24,8 @@ public class ContactoController {
     @Autowired
     private EmailService emailService;
 
-    // Si no se configura otro, los mensajes llegan a la casilla del proyecto (la misma que manda los mails)
-    @Value("${app.contacto.email:${spring.mail.username}}")
+    // La casilla de contacto puede sobrescribirse sin cambiar la cuenta SMTP que envía los mensajes.
+    @Value("${app.contacto.email:entrelibross28@gmail.com}")
     private String emailDestino;
 
     @PostMapping
