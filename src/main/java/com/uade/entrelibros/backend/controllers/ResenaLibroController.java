@@ -18,6 +18,7 @@ import com.uade.entrelibros.backend.entity.dto.ResenaLibroResponse;
 import com.uade.entrelibros.backend.entity.dto.ResenaResumenResponse;
 import com.uade.entrelibros.backend.exceptions.AccionNoPermitidaException;
 import com.uade.entrelibros.backend.exceptions.CalificacionInvalidaException;
+import com.uade.entrelibros.backend.exceptions.ListaVaciaException;
 import com.uade.entrelibros.backend.exceptions.OrdenItemNoEncontradoException;
 import com.uade.entrelibros.backend.exceptions.ResenaDuplicadaException;
 import com.uade.entrelibros.backend.exceptions.ResenaLibroNoEncontradaException;
@@ -56,6 +57,11 @@ public class ResenaLibroController {
                 .getResenasByLibro(idLibro, calificacion, sort).stream()
                 .map(ResenaLibroResponse::from)
                 .toList();
+        if (resultado.isEmpty()) {
+            throw new ListaVaciaException(calificacion == null
+                    ? "Este libro todavía no tiene reseñas"
+                    : "No hay reseñas con esa calificación");
+        }
         return ResponseEntity.ok(resultado);
     }
 

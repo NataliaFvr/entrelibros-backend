@@ -106,6 +106,9 @@ public class LibrosController {
         filtro.setEnvioLocal(envioLocal);
 
         Page<Libro> libros = libroService.buscarLibros(filtro, PageRequest.of(page, size));
+        if (libros.isEmpty()) {
+            throw new ListaVaciaException("No encontramos libros con esa búsqueda");
+        }
         Map<Long, List<String>> categorias = categoriasPorLibro(libros.getContent());
         Map<Long, Long> portadas = portadasPorLibro(libros.getContent());
         return ResponseEntity.ok(libros.map(libro -> LibroResponse.from(
@@ -272,8 +275,12 @@ public class LibrosController {
             @PathVariable Long libroId,
             @RequestParam(defaultValue = "0") Integer page,
             @RequestParam(defaultValue = "20") Integer size) throws LibroNoEncontradoException {
-        return ResponseEntity.ok(historialModeracionService.getHistorialPorLibro(
-                libroId, PageRequest.of(page, size)));
+        Page<HistorialModeracionResponse> historial = historialModeracionService.getHistorialPorLibro(
+                libroId, PageRequest.of(page, size));
+        if (historial.isEmpty()) {
+            throw new ListaVaciaException("Este libro todavía no tiene historial de moderación");
+        }
+        return ResponseEntity.ok(historial);
     }
 
     @PreAuthorize("hasAuthority('ADMIN')")
@@ -281,7 +288,12 @@ public class LibrosController {
     public ResponseEntity<Page<HistorialModeracionResponse>> getHistorialModeracionCompleto(
             @RequestParam(defaultValue = "0") Integer page,
             @RequestParam(defaultValue = "20") Integer size) {
-        return ResponseEntity.ok(historialModeracionService.getHistorialCompleto(PageRequest.of(page, size)));
+        Page<HistorialModeracionResponse> historial =
+                historialModeracionService.getHistorialCompleto(PageRequest.of(page, size));
+        if (historial.isEmpty()) {
+            throw new ListaVaciaException("Todavía no hay moderaciones registradas");
+        }
+        return ResponseEntity.ok(historial);
     }
 
     private LibroResponse respuesta(Libro libro) {

@@ -13,6 +13,7 @@ import com.uade.entrelibros.backend.entity.dto.CategoriaRequest;
 import com.uade.entrelibros.backend.entity.dto.CategoriaResponse;
 import com.uade.entrelibros.backend.exceptions.CategoriaDuplicadaException;
 import com.uade.entrelibros.backend.exceptions.CategoriaNoEncontradaException;
+import com.uade.entrelibros.backend.exceptions.ListaVaciaException;
 import com.uade.entrelibros.backend.service.CategoriaService;
 import com.uade.entrelibros.backend.service.ImagenCategoriaService;
 import jakarta.validation.Valid;
@@ -40,10 +41,14 @@ public class CategoriasController {
     @PreAuthorize("hasAuthority('ADMIN')")
     @GetMapping("/todas")
     public ResponseEntity<List<CategoriaResponse>> getTodas() {
-        return ResponseEntity.ok(categoriaService.getTodasLasCategorias().stream()
+        List<CategoriaResponse> resultado = categoriaService.getTodasLasCategorias().stream()
                 .map(categoria -> CategoriaResponse.from(
                         categoria, imagenCategoriaService.tieneImagen(categoria.getId())))
-                .toList());
+                .toList();
+        if (resultado.isEmpty()) {
+            throw new ListaVaciaException("No hay categorías registradas");
+        }
+        return ResponseEntity.ok(resultado);
     }
 
     @GetMapping("/{categoriaId}")
