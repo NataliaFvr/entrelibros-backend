@@ -15,10 +15,15 @@ public class CargoServicioServiceImpl implements CargoServicioService {
     @Autowired
     private ConfiguracionCargoRepository configuracionCargoRepository;
 
+    // Si el admin nunca lo configuro: 0 % y sin fecha (el panel muestra "Todavía no se configuró")
     @Override
     public ConfiguracionCargo obtener() {
         return configuracionCargoRepository.findFirstByOrderByIdAsc()
-                .orElseGet(() -> new ConfiguracionCargo(0.0));
+                .orElseGet(() -> {
+                    ConfiguracionCargo sinConfigurar = new ConfiguracionCargo();
+                    sinConfigurar.setPorcentaje(0.0);
+                    return sinConfigurar;
+                });
     }
 
     @Override

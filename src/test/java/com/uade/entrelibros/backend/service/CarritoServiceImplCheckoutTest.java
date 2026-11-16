@@ -22,6 +22,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 import com.uade.entrelibros.backend.entity.Carrito;
 import com.uade.entrelibros.backend.entity.CarritoItem;
+import com.uade.entrelibros.backend.entity.Direccion;
 import com.uade.entrelibros.backend.entity.EstadoModeracion;
 import com.uade.entrelibros.backend.entity.EstadoPublicacion;
 import com.uade.entrelibros.backend.entity.Libro;
@@ -62,6 +63,8 @@ class CarritoServiceImplCheckoutTest {
     private DireccionRepository direccionRepository;
     @Mock
     private EnvioService envioService;
+    @Mock
+    private CargoServicioService cargoServicioService; // sin configurar: 0 % de cargo
 
     @InjectMocks
     private CarritoServiceImpl carritoService;
@@ -87,6 +90,15 @@ class CarritoServiceImplCheckoutTest {
         return l;
     }
 
+    // El checkout toma la provincia de una direccion guardada del comprador
+    private Long direccionEn(String provincia) {
+        Direccion d = new Direccion();
+        d.setId(5L);
+        d.setProvincia(provincia);
+        when(direccionRepository.findByIdAndUsuarioId(5L, ID_COMPRADOR)).thenReturn(Optional.of(d));
+        return 5L;
+    }
+
     @Test
     void unEnvioPorVendedorYTotalIgualAlDelFront() {
         Usuario porteno = EnvioPolicyTest.vendedor(1L, "Ciudad Autónoma de Buenos Aires");
@@ -102,8 +114,8 @@ class CarritoServiceImplCheckoutTest {
         when(ordenRepository.save(any(Orden.class))).thenAnswer(inv -> inv.getArgument(0));
         when(ordenVendedorRepository.save(any(OrdenVendedor.class))).thenAnswer(inv -> inv.getArgument(0));
 
-        // el front manda "CABA" (provinciaParaBack): tiene que dar MISMA contra "Ciudad Autónoma de Buenos Aires"
-        Orden orden = carritoService.checkout(ID_COMPRADOR, null, "CABA");
+        // la direccion dice "CABA": tiene que dar MISMA contra "Ciudad Autónoma de Buenos Aires"
+        Orden orden = carritoService.checkout(ID_COMPRADOR, direccionEn("CABA"), null);
 
         assertEquals(4000.0, orden.getSubtotal());
         assertEquals(5300.0, orden.getCostoEnvio());
@@ -122,7 +134,8 @@ class CarritoServiceImplCheckoutTest {
         when(carritoRepository.findByUsuarioId(ID_COMPRADOR)).thenReturn(carrito);
         when(carritoItemRepository.findByCarritoId(1L)).thenReturn(List.of(new CarritoItem(carrito, propio, 1)));
 
-        assertThrows(CompraPropiaException.class, () -> carritoService.checkout(ID_COMPRADOR, null, "Córdoba"));
+        Long idDireccion = direccionEn("Córdoba");
+        assertThrows(CompraPropiaException.class, () -> carritoService.checkout(ID_COMPRADOR, idDireccion, null));
         verify(ordenRepository, never()).save(any());
     }
 
