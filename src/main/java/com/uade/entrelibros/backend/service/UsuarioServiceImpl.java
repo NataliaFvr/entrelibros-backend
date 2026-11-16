@@ -3,7 +3,7 @@ package com.uade.entrelibros.backend.service;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
-import java.util.Random;
+import java.security.SecureRandom;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -85,9 +85,11 @@ public class UsuarioServiceImpl implements UsuarioService {
     @Override
     public Usuario createUsuarioDesdeAdmin(String nombreUsuario, String email, String contrasena, String nombre,
             String apellido, Rol rol, String nombreTienda, String provincia, String telefono) {
-        // El admin puede crear cualquier rol (incluso otro ADMIN). Sin rol se crea un comprador.
+        // El admin puede crear cualquier rol (incluso otro ADMIN). Sin rol se crea un
+        // comprador.
         Rol rolFinal = rol != null ? rol : Rol.COMPRADOR;
-        // Mismo criterio que cambiarRol: un vendedor no puede existir sin tienda, provincia y telefono
+        // Mismo criterio que cambiarRol: un vendedor no puede existir sin tienda,
+        // provincia y telefono
         if (rolFinal == Rol.VENDEDOR && (vacio(nombreTienda) || vacio(provincia) || vacio(telefono))) {
             throw new DatosVendedorIncompletosException();
         }
@@ -209,8 +211,8 @@ public class UsuarioServiceImpl implements UsuarioService {
         // Sus ventas sin pagar se cancelan: nadie se las va a mandar al comprador
         ordenService.cancelarVentasPendientes(vendedor);
 
-
     }
+
     @Override
     @Transactional // el rol y la baja de sus libros se guardan juntos o no se guarda nada
     public Usuario cambiarRol(Long usuarioId, Rol nuevoRol, String nombreTienda, String provincia, String telefono) {
@@ -229,12 +231,14 @@ public class UsuarioServiceImpl implements UsuarioService {
             usuario.setTelefono(telefono.trim());
         }
         boolean eraVendedor = usuario.getRol() == Rol.VENDEDOR;
-        // Si deja de ser vendedor, sus libros salen del catalogo: ya no podria ver sus ventas ni darlos de baja
+        // Si deja de ser vendedor, sus libros salen del catalogo: ya no podria ver sus
+        // ventas ni darlos de baja
         if (eraVendedor && nuevoRol != Rol.VENDEDOR) {
             darDeBajaLibrosYCarritos(usuario);
         }
         usuario.setRol(nuevoRol);
-        // El estado de la solicitud sigue al rol: antes quedaba en NINGUNO (o PENDIENTE) aunque ya fuera vendedor
+        // El estado de la solicitud sigue al rol: antes quedaba en NINGUNO (o
+        // PENDIENTE) aunque ya fuera vendedor
         if (nuevoRol == Rol.VENDEDOR) {
             usuario.setEstadoSolicitudVendedor(EstadoSolicitudVendedor.APROBADO);
         } else if (eraVendedor) {
@@ -246,11 +250,13 @@ public class UsuarioServiceImpl implements UsuarioService {
     @Transactional
     public Usuario reactivarUsuario(Long usuarioId) {
         Usuario usuario = usuarioRepository.findById(usuarioId)
-            .orElseThrow(UsuarioNoEncontradoException::new);
+                .orElseThrow(UsuarioNoEncontradoException::new);
         boolean estabaDeBaja = usuario.getEstado() == EstadoUsuario.DADO_DE_BAJA;
         usuario.setEstado(EstadoUsuario.ACTIVO);
-        // Un vendedor reactivado recupera sus publicaciones: vuelven las que se bajaron junto con su cuenta
-        // (las que ya estaban rechazadas o en revision siguen esperando al admin, como antes)
+        // Un vendedor reactivado recupera sus publicaciones: vuelven las que se bajaron
+        // junto con su cuenta
+        // (las que ya estaban rechazadas o en revision siguen esperando al admin, como
+        // antes)
         if (estabaDeBaja && usuario.getRol() == Rol.VENDEDOR) {
             List<Libro> libros = libroRepository.findByVendedorId(usuario.getId());
             for (Libro libro : libros) {
@@ -270,14 +276,21 @@ public class UsuarioServiceImpl implements UsuarioService {
             throw new EmailYaVerificadoException();
         }
 
+        if (valor(usuario.getIntentosCodigoVerificacion()) >= MAX_INTENTOS_CODIGO) {
+            throw new CodigoVerificacionInvalidoException();
+        }
+
         boolean codigoValido = codigo != null
                 && codigo.equals(usuario.getCodigoVerificacion())
                 && usuario.getCodigoVerificacionExpira() != null
                 && usuario.getCodigoVerificacionExpira().isAfter(LocalDateTime.now());
 
         if (!codigoValido) {
+            usuario.setIntentosCodigoVerificacion(valor(usuario.getIntentosCodigoVerificacion()) + 1);
+            usuarioRepository.save(usuario);
             throw new CodigoVerificacionInvalidoException();
         }
+        usuario.setIntentosCodigoVerificacion(0);
 
         usuario.setEmailVerificado(true);
         usuario.setCodigoVerificacion(null);
@@ -298,6 +311,7 @@ public class UsuarioServiceImpl implements UsuarioService {
         String codigo = generarCodigo();
         usuario.setCodigoVerificacion(codigo);
         usuario.setCodigoVerificacionExpira(LocalDateTime.now().plusMinutes(15));
+        usuario.setIntentosCodigoVerificacion(0);
 
         Usuario guardado = usuarioRepository.save(usuario);
         emailService.enviarCodigoVerificacion(guardado.getEmail(), guardado.getNombre(), codigo);
@@ -305,45 +319,59 @@ public class UsuarioServiceImpl implements UsuarioService {
         return guardado;
     }
 
+    private static final int MAX_INTENTOS_CODIGO = 5;
+    private static final SecureRandom RANDOM = new SecureRandom();
+
     private String generarCodigo() {
-        int codigo = 100000 + new Random().nextInt(900000);
-        return String.valueOf(codigo);
+        return String.valueOf(100000 + RANDOM.nextInt(900000));
     }
+
+    private static int valor(Integer n) {
+        return n == null ? 0 : n;
+    }
+
     @Override
-public Usuario solicitarResetPassword(String email) {
-    Usuario usuario = usuarioRepository.findByEmail(email)
-            .orElseThrow(UsuarioNoEncontradoException::new);
+    public Usuario solicitarResetPassword(String email) {
+        Usuario usuario = usuarioRepository.findByEmail(email)
+                .orElseThrow(UsuarioNoEncontradoException::new);
 
-    String codigo = generarCodigo();
-    usuario.setCodigoResetPassword(codigo);
-    usuario.setCodigoResetPasswordExpira(LocalDateTime.now().plusMinutes(15));
+        String codigo = generarCodigo();
+        usuario.setCodigoResetPassword(codigo);
+        usuario.setCodigoResetPasswordExpira(LocalDateTime.now().plusMinutes(15));
 
-    Usuario guardado = usuarioRepository.save(usuario);
-    emailService.enviarCodigoResetPassword(guardado.getEmail(), guardado.getNombre(), codigo);
+        Usuario guardado = usuarioRepository.save(usuario);
+        emailService.enviarCodigoResetPassword(guardado.getEmail(), guardado.getNombre(), codigo);
 
-    return guardado;
-}
-
-@Override
-public Usuario cambiarContrasenia(String email, String codigo, String nuevaContrasenia) {
-    Usuario usuario = usuarioRepository.findByEmail(email)
-            .orElseThrow(UsuarioNoEncontradoException::new);
-
-    boolean codigoValido = codigo != null
-            && codigo.equals(usuario.getCodigoResetPassword())
-            && usuario.getCodigoResetPasswordExpira() != null
-            && usuario.getCodigoResetPasswordExpira().isAfter(LocalDateTime.now());
-
-    if (!codigoValido) {
-        throw new CodigoVerificacionInvalidoException();
+        return guardado;
     }
 
-    usuario.setContrasenaHash(passwordEncoder.encode(nuevaContrasenia));
-    usuario.setCodigoResetPassword(null);
-    usuario.setCodigoResetPasswordExpira(null);
+    @Override
+    public Usuario cambiarContrasenia(String email, String codigo, String nuevaContrasenia) {
+        Usuario usuario = usuarioRepository.findByEmail(email)
+                .orElseThrow(UsuarioNoEncontradoException::new);
 
-    return usuarioRepository.save(usuario);
-}
+        if (valor(usuario.getIntentosCodigoReset()) >= MAX_INTENTOS_CODIGO) {
+            throw new CodigoVerificacionInvalidoException();
+        }
+
+        boolean codigoValido = codigo != null
+                && codigo.equals(usuario.getCodigoResetPassword())
+                && usuario.getCodigoResetPasswordExpira() != null
+                && usuario.getCodigoResetPasswordExpira().isAfter(LocalDateTime.now());
+
+        if (!codigoValido) {
+            usuario.setIntentosCodigoReset(valor(usuario.getIntentosCodigoReset()) + 1);
+            usuarioRepository.save(usuario);
+            throw new CodigoVerificacionInvalidoException();
+        }
+        usuario.setIntentosCodigoReset(0);
+
+        usuario.setContrasenaHash(passwordEncoder.encode(nuevaContrasenia));
+        usuario.setCodigoResetPassword(null);
+        usuario.setCodigoResetPasswordExpira(null);
+
+        return usuarioRepository.save(usuario);
+    }
 
     @Override
     public Usuario solicitarVendedor(Usuario usuario, String nombreTienda, String telefono,

@@ -63,25 +63,36 @@ public class Usuario implements UserDetails {
     private LocalDateTime codigoVerificacionExpira;
     private String codigoResetPassword;
     private LocalDateTime codigoResetPasswordExpira;
+    private Integer intentosCodigoVerificacion = 0;
+    private Integer intentosCodigoReset = 0;
 
-    // Ubicación del usuario (se usa en el filtro de catálogo "envío local" comparando contra la provincia del comprador)
+    // Ubicación del usuario (se usa en el filtro de catálogo "envío local"
+    // comparando contra la provincia del comprador)
     private String provincia;
 
-    // Provincia normalizada con EnvioPolicy.normalizar (sin tildes ni mayusculas, espacios colapsados,
-    // CABA = Ciudad Autonoma de Buenos Aires). La usa el filtro envioLocal del catalogo para comparar en SQL
-    // con EXACTAMENTE la misma regla que el checkout y LibroResponse.envio. Se mantiene sola (setProvincia +
-    // @PrePersist/@PreUpdate); ProvinciaNormalizadaBackfill completa las filas viejas al arrancar.
+    // Provincia normalizada con EnvioPolicy.normalizar (sin tildes ni mayusculas,
+    // espacios colapsados,
+    // CABA = Ciudad Autonoma de Buenos Aires). La usa el filtro envioLocal del
+    // catalogo para comparar en SQL
+    // con EXACTAMENTE la misma regla que el checkout y LibroResponse.envio. Se
+    // mantiene sola (setProvincia +
+    // @PrePersist/@PreUpdate); ProvinciaNormalizadaBackfill completa las filas
+    // viejas al arrancar.
     @JsonIgnore
     private String provinciaNormalizada;
 
-    // Clave del avatar elegido. Los avatares por defecto son assets del front: aca solo se guarda la clave
+    // Clave del avatar elegido. Los avatares por defecto son assets del front: aca
+    // solo se guarda la clave
     private String avatar;
 
-    // true si el usuario tiene una foto activa en ImagenUsuario. Se mantiene desde ImagenUsuarioService
-    // y evita consultar la tabla de imagenes (con sus bytes) para armar cada UsuarioResponse
+    // true si el usuario tiene una foto activa en ImagenUsuario. Se mantiene desde
+    // ImagenUsuarioService
+    // y evita consultar la tabla de imagenes (con sus bytes) para armar cada
+    // UsuarioResponse
     private Boolean tieneFoto = false;
 
-    // Alta de vendedor vía solicitud: un COMPRADOR pide pasar a VENDEDOR y un admin la aprueba/rechaza
+    // Alta de vendedor vía solicitud: un COMPRADOR pide pasar a VENDEDOR y un admin
+    // la aprueba/rechaza
     private String nombreTienda;
     private String telefono;
     private String descripcion;
