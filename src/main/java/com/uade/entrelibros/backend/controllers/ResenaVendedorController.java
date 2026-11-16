@@ -24,8 +24,6 @@ import com.uade.entrelibros.backend.exceptions.ResenaVendedorNoEncontradaExcepti
 import com.uade.entrelibros.backend.service.ResenaVendedorService;
 
 import jakarta.validation.Valid;
-import com.uade.entrelibros.backend.repository.OrdenItemRepository;
-import com.uade.entrelibros.backend.entity.OrdenItem;
 
 @RestController
 @RequestMapping("resenas-vendedor")
@@ -33,9 +31,6 @@ public class ResenaVendedorController {
 
     @Autowired
     private ResenaVendedorService resenaVendedorService;
-
-    @Autowired
-    private OrdenItemRepository ordenItemRepository;
 
     @GetMapping
     public ResponseEntity<List<ResenaVendedorResponse>> getResenas() {
@@ -110,12 +105,6 @@ public class ResenaVendedorController {
     }
 
     private ResenaVendedorResponse toResponse(ResenaVendedor resena) {
-        OrdenItem item = null;
-        if (resena.getPago() != null && resena.getPago().getOrden() != null
-                && resena.getVendedor() != null) {
-            item = ordenItemRepository.findFirstByOrdenIdAndVendedorIdOrderByIdAsc(
-                    resena.getPago().getOrden().getId(), resena.getVendedor().getId()).orElse(null);
-        }
-        return ResenaVendedorResponse.from(resena, item);
+        return ResenaVendedorResponse.from(resena, resenaVendedorService.getItemCalificado(resena));
     }
 }

@@ -2,6 +2,7 @@ package com.uade.entrelibros.backend.service;
 
 import java.util.List;
 
+import com.uade.entrelibros.backend.entity.OrdenItem;
 import com.uade.entrelibros.backend.entity.ResenaVendedor;
 import com.uade.entrelibros.backend.entity.Usuario;
 import com.uade.entrelibros.backend.entity.dto.ResenaResumenResponse;
@@ -32,6 +33,10 @@ public interface ResenaVendedorService {
     EstadoResena getEstadoResena(Usuario usuario, Long idVendedor);
 
     ResenaResumenResponse getResumenByVendedor(Long idVendedor);
+
+    // El primer libro que el comprador le compro a ese vendedor en la orden calificada (o null):
+    // la respuesta lo muestra para que se sepa por que compra es la calificacion
+    OrdenItem getItemCalificado(ResenaVendedor resena);
 
     record EstadoResena(boolean puedeResenar, String motivo, Long idPago, ResenaVendedor miResena) {
     }

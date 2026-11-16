@@ -9,6 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.uade.entrelibros.backend.entity.EstadoPago;
 import com.uade.entrelibros.backend.entity.Orden;
+import com.uade.entrelibros.backend.entity.OrdenItem;
 import com.uade.entrelibros.backend.entity.Pago;
 import com.uade.entrelibros.backend.entity.ResenaVendedor;
 import com.uade.entrelibros.backend.entity.OrdenVendedor;
@@ -23,6 +24,7 @@ import com.uade.entrelibros.backend.exceptions.ListaVaciaException;
 import com.uade.entrelibros.backend.exceptions.ResenaDuplicadaException;
 import com.uade.entrelibros.backend.exceptions.ResenaVendedorNoEncontradaException;
 import com.uade.entrelibros.backend.exceptions.PagoNoEncontradoException;
+import com.uade.entrelibros.backend.repository.OrdenItemRepository;
 import com.uade.entrelibros.backend.repository.OrdenRepository;
 import com.uade.entrelibros.backend.repository.PagoRepository;
 import com.uade.entrelibros.backend.repository.OrdenVendedorRepository;
@@ -40,6 +42,9 @@ public class ResenaVendedorServiceImpl implements ResenaVendedorService {
 
     @Autowired
     private OrdenRepository ordenRepository;
+
+    @Autowired
+    private OrdenItemRepository ordenItemRepository;
 
     public List<ResenaVendedor> getResenas() {
         List<ResenaVendedor> resenas = resenaVendedorRepository.findAll();
@@ -196,6 +201,15 @@ public class ResenaVendedorServiceImpl implements ResenaVendedorService {
         if (clasificacion < 1 || clasificacion > 5) {
             throw new CalificacionInvalidaException();
         }
+    }
+
+    @Override
+    public OrdenItem getItemCalificado(ResenaVendedor resena) {
+        if (resena.getPago() == null || resena.getPago().getOrden() == null || resena.getVendedor() == null) {
+            return null;
+        }
+        return ordenItemRepository.findFirstByOrdenIdAndVendedorIdOrderByIdAsc(
+                resena.getPago().getOrden().getId(), resena.getVendedor().getId()).orElse(null);
     }
 
     private void validarAutor(ResenaVendedor resena, Usuario comprador) {

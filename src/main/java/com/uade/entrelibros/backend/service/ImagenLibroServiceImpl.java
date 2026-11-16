@@ -1,7 +1,9 @@
 package com.uade.entrelibros.backend.service;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -102,5 +104,22 @@ public class ImagenLibroServiceImpl implements ImagenLibroService {
             throw new UltimaFotoException();
         }
         imagenLibroRepository.delete(imagen);
+    }
+
+    @Override
+    public ImagenLibro getPortada(Long idLibro) {
+        return imagenLibroRepository.findFirstByLibroIdOrderByOrdenAsc(idLibro).orElse(null);
+    }
+
+    @Override
+    public Map<Long, Long> getIdsPortadas(List<Long> idsLibros) {
+        if (idsLibros.isEmpty()) {
+            return Map.of();
+        }
+        Map<Long, Long> portadas = new HashMap<>();
+        for (Object[] fila : imagenLibroRepository.findIdsPorLibroIds(idsLibros)) {
+            portadas.putIfAbsent((Long) fila[0], (Long) fila[1]);
+        }
+        return portadas;
     }
 }

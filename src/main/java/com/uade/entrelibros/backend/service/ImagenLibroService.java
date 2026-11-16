@@ -2,6 +2,7 @@ package com.uade.entrelibros.backend.service;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.web.multipart.MultipartFile;
 
@@ -24,4 +25,10 @@ public interface ImagenLibroService {
 
     void deleteImagenLibro(Usuario vendedor, Long imagenId)
             throws ImagenLibroNoEncontradaException, AccionNoPermitidaException;
+
+    // La primera foto (la portada) de un libro, o null si no tiene
+    ImagenLibro getPortada(Long idLibro);
+
+    // Id de la portada de cada libro (idLibro -> idImagen), en una sola consulta para toda la lista
+    Map<Long, Long> getIdsPortadas(List<Long> idsLibros);
 }

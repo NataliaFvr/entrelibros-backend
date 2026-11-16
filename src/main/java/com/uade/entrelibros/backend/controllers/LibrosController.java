@@ -1,10 +1,8 @@
 package com.uade.entrelibros.backend.controllers;
 
 import java.net.URI;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -40,9 +38,8 @@ import com.uade.entrelibros.backend.exceptions.EstadoFiltroInvalidoException;
 import com.uade.entrelibros.backend.exceptions.LibroNoEncontradoException;
 import com.uade.entrelibros.backend.exceptions.ListaVaciaException;
 import com.uade.entrelibros.backend.exceptions.RolInvalidoException;
-import com.uade.entrelibros.backend.repository.ImagenLibroRepository;
-import com.uade.entrelibros.backend.repository.LibroCategoriaRepository;
 import com.uade.entrelibros.backend.service.HistorialModeracionService;
+import com.uade.entrelibros.backend.service.ImagenLibroService;
 import com.uade.entrelibros.backend.service.LibroService;
 
 import jakarta.validation.Valid;
@@ -59,10 +56,7 @@ public class LibrosController {
     private HistorialModeracionService historialModeracionService;
 
     @Autowired
-    private LibroCategoriaRepository libroCategoriaRepository;
-
-    @Autowired
-    private ImagenLibroRepository imagenLibroRepository;
+    private ImagenLibroService imagenLibroService;
 
     @GetMapping
     public ResponseEntity<Page<LibroResponse>> getLibros(
@@ -145,7 +139,8 @@ public class LibrosController {
         sortConfig = sortConfig.and(Sort.by("id").descending());
         Page<LibroMioResponse> mios = libroService.getLibrosMios(
                 vendedor, moderacion, publicacion, PageRequest.of(page, tamanio, sortConfig));
-        Map<Long, Long> portadas = portadasPorIds(mios.getContent().stream().map(LibroMioResponse::getId).toList());
+        Map<Long, Long> portadas = imagenLibroService.getIdsPortadas(
+                mios.getContent().stream().map(LibroMioResponse::getId).toList());
         mios.forEach(libro -> libro.conPortada(portadas.get(libro.getId())));
         return ResponseEntity.ok(mios);
     }
@@ -300,46 +295,24 @@ public class LibrosController {
         return LibroResponse.from(libro, categoriasDe(libro)).conPortada(portadaDe(libro));
     }
 
+    // Las portadas y las categorias las buscan los services: el controller solo arma la respuesta
     private Map<Long, Long> portadasPorLibro(List<Libro> libros) {
-        return portadasPorIds(libros.stream().map(Libro::getId).toList());
-    }
-
-    private Map<Long, Long> portadasPorIds(List<Long> idsLibros) {
-        if (idsLibros.isEmpty()) {
-            return Map.of();
-        }
-        Map<Long, Long> portadas = new HashMap<>();
-        for (Object[] fila : imagenLibroRepository.findIdsPorLibroIds(idsLibros)) {
-            portadas.putIfAbsent((Long) fila[0], (Long) fila[1]);
-        }
-        return portadas;
+        return imagenLibroService.getIdsPortadas(libros.stream().map(Libro::getId).toList());
     }
 
     private Long portadaDe(Libro libro) {
         return portadasPorLibro(List.of(libro)).get(libro.getId());
     }
 
-    // Una consulta escalar (antes cargaba cada LibroCategoria con su libro y categoria EAGER = selects extra)
     private List<String> categoriasDe(Libro libro) {
         return categoriasPorLibro(List.of(libro)).getOrDefault(libro.getId(), List.of());
     }
 
     private Map<Long, List<String>> categoriasPorLibro(List<Libro> libros) {
-        if (libros.isEmpty()) {
-            return Map.of();
-        }
-        return libroCategoriaRepository.findNombresPorLibroIds(libros.stream().map(Libro::getId).toList()).stream()
-                .collect(Collectors.groupingBy(fila -> (Long) fila[0],
-                        Collectors.mapping(fila -> (String) fila[1], Collectors.toList())));
+        return libroService.getCategoriasPorLibro(libros);
     }
 
     private Map<Long, List<LibroResponse.CategoriaModeracion>> categoriasModeracionPorLibro(List<Libro> libros) {
-        if (libros.isEmpty()) {
-            return Map.of();
-        }
-        return libroCategoriaRepository.findNombresYEstadoPorLibroIds(libros.stream().map(Libro::getId).toList()).stream()
-                .collect(Collectors.groupingBy(fila -> (Long) fila[0],
-                        Collectors.mapping(fila -> new LibroResponse.CategoriaModeracion((String) fila[1], (Boolean) fila[2]),
-                                Collectors.toList())));
+        return libroService.getCategoriasModeracionPorLibro(libros);
     }
 }

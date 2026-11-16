@@ -3,7 +3,9 @@ package com.uade.entrelibros.backend.service;
 import java.math.BigDecimal;
 import java.time.Year;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -28,6 +30,7 @@ import com.uade.entrelibros.backend.entity.dto.FiltrosDisponiblesResponse;
 import com.uade.entrelibros.backend.entity.dto.LibroFiltroRequest;
 import com.uade.entrelibros.backend.entity.dto.LibroMioResponse;
 import com.uade.entrelibros.backend.entity.dto.LibroRequest;
+import com.uade.entrelibros.backend.entity.dto.LibroResponse;
 import com.uade.entrelibros.backend.entity.dto.VendedorOptionResponse;
 import com.uade.entrelibros.backend.exceptions.AccionNoPermitidaException;
 import com.uade.entrelibros.backend.exceptions.CampoInvalidoException;
@@ -532,4 +535,24 @@ public class LibroServiceImpl implements LibroService {
         }
     }
 
+    @Override
+    public Map<Long, List<String>> getCategoriasPorLibro(List<Libro> libros) {
+        if (libros.isEmpty()) {
+            return Map.of();
+        }
+        return libroCategoriaRepository.findNombresPorLibroIds(libros.stream().map(Libro::getId).toList()).stream()
+                .collect(Collectors.groupingBy(fila -> (Long) fila[0],
+                        Collectors.mapping(fila -> (String) fila[1], Collectors.toList())));
+    }
+
+    @Override
+    public Map<Long, List<LibroResponse.CategoriaModeracion>> getCategoriasModeracionPorLibro(List<Libro> libros) {
+        if (libros.isEmpty()) {
+            return Map.of();
+        }
+        return libroCategoriaRepository.findNombresYEstadoPorLibroIds(libros.stream().map(Libro::getId).toList()).stream()
+                .collect(Collectors.groupingBy(fila -> (Long) fila[0],
+                        Collectors.mapping(fila -> new LibroResponse.CategoriaModeracion((String) fila[1], (Boolean) fila[2]),
+                                Collectors.toList())));
+    }
 }

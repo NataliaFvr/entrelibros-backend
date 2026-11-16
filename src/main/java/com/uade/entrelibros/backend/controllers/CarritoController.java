@@ -26,8 +26,8 @@ import com.uade.entrelibros.backend.exceptions.ItemCarritoNoEncontradoException;
 import com.uade.entrelibros.backend.exceptions.LibroNoEncontradoException;
 import com.uade.entrelibros.backend.exceptions.StockInsuficienteException;
 import com.uade.entrelibros.backend.service.CarritoService;
+import com.uade.entrelibros.backend.service.ImagenLibroService;
 import com.uade.entrelibros.backend.service.OrdenRespuestas;
-import com.uade.entrelibros.backend.repository.ImagenLibroRepository;
 import com.uade.entrelibros.backend.exceptions.LibroNoDisponibleException;
 
 // Compran COMPRADOR y VENDEDOR (un vendedor puede comprar libros que no sean suyos: lo impide CompraPropiaException).
@@ -41,7 +41,7 @@ public class CarritoController {
     private CarritoService carritoService;
 
     @Autowired
-    private ImagenLibroRepository imagenLibroRepository;
+    private ImagenLibroService imagenLibroService;
 
     @Autowired
     private OrdenRespuestas respuestas;
@@ -49,9 +49,7 @@ public class CarritoController {
     @GetMapping
     public ResponseEntity<List<CarritoItemResponse>> getCarrito(@AuthenticationPrincipal Usuario usuario) {
         List<CarritoItemResponse> resultado = carritoService.getItemsCarrito(usuario.getId()).stream()
-                .map(item -> CarritoItemResponse.from(item,
-                        imagenLibroRepository.findFirstByLibroIdOrderByOrdenAsc(item.getLibro().getId())
-                                .orElse(null)))
+                .map(item -> CarritoItemResponse.from(item, imagenLibroService.getPortada(item.getLibro().getId())))
                 .toList();
         return ResponseEntity.ok(resultado);
     }
@@ -64,9 +62,7 @@ public class CarritoController {
             CompraPropiaException {
         CarritoItem result = carritoService.agregarItem(
                 usuario.getId(), request.getIdLibro(), request.getCantidad());
-        return ResponseEntity.ok(CarritoItemResponse.from(result,
-                imagenLibroRepository.findFirstByLibroIdOrderByOrdenAsc(result.getLibro().getId())
-                        .orElse(null)));
+        return ResponseEntity.ok(CarritoItemResponse.from(result, imagenLibroService.getPortada(result.getLibro().getId())));
     }
 
     @PatchMapping("/items/{idItem}")
@@ -78,9 +74,7 @@ public class CarritoController {
             StockInsuficienteException, LibroNoDisponibleException {
         CarritoItem result = carritoService.modificarCantidad(
                 usuario.getId(), idItem, request.getCantidad());
-        return ResponseEntity.ok(CarritoItemResponse.from(result,
-                imagenLibroRepository.findFirstByLibroIdOrderByOrdenAsc(result.getLibro().getId())
-                        .orElse(null)));
+        return ResponseEntity.ok(CarritoItemResponse.from(result, imagenLibroService.getPortada(result.getLibro().getId())));
     }
 
     @DeleteMapping("/items/{idItem}")
