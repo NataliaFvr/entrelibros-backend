@@ -5,6 +5,7 @@ import lombok.Data;
 
 @Data
 @Entity
+@Table(uniqueConstraints = @UniqueConstraint(columnNames = { "id_carrito", "id_libro" }))
 public class CarritoItem {
 
     public CarritoItem() {
