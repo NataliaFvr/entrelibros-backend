@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.security.access.prepost.PreAuthorize;
 
 import com.uade.entrelibros.backend.entity.Usuario;
+import com.uade.entrelibros.backend.entity.dto.ResolverSolicitudVendedorRequest;
 import com.uade.entrelibros.backend.entity.dto.RolUpdateRequest;
 import com.uade.entrelibros.backend.entity.dto.SolicitudVendedorRequest;
 import com.uade.entrelibros.backend.entity.dto.UsuarioRequest;
@@ -149,10 +150,10 @@ public class UsuariosController {
     @PatchMapping("/{usuarioId}/solicitud-vendedor")
     public ResponseEntity<UsuarioResponse> resolverSolicitudVendedor(
             @PathVariable Long usuarioId,
-            @RequestParam boolean aprobar,
-            @RequestParam(required = false) String comentario)
+            @Valid @RequestBody ResolverSolicitudVendedorRequest request)
             throws UsuarioNoEncontradoException, YaEsVendedorException, SolicitudVendedorNoEncontradaException {
-        Usuario result = usuarioService.resolverSolicitudVendedor(usuarioId, aprobar, comentario);
+        Usuario result = usuarioService.resolverSolicitudVendedor(
+                usuarioId, request.getAprobar(), request.getComentario());
         return ResponseEntity.ok(UsuarioResponse.from(result));
     }
 
