@@ -63,6 +63,8 @@ public class CarritoServiceImpl implements CarritoService {
     private EnvioPolicy envioPolicy;
     @Autowired
     private DireccionRepository direccionRepository;
+    @Autowired
+    private CargoServicioService cargoServicioService;
 
     public Carrito getOrCrearCarrito(Long idUsuario) {
         Carrito carrito = carritoRepository.findByUsuarioId(idUsuario);
@@ -194,7 +196,11 @@ public class CarritoServiceImpl implements CarritoService {
                 librosBloqueados.values(), provinciaDestino);
         double costoEnvio = EnvioPolicy.redondear(envios.values().stream()
                 .mapToDouble(EnvioPolicy.EnvioVendedor::costo).sum());
-        double total = EnvioPolicy.redondear(subtotal + costoEnvio);
+        // Cargo de servicio: uno por orden, sobre los libros (sin envio), con el porcentaje vigente al confirmar.
+        // No se guarda en una columna aparte: queda dentro del total (cargo = total - subtotal - costoEnvio),
+        // asi un cambio posterior del admin no modifica las ordenes ya creadas.
+        double cargoServicio = CargoServicioService.calcular(subtotal, cargoServicioService.porcentajeVigente());
+        double total = EnvioPolicy.redondear(subtotal + costoEnvio + cargoServicio);
 
         Orden orden = new Orden(carrito.getUsuario(), provinciaDestino, subtotal, costoEnvio, total);
         orden.setCalleDestino(direccion.getCalle());
@@ -279,8 +285,11 @@ public class CarritoServiceImpl implements CarritoService {
                         e.zona() == com.uade.entrelibros.backend.entity.ZonaEnvio.MISMA_PROVINCIA ? "misma" : "distinta",
                         e.costo()))
                 .toList();
-        return new CotizacionEnvioResponse(subtotal, costoEnvio, EnvioPolicy.redondear(subtotal + costoEnvio),
-                envios.size(), detalle);
+        // Mismo cargo que va a calcular el checkout (si el admin no lo cambia en el medio)
+        double porcentaje = cargoServicioService.porcentajeVigente();
+        double cargoServicio = CargoServicioService.calcular(subtotal, porcentaje);
+        return new CotizacionEnvioResponse(subtotal, costoEnvio, cargoServicio, porcentaje,
+                EnvioPolicy.redondear(subtotal + costoEnvio + cargoServicio), envios.size(), detalle);
     }
 
     private int maxCantidad(Libro libro) {

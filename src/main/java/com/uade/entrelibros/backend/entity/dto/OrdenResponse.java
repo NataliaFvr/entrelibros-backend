@@ -8,6 +8,7 @@ import java.util.Map;
 import com.uade.entrelibros.backend.entity.EstadoPago;
 import com.uade.entrelibros.backend.entity.Orden;
 import com.uade.entrelibros.backend.entity.OrdenItem;
+import com.uade.entrelibros.backend.service.CargoServicioService;
 import lombok.Data;
 
 @Data
@@ -18,6 +19,8 @@ public class OrdenResponse {
     private String provinciaDestino;
     private Double subtotal;
     private Double costoEnvio;
+    // Cargo de servicio de la plataforma (total = subtotal + costoEnvio + cargoServicio)
+    private Double cargoServicio;
     private Double total;
     private String estadoPago;
     private Long idComprador;
@@ -88,6 +91,7 @@ public class OrdenResponse {
         r.subtotal = orden.getSubtotal();
         r.costoEnvio = orden.getCostoEnvio();
         r.total = orden.getTotal();
+        r.cargoServicio = CargoServicioService.cargoDe(orden);
         r.estadoPago = orden.getEstadoPago() != null ? orden.getEstadoPago().name() : null;
         if (orden.getComprador() != null) {
             r.idComprador = orden.getComprador().getId();

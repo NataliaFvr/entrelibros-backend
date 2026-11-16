@@ -157,11 +157,18 @@ public class OrdenServiceImpl implements OrdenService {
         } else {
             double libros = items.stream().mapToDouble(i -> i.getPrecioUnitario() * i.getCantidad()).sum();
             double envio = ordenVendedor.getCostoEnvio() != null ? ordenVendedor.getCostoEnvio() : 0.0;
-            double subtotal = EnvioPolicy.redondear(orden.getSubtotal() - libros);
+            double cargoAnterior = CargoServicioService.cargoDe(orden);
+            double subtotalAnterior = orden.getSubtotal();
+            double subtotal = EnvioPolicy.redondear(subtotalAnterior - libros);
             double costoEnvio = EnvioPolicy.redondear(orden.getCostoEnvio() - envio);
+            // El cargo de servicio se recalcula sobre los libros que quedan, con el MISMO porcentaje que tenia la
+            // orden al confirmarse (no el vigente hoy): se reparte en proporcion al subtotal que sigue en pie.
+            double cargoServicio = subtotalAnterior > 0
+                    ? EnvioPolicy.redondear(cargoAnterior * subtotal / subtotalAnterior)
+                    : 0.0;
             orden.setSubtotal(subtotal);
             orden.setCostoEnvio(costoEnvio);
-            orden.setTotal(EnvioPolicy.redondear(subtotal + costoEnvio));
+            orden.setTotal(EnvioPolicy.redondear(subtotal + costoEnvio + cargoServicio));
         }
         ordenRepository.save(orden);
     }
