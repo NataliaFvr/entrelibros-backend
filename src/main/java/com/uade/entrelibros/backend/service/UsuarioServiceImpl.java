@@ -338,6 +338,7 @@ public class UsuarioServiceImpl implements UsuarioService {
         String codigo = generarCodigo();
         usuario.setCodigoResetPassword(codigo);
         usuario.setCodigoResetPasswordExpira(LocalDateTime.now().plusMinutes(15));
+        usuario.setIntentosCodigoReset(0);
 
         Usuario guardado = usuarioRepository.save(usuario);
         emailService.enviarCodigoResetPassword(guardado.getEmail(), guardado.getNombre(), codigo);

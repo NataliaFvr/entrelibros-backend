@@ -101,7 +101,8 @@ public class CarritoServiceImpl implements CarritoService {
 
         validarLibroDisponible(libro);
 
-        // Si el libro ya está en el carrito se suma al mismo renglón, y el stock se controla contra el total
+        // Si el libro ya está en el carrito se suma al mismo renglón, y el stock se
+        // controla contra el total
         Carrito carrito = getOrCrearCarrito(idUsuario);
         CarritoItem existente = carritoItemRepository.findByCarritoIdAndLibroId(carrito.getId(), idLibro)
                 .orElse(null);
@@ -180,7 +181,7 @@ public class CarritoServiceImpl implements CarritoService {
                 throw new CompraPropiaException();
             }
             validarLibroDisponible(libro);
-            if (libro.getStock() < item.getCantidad()) {
+            if (libro.getStock() < item.getCantidad() || maxCantidad(libro) < item.getCantidad()) {
                 throw new StockInsuficienteException(libro.getTitulo());
             }
         }
@@ -196,8 +197,10 @@ public class CarritoServiceImpl implements CarritoService {
                 librosBloqueados.values(), provinciaDestino);
         double costoEnvio = EnvioPolicy.redondear(envios.values().stream()
                 .mapToDouble(EnvioPolicy.EnvioVendedor::costo).sum());
-        // Cargo de servicio: uno por orden, sobre los libros (sin envio), con el porcentaje vigente al confirmar.
-        // No se guarda en una columna aparte: queda dentro del total (cargo = total - subtotal - costoEnvio),
+        // Cargo de servicio: uno por orden, sobre los libros (sin envio), con el
+        // porcentaje vigente al confirmar.
+        // No se guarda en una columna aparte: queda dentro del total (cargo = total -
+        // subtotal - costoEnvio),
         // asi un cambio posterior del admin no modifica las ordenes ya creadas.
         double cargoServicio = CargoServicioService.calcular(subtotal, cargoServicioService.porcentajeVigente());
         double total = EnvioPolicy.redondear(subtotal + costoEnvio + cargoServicio);
@@ -251,7 +254,8 @@ public class CarritoServiceImpl implements CarritoService {
         }
     }
 
-    // Mismo calculo que el checkout (subtotal con descuento + un envio por vendedor), pero sin crear la orden
+    // Mismo calculo que el checkout (subtotal con descuento + un envio por
+    // vendedor), pero sin crear la orden
     // ni reservar stock: sirve para mostrar el total antes de confirmar la compra.
     @Override
     @Transactional
@@ -273,7 +277,8 @@ public class CarritoServiceImpl implements CarritoService {
         Map<Long, EnvioPolicy.EnvioVendedor> envios = envioPolicy.enviosPorVendedor(libros, direccion.getProvincia());
         double costoEnvio = EnvioPolicy.redondear(envios.values().stream()
                 .mapToDouble(EnvioPolicy.EnvioVendedor::costo).sum());
-        // Nombre visible de cada vendedor (la tienda o, si no tiene, su nombre), en el orden de los envios
+        // Nombre visible de cada vendedor (la tienda o, si no tiene, su nombre), en el
+        // orden de los envios
         Map<Long, String> nombres = new HashMap<>();
         for (Libro libro : libros) {
             Usuario vendedor = libro.getVendedor();
@@ -282,10 +287,12 @@ public class CarritoServiceImpl implements CarritoService {
         }
         List<CotizacionEnvioResponse.EnvioVendedor> detalle = envios.values().stream()
                 .map(e -> new CotizacionEnvioResponse.EnvioVendedor(e.idVendedor(), nombres.get(e.idVendedor()),
-                        e.zona() == com.uade.entrelibros.backend.entity.ZonaEnvio.MISMA_PROVINCIA ? "misma" : "distinta",
+                        e.zona() == com.uade.entrelibros.backend.entity.ZonaEnvio.MISMA_PROVINCIA ? "misma"
+                                : "distinta",
                         e.costo()))
                 .toList();
-        // Mismo cargo que va a calcular el checkout (si el admin no lo cambia en el medio)
+        // Mismo cargo que va a calcular el checkout (si el admin no lo cambia en el
+        // medio)
         double porcentaje = cargoServicioService.porcentajeVigente();
         double cargoServicio = CargoServicioService.calcular(subtotal, porcentaje);
         return new CotizacionEnvioResponse(subtotal, costoEnvio, cargoServicio, porcentaje,
@@ -294,11 +301,14 @@ public class CarritoServiceImpl implements CarritoService {
 
     private int maxCantidad(Libro libro) {
         return libro.getEstadoLibro() == com.uade.entrelibros.backend.entity.EstadoLibro.USADO
-                ? 1 : libro.getStock();
+                ? 1
+                : libro.getStock();
     }
 
-    // EXACTAMENTE la cuenta de precioFinal del front: Math.round(base * (1 - d / 100) * 100) / 100.
-    // (Con BigDecimal hay casos borde, p. ej. 1.005, en los que el back redondeaba distinto que el front.)
+    // EXACTAMENTE la cuenta de precioFinal del front: Math.round(base * (1 - d /
+    // 100) * 100) / 100.
+    // (Con BigDecimal hay casos borde, p. ej. 1.005, en los que el back redondeaba
+    // distinto que el front.)
     static double precioConDescuento(Libro libro) {
         double descuento = libro.getDescuentoPct() != null ? libro.getDescuentoPct() : 0.0;
         return Math.round(libro.getPrecio() * (1 - descuento / 100.0) * 100) / 100.0;
