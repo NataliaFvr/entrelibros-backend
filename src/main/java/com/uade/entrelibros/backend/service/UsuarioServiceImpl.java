@@ -21,6 +21,7 @@ import com.uade.entrelibros.backend.entity.dto.UsuarioUpdateRequest;
 import com.uade.entrelibros.backend.entity.TipoNotificacion;
 import com.uade.entrelibros.backend.exceptions.DatosVendedorIncompletosException;
 import com.uade.entrelibros.backend.exceptions.CodigoVerificacionInvalidoException;
+import com.uade.entrelibros.backend.exceptions.IntentosCodigoAgotadosException;
 import com.uade.entrelibros.backend.exceptions.EmailYaVerificadoException;
 import com.uade.entrelibros.backend.exceptions.ListaVaciaException;
 import com.uade.entrelibros.backend.exceptions.RolInvalidoException;
@@ -276,8 +277,9 @@ public class UsuarioServiceImpl implements UsuarioService {
             throw new EmailYaVerificadoException();
         }
 
+        // Código bloqueado por intentos fallidos: aunque ahora sea el correcto, hay que pedir uno nuevo
         if (valor(usuario.getIntentosCodigoVerificacion()) >= MAX_INTENTOS_CODIGO) {
-            throw new CodigoVerificacionInvalidoException();
+            throw new IntentosCodigoAgotadosException();
         }
 
         boolean codigoValido = codigo != null
@@ -286,8 +288,13 @@ public class UsuarioServiceImpl implements UsuarioService {
                 && usuario.getCodigoVerificacionExpira().isAfter(LocalDateTime.now());
 
         if (!codigoValido) {
-            usuario.setIntentosCodigoVerificacion(valor(usuario.getIntentosCodigoVerificacion()) + 1);
+            int intentos = valor(usuario.getIntentosCodigoVerificacion()) + 1;
+            usuario.setIntentosCodigoVerificacion(intentos);
             usuarioRepository.save(usuario);
+            // El error que agota los intentos ya avisa que hay que pedir un código nuevo
+            if (intentos >= MAX_INTENTOS_CODIGO) {
+                throw new IntentosCodigoAgotadosException();
+            }
             throw new CodigoVerificacionInvalidoException();
         }
         usuario.setIntentosCodigoVerificacion(0);
@@ -351,8 +358,9 @@ public class UsuarioServiceImpl implements UsuarioService {
         Usuario usuario = usuarioRepository.findByEmail(email)
                 .orElseThrow(UsuarioNoEncontradoException::new);
 
+        // Código bloqueado por intentos fallidos: aunque ahora sea el correcto, hay que pedir uno nuevo
         if (valor(usuario.getIntentosCodigoReset()) >= MAX_INTENTOS_CODIGO) {
-            throw new CodigoVerificacionInvalidoException();
+            throw new IntentosCodigoAgotadosException();
         }
 
         boolean codigoValido = codigo != null
@@ -361,8 +369,13 @@ public class UsuarioServiceImpl implements UsuarioService {
                 && usuario.getCodigoResetPasswordExpira().isAfter(LocalDateTime.now());
 
         if (!codigoValido) {
-            usuario.setIntentosCodigoReset(valor(usuario.getIntentosCodigoReset()) + 1);
+            int intentos = valor(usuario.getIntentosCodigoReset()) + 1;
+            usuario.setIntentosCodigoReset(intentos);
             usuarioRepository.save(usuario);
+            // El error que agota los intentos ya avisa que hay que pedir un código nuevo
+            if (intentos >= MAX_INTENTOS_CODIGO) {
+                throw new IntentosCodigoAgotadosException();
+            }
             throw new CodigoVerificacionInvalidoException();
         }
         usuario.setIntentosCodigoReset(0);
