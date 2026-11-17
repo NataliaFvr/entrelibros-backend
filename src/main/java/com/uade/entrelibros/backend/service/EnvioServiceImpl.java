@@ -13,7 +13,6 @@ import com.uade.entrelibros.backend.exceptions.CampoInvalidoException;
 import com.uade.entrelibros.backend.exceptions.CostoEnvioInvalidoException;
 import com.uade.entrelibros.backend.exceptions.EnvioDuplicadoException;
 import com.uade.entrelibros.backend.exceptions.EnvioNoEncontradoException;
-import com.uade.entrelibros.backend.exceptions.ListaVaciaException;
 import com.uade.entrelibros.backend.exceptions.ZonaEnvioInvalidaException;
 import com.uade.entrelibros.backend.repository.EnvioRepository;
 import jakarta.annotation.PostConstruct;
@@ -93,9 +92,6 @@ public class EnvioServiceImpl implements EnvioService {
     public List<Envio> getEnvios() {
         asegurarTarifas();
         List<Envio> envios = envioRepository.findAll();
-        if (envios.isEmpty()) {
-            throw new ListaVaciaException("No hay tarifas de envío registradas");
-        }
         return envios;
     }
 

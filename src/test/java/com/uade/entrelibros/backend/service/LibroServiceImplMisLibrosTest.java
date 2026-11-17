@@ -2,7 +2,7 @@ package com.uade.entrelibros.backend.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.never;
@@ -30,7 +30,6 @@ import com.uade.entrelibros.backend.entity.Libro;
 import com.uade.entrelibros.backend.entity.Rol;
 import com.uade.entrelibros.backend.entity.Usuario;
 import com.uade.entrelibros.backend.entity.dto.LibroMioResponse;
-import com.uade.entrelibros.backend.exceptions.ListaVaciaException;
 import com.uade.entrelibros.backend.repository.CategoriaRepository;
 import com.uade.entrelibros.backend.repository.HistorialModeracionRepository;
 import com.uade.entrelibros.backend.repository.LibroCategoriaRepository;
@@ -76,36 +75,39 @@ class LibroServiceImplMisLibrosTest {
         when(libroRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(pagina);
     }
 
+    // Una lista vacía no es un error: el back responde 200 con una página vacía
     @Test
     void vendedorSinLibros() {
         devolver(new PageImpl<>(List.of(), PageRequest.of(0, 20), 0));
 
-        ListaVaciaException ex = assertThrows(ListaVaciaException.class,
-                () -> libroService.getLibrosMios(vendedor(), null, null, PageRequest.of(0, 20)));
+        Page<LibroMioResponse> pagina = libroService.getLibrosMios(vendedor(), null, null, PageRequest.of(0, 20));
 
-        assertEquals("No tenés libros publicados", ex.getMessage());
-        verify(libroRepository, never()).countByVendedorId(any());
+        assertTrue(pagina.isEmpty());
+        assertEquals(0, pagina.getTotalElements());
+        // Corta antes de la consulta IN (:ids), que no puede ir vacía
+        verifyNoInteractions(libroCategoriaRepository);
     }
 
     @Test
-    void paginaFueraDeRangoConFiltroNoDiceConEseEstado() {
+    void paginaFueraDeRangoDevuelvePaginaVacia() {
         devolver(new PageImpl<>(List.of(), PageRequest.of(9, 20), 5));
 
-        ListaVaciaException ex = assertThrows(ListaVaciaException.class, () -> libroService.getLibrosMios(
-                vendedor(), EstadoModeracion.ACEPTADO, null, PageRequest.of(9, 20)));
+        Page<LibroMioResponse> pagina = libroService.getLibrosMios(
+                vendedor(), EstadoModeracion.ACEPTADO, null, PageRequest.of(9, 20));
 
-        assertEquals("No tenés libros publicados", ex.getMessage());
+        assertTrue(pagina.isEmpty());
+        assertEquals(9, pagina.getNumber());
     }
 
     @Test
-    void filtroSinCoincidencias() {
+    void filtroSinCoincidenciasDevuelvePaginaVacia() {
         devolver(new PageImpl<>(List.of(), PageRequest.of(0, 20), 0));
-        when(libroRepository.countByVendedorId(7L)).thenReturn(3L);
 
-        ListaVaciaException ex = assertThrows(ListaVaciaException.class, () -> libroService.getLibrosMios(
-                vendedor(), EstadoModeracion.RECHAZADO, null, PageRequest.of(0, 20)));
+        Page<LibroMioResponse> pagina = libroService.getLibrosMios(
+                vendedor(), EstadoModeracion.RECHAZADO, null, PageRequest.of(0, 20));
 
-        assertEquals("No tenés libros con ese estado", ex.getMessage());
+        assertTrue(pagina.isEmpty());
+        verify(libroRepository, never()).countByVendedorId(any());
     }
 
     @Test

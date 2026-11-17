@@ -23,7 +23,6 @@ import com.uade.entrelibros.backend.exceptions.DatosVendedorIncompletosException
 import com.uade.entrelibros.backend.exceptions.CodigoVerificacionInvalidoException;
 import com.uade.entrelibros.backend.exceptions.IntentosCodigoAgotadosException;
 import com.uade.entrelibros.backend.exceptions.EmailYaVerificadoException;
-import com.uade.entrelibros.backend.exceptions.ListaVaciaException;
 import com.uade.entrelibros.backend.exceptions.RolInvalidoException;
 import com.uade.entrelibros.backend.exceptions.SolicitudPendienteExistenteException;
 import com.uade.entrelibros.backend.exceptions.SolicitudVendedorNoEncontradaException;
@@ -418,9 +417,6 @@ public class UsuarioServiceImpl implements UsuarioService {
     public Page<Usuario> getSolicitudesVendedorPendientes(PageRequest pageRequest) {
         Page<Usuario> solicitudes = usuarioRepository
                 .findByEstadoSolicitudVendedor(EstadoSolicitudVendedor.PENDIENTE, pageRequest);
-        if (solicitudes.isEmpty()) {
-            throw new ListaVaciaException("No hay solicitudes de vendedor pendientes");
-        }
         return solicitudes;
     }
 

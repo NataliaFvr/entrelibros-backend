@@ -14,7 +14,6 @@ import com.uade.entrelibros.backend.entity.Marcapagina;
 import com.uade.entrelibros.backend.entity.Usuario;
 import com.uade.entrelibros.backend.exceptions.LibroNoDisponibleException;
 import com.uade.entrelibros.backend.exceptions.LibroNoEncontradoException;
-import com.uade.entrelibros.backend.exceptions.ListaVaciaException;
 import com.uade.entrelibros.backend.exceptions.MarcapaginaDuplicadaException;
 import com.uade.entrelibros.backend.exceptions.MarcapaginaNoEncontradaException;
 import com.uade.entrelibros.backend.exceptions.AccionNoPermitidaException;
@@ -33,9 +32,6 @@ public class MarcapaginaServiceImpl implements MarcapaginaService {
     @Override
     public Page<Marcapagina> getMarcapaginas(Long idUsuario, Pageable pageable) {
         Page<Marcapagina> marcapaginas = marcapaginaRepository.findVisiblesByUsuarioId(idUsuario, pageable);
-        if (marcapaginas.isEmpty()) {
-            throw new ListaVaciaException("No tenes libros en tus marcapaginas");
-        }
         return marcapaginas;
     }
 

@@ -40,7 +40,6 @@ import com.uade.entrelibros.backend.exceptions.LibroConDemasiadasFotosException;
 import com.uade.entrelibros.backend.exceptions.LibroNoEncontradoException;
 import com.uade.entrelibros.backend.exceptions.LibroSinCategoriaActivaException;
 import com.uade.entrelibros.backend.exceptions.LibroSinFotosException;
-import com.uade.entrelibros.backend.exceptions.ListaVaciaException;
 import com.uade.entrelibros.backend.exceptions.RolInvalidoException;
 import com.uade.entrelibros.backend.repository.CategoriaRepository;
 import com.uade.entrelibros.backend.repository.HistorialModeracionRepository;
@@ -74,9 +73,6 @@ public class LibroServiceImpl implements LibroService {
 
     public Page<Libro> getLibros(PageRequest pageRequest) {
         Page<Libro> libros = libroRepository.findVisibles(pageRequest);
-        if (libros.isEmpty()) {
-            throw new ListaVaciaException("No hay libros disponibles");
-        }
         return libros;
     }
 
@@ -126,9 +122,6 @@ public class LibroServiceImpl implements LibroService {
     public Page<Libro> getLibrosPorEstadoModeracion(EstadoModeracion estado, PageRequest pageRequest) {
         Page<Libro> libros = libroRepository.findByEstadoModeracionAndEstadoPublicacion(
                 estado, EstadoPublicacion.ACTIVA, pageRequest);
-        if (libros.isEmpty()) {
-            throw new ListaVaciaException("No hay libros en ese estado de moderacion");
-        }
         return libros;
     }
 
@@ -486,13 +479,10 @@ public class LibroServiceImpl implements LibroService {
                 .and(LibroSpecification.conEstadoPublicacion(estadoPublicacion));
         Page<Libro> pagina = libroRepository.findAll(spec, pageable);
 
+        // Sin libros (o con filtros sin coincidencias): página vacía con 200, no es un error.
+        // Se corta acá porque la consulta de categorías de abajo usa IN (:ids) y no puede ir vacía.
         if (pagina.isEmpty()) {
-            boolean hayFiltros = estadoModeracion != null || estadoPublicacion != null;
-            if (hayFiltros && pagina.getTotalElements() == 0
-                    && libroRepository.countByVendedorId(vendedor.getId()) > 0) {
-                throw new ListaVaciaException("No tenés libros con ese estado");
-            }
-            throw new ListaVaciaException("No tenés libros publicados");
+            return Page.empty(pageable);
         }
 
         List<Long> ids = pagina.getContent().stream().map(Libro::getId).toList();

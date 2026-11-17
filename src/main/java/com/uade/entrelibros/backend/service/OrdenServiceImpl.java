@@ -17,7 +17,6 @@ import com.uade.entrelibros.backend.entity.EstadoOrdenVendedor;
 import com.uade.entrelibros.backend.entity.Rol;
 import com.uade.entrelibros.backend.entity.Usuario;
 import com.uade.entrelibros.backend.exceptions.AccionNoPermitidaException;
-import com.uade.entrelibros.backend.exceptions.ListaVaciaException;
 import com.uade.entrelibros.backend.exceptions.OrdenNoEncontradaException;
 import com.uade.entrelibros.backend.exceptions.OrdenVendedorNoEncontradaException;
 import com.uade.entrelibros.backend.exceptions.OrdenNoCancelableException;
@@ -49,9 +48,6 @@ public class OrdenServiceImpl implements OrdenService {
             throw new AccionNoPermitidaException();
         }
         List<Orden> ordenes = ordenRepository.findAll(Sort.by(Sort.Direction.DESC, "id")); // la mas nueva primero
-        if (ordenes.isEmpty()) {
-            throw new ListaVaciaException("No hay órdenes registradas");
-        }
         ordenes.forEach(this::resolverVencimiento);
         return ordenes;
     }
@@ -79,9 +75,6 @@ public class OrdenServiceImpl implements OrdenService {
     @Transactional
     public List<Orden> getOrdenesByComprador(Usuario comprador) {
         List<Orden> ordenes = ordenRepository.findByCompradorIdOrderByIdDesc(comprador.getId());
-        if (ordenes.isEmpty()) {
-            throw new ListaVaciaException("No tenés órdenes registradas");
-        }
         ordenes.forEach(this::resolverVencimiento);
         return ordenes;
     }
@@ -90,9 +83,6 @@ public class OrdenServiceImpl implements OrdenService {
     public List<OrdenVendedor> getOrdenesDelVendedor(Usuario vendedor) {
         validarVendedor(vendedor);
         List<OrdenVendedor> ordenes = ordenVendedorRepository.findByVendedorIdOrderByIdDesc(vendedor.getId()); // la mas nueva primero
-        if (ordenes.isEmpty()) {
-            throw new ListaVaciaException("No tenés órdenes como vendedor");
-        }
         ordenes.forEach(ordenVendedor -> resolverVencimiento(ordenVendedor.getOrden()));
         return ordenes;
     }

@@ -32,7 +32,6 @@ import com.uade.entrelibros.backend.exceptions.ItemCarritoDuplicadoException;
 import com.uade.entrelibros.backend.exceptions.DireccionNoEncontradaException;
 import com.uade.entrelibros.backend.exceptions.ItemCarritoNoEncontradoException;
 import com.uade.entrelibros.backend.exceptions.LibroNoEncontradoException;
-import com.uade.entrelibros.backend.exceptions.ListaVaciaException;
 import com.uade.entrelibros.backend.exceptions.StockInsuficienteException;
 import com.uade.entrelibros.backend.exceptions.UsuarioNoEncontradoException;
 import com.uade.entrelibros.backend.repository.CarritoItemRepository;
@@ -81,9 +80,6 @@ public class CarritoServiceImpl implements CarritoService {
     public List<CarritoItem> getItemsCarrito(Long idUsuario) {
         Carrito carrito = getOrCrearCarrito(idUsuario);
         List<CarritoItem> items = carritoItemRepository.findByCarritoId(carrito.getId());
-        if (items.isEmpty()) {
-            throw new ListaVaciaException("El carrito no tiene items");
-        }
         return items;
     }
 

@@ -36,7 +36,7 @@ import com.uade.entrelibros.backend.exceptions.AccionNoPermitidaException;
 import com.uade.entrelibros.backend.exceptions.CategoriaNoEncontradaException;
 import com.uade.entrelibros.backend.exceptions.EstadoFiltroInvalidoException;
 import com.uade.entrelibros.backend.exceptions.LibroNoEncontradoException;
-import com.uade.entrelibros.backend.exceptions.ListaVaciaException;
+import com.uade.entrelibros.backend.exceptions.CampoInvalidoException;
 import com.uade.entrelibros.backend.exceptions.RolInvalidoException;
 import com.uade.entrelibros.backend.service.HistorialModeracionService;
 import com.uade.entrelibros.backend.service.ImagenLibroService;
@@ -100,9 +100,6 @@ public class LibrosController {
         filtro.setEnvioLocal(envioLocal);
 
         Page<Libro> libros = libroService.buscarLibros(filtro, PageRequest.of(page, size));
-        if (libros.isEmpty()) {
-            throw new ListaVaciaException("No encontramos libros con esa búsqueda");
-        }
         Map<Long, List<String>> categorias = categoriasPorLibro(libros.getContent());
         Map<Long, Long> portadas = portadasPorLibro(libros.getContent());
         return ResponseEntity.ok(libros.map(libro -> LibroResponse.from(
@@ -111,7 +108,7 @@ public class LibrosController {
     }
 
     // Libros del vendedor autenticado en TODOS sus estados. /mios es literal y gana sobre /{libroId}.
-    // Sin resultados -> ListaVaciaException (404). COMPRADOR/ADMIN -> 403 por @PreAuthorize.
+    // Sin resultados -> página vacía con 200. COMPRADOR/ADMIN -> 403 por @PreAuthorize.
     // Los estados llegan como texto para devolver {"error": ...} si son invalidos y aceptar PENDIENTE = EN_REVISION.
     @PreAuthorize("hasAuthority('VENDEDOR')")
     @GetMapping("/mios")
@@ -125,7 +122,8 @@ public class LibrosController {
         EstadoModeracion moderacion = parsearModeracion(estadoModeracion);
         EstadoPublicacion publicacion = parsearPublicacion(estadoPublicacion);
         if (page < 0) {
-            throw new ListaVaciaException("No tenés libros publicados");
+            // Una página negativa es un pedido mal armado (400), no una lista vacía
+            throw new CampoInvalidoException("page", "La página no puede ser negativa.");
         }
         int tamanio = Math.min(Math.max(size, 1), 100);
         Sort sortConfig = switch (sort == null ? "" : sort.trim()) {
@@ -272,9 +270,6 @@ public class LibrosController {
             @RequestParam(defaultValue = "20") Integer size) throws LibroNoEncontradoException {
         Page<HistorialModeracionResponse> historial = historialModeracionService.getHistorialPorLibro(
                 libroId, PageRequest.of(page, size));
-        if (historial.isEmpty()) {
-            throw new ListaVaciaException("Este libro todavía no tiene historial de moderación");
-        }
         return ResponseEntity.ok(historial);
     }
 
@@ -285,9 +280,6 @@ public class LibrosController {
             @RequestParam(defaultValue = "20") Integer size) {
         Page<HistorialModeracionResponse> historial =
                 historialModeracionService.getHistorialCompleto(PageRequest.of(page, size));
-        if (historial.isEmpty()) {
-            throw new ListaVaciaException("Todavía no hay moderaciones registradas");
-        }
         return ResponseEntity.ok(historial);
     }
 

@@ -13,7 +13,6 @@ import com.uade.entrelibros.backend.entity.Direccion;
 import com.uade.entrelibros.backend.entity.Usuario;
 import com.uade.entrelibros.backend.entity.dto.DireccionRequest;
 import com.uade.entrelibros.backend.entity.dto.DireccionResponse;
-import com.uade.entrelibros.backend.exceptions.ListaVaciaException;
 import com.uade.entrelibros.backend.service.DireccionService;
 
 import jakarta.validation.Valid;
@@ -30,9 +29,6 @@ public class DireccionController {
         List<DireccionResponse> resultado = direccionService.getDirecciones(usuario.getId()).stream()
                 .map(DireccionResponse::from)
                 .toList();
-        if (resultado.isEmpty()) {
-            throw new ListaVaciaException("Todavía no tenés direcciones guardadas");
-        }
         return ResponseEntity.ok(resultado);
     }
 

@@ -15,7 +15,6 @@ import com.uade.entrelibros.backend.entity.Orden;
 import com.uade.entrelibros.backend.entity.Rol;
 import com.uade.entrelibros.backend.entity.TipoNotificacion;
 import com.uade.entrelibros.backend.entity.Usuario;
-import com.uade.entrelibros.backend.exceptions.ListaVaciaException;
 import com.uade.entrelibros.backend.exceptions.NotificacionInvalidaException;
 import com.uade.entrelibros.backend.exceptions.NotificacionNoEncontradaException;
 
@@ -62,9 +61,6 @@ public class NotificacionServiceImpl implements NotificacionService {
     public Page<Notificacion> getNotificaciones(Long idUsuario, Pageable pageable) {
         Page<Notificacion> notificaciones = notificacionRepository
                 .findByUsuarioIdOrderByFechaDesc(idUsuario, pageable);
-        if (notificaciones.isEmpty()) {
-            throw new ListaVaciaException("No tenes notificaciones");
-        }
         return notificaciones;
     }
 
@@ -72,9 +68,6 @@ public class NotificacionServiceImpl implements NotificacionService {
     public Page<Notificacion> getNoLeidas(Long idUsuario, Pageable pageable) {
         Page<Notificacion> notificaciones = notificacionRepository
                 .findByUsuarioIdAndLeidaFalseOrderByFechaDesc(idUsuario, pageable);
-        if (notificaciones.isEmpty()) {
-            throw new ListaVaciaException("No tenes notificaciones sin leer");
-        }
         return notificaciones;
     }
 
@@ -82,9 +75,6 @@ public class NotificacionServiceImpl implements NotificacionService {
     @Transactional
     public int marcarLeidas(Long idUsuario) {
         int cantidad = notificacionRepository.marcarTodasComoLeidas(idUsuario);
-        if (cantidad == 0) {
-            throw new ListaVaciaException("No tenes notificaciones sin leer");
-        }
         return cantidad;
     }
 

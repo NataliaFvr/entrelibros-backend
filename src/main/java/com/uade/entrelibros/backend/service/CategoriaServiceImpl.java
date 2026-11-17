@@ -12,7 +12,6 @@ import com.uade.entrelibros.backend.entity.Libro;
 import com.uade.entrelibros.backend.entity.TipoNotificacion;
 import com.uade.entrelibros.backend.exceptions.CategoriaDuplicadaException;
 import com.uade.entrelibros.backend.exceptions.CategoriaNoEncontradaException;
-import com.uade.entrelibros.backend.exceptions.ListaVaciaException;
 import com.uade.entrelibros.backend.repository.CategoriaRepository;
 import com.uade.entrelibros.backend.repository.LibroCategoriaRepository;
 import com.uade.entrelibros.backend.repository.LibroRepository;
@@ -34,9 +33,6 @@ public class CategoriaServiceImpl implements CategoriaService {
 
     public List<Categoria> getCategorias() {
         List<Categoria> categorias = categoriaRepository.findByActivaTrueOrderByNombreAsc();
-        if (categorias.isEmpty()) {
-            throw new ListaVaciaException("No hay categorías registradas");
-        }
         return categorias;
     }
 

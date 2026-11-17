@@ -19,7 +19,6 @@ import com.uade.entrelibros.backend.exceptions.CalificacionInvalidaException;
 import com.uade.entrelibros.backend.exceptions.CampoInvalidoException;
 import com.uade.entrelibros.backend.exceptions.CompraNoPagadaException;
 import com.uade.entrelibros.backend.exceptions.LibroNoEncontradoException;
-import com.uade.entrelibros.backend.exceptions.ListaVaciaException;
 import com.uade.entrelibros.backend.exceptions.OrdenItemNoEncontradoException;
 import com.uade.entrelibros.backend.exceptions.ResenaDuplicadaException;
 import com.uade.entrelibros.backend.exceptions.ResenaLibroNoEncontradaException;
@@ -48,9 +47,6 @@ public class ResenaLibroServiceImpl implements ResenaLibroService {
 
     public List<ResenaLibro> getResenas() {
         List<ResenaLibro> resenas = resenaLibroRepository.findAll();
-        if (resenas.isEmpty()) {
-            throw new ListaVaciaException("No hay reseñas de libros registradas");
-        }
         return resenas;
     }
 
@@ -75,9 +71,6 @@ public class ResenaLibroServiceImpl implements ResenaLibroService {
     @Override
     public List<ResenaLibro> getResenasByVendedor(Long idVendedor) {
         List<ResenaLibro> resenas = resenaLibroRepository.findByVendedorIdOrderByFechaDesc(idVendedor);
-        if (resenas.isEmpty()) {
-            throw new ListaVaciaException("Ese vendedor todavía no tiene reseñas de libros");
-        }
         return resenas;
     }
 
