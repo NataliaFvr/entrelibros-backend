@@ -37,7 +37,7 @@ public class CategoriaServiceImpl implements CategoriaService {
     }
 
     // Para el panel del admin: incluye las dadas de baja (getCategorias solo devuelve las activas).
-    // Sin categorias devuelve [] y no ListaVaciaException: en el panel "todavia no hay ninguna" es un estado normal.
+    // Sin categorias devuelve []: en el panel "todavia no hay ninguna" es un estado normal.
     @Override
     public List<Categoria> getTodasLasCategorias() {
         return categoriaRepository.findAllByOrderByNombreAsc();

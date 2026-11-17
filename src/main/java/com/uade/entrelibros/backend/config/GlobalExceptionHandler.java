@@ -24,7 +24,6 @@ import org.springframework.security.authentication.DisabledException;
 import com.uade.entrelibros.backend.exceptions.CampoInvalidoException;
 import com.uade.entrelibros.backend.exceptions.CamposInvalidosException;
 import com.uade.entrelibros.backend.exceptions.EntreLibrosException;
-import com.uade.entrelibros.backend.exceptions.ListaVaciaException;
 import com.uade.entrelibros.backend.exceptions.CuentaDadaDeBajaException;
 
 @RestControllerAdvice
@@ -88,13 +87,6 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
                 .body(Map.of("error", "El archivo supera el tamaño máximo permitido (10MB)"));
-    }
-
-    @ExceptionHandler(ListaVaciaException.class)
-    public ResponseEntity<Map<String, String>> handleListaVacia(ListaVaciaException ex) {
-        return ResponseEntity
-                .status(HttpStatus.NOT_FOUND)
-                .body(Map.of("error", ex.getMessage()));
     }
 
     @ExceptionHandler(DisabledException.class)
