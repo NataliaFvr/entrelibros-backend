@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,6 +28,7 @@ import com.uade.entrelibros.backend.exceptions.CarritoVacioException;
 import com.uade.entrelibros.backend.exceptions.AccionNoPermitidaException;
 import com.uade.entrelibros.backend.exceptions.CantidadInvalidaException;
 import com.uade.entrelibros.backend.exceptions.CompraPropiaException;
+import com.uade.entrelibros.backend.exceptions.ItemCarritoDuplicadoException;
 import com.uade.entrelibros.backend.exceptions.DireccionNoEncontradaException;
 import com.uade.entrelibros.backend.exceptions.ItemCarritoNoEncontradoException;
 import com.uade.entrelibros.backend.exceptions.LibroNoEncontradoException;
@@ -116,7 +118,14 @@ public class CarritoServiceImpl implements CarritoService {
             existente.setCantidad(total);
             return carritoItemRepository.save(existente);
         }
-        return carritoItemRepository.save(new CarritoItem(carrito, libro, cantidad));
+        try {
+            // saveAndFlush: el INSERT sale ya, así el choque con la restricción única se atrapa acá
+            return carritoItemRepository.saveAndFlush(new CarritoItem(carrito, libro, cantidad));
+        } catch (DataIntegrityViolationException e) {
+            // Dos pedidos simultáneos con el mismo libro: los dos vieron que no estaba y el segundo
+            // choca con la restricción única (id_carrito, id_libro). Mismo criterio que MarcapaginaServiceImpl.
+            throw new ItemCarritoDuplicadoException();
+        }
     }
 
     public CarritoItem modificarCantidad(Long idUsuario, Long idItem, Integer cantidad) {
