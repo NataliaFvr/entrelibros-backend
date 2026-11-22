@@ -62,6 +62,13 @@ public class AuthenticationController {
     public ResponseEntity<AuthenticationResponse> refresh(@Valid @RequestBody RefreshTokenRequest request) {
         return ResponseEntity.ok(authenticationService.refresh(request));
     }
+
+    @PostMapping("/logout")
+    public ResponseEntity<Map<String, String>> logout(@Valid @RequestBody RefreshTokenRequest request) {
+        authenticationService.logout(request);
+        return ResponseEntity.ok(Map.of("mensaje", "Sesión cerrada correctamente"));
+    }
+
     @PostMapping("/recuperar-contrasenia")
     public ResponseEntity<Map<String, String>> recuperarContrasenia(@Valid @RequestBody RecuperarContraseniaRequest request) {
         usuarioService.solicitarResetPassword(request.getEmail());

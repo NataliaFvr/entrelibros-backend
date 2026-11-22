@@ -2,6 +2,7 @@ package com.uade.entrelibros.backend.config;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
+import java.util.UUID;
 import java.util.function.Function;
 
 import javax.crypto.SecretKey;
@@ -31,7 +32,15 @@ public class JwtService {
     }
 
     public String generateRefreshToken(UserDetails userDetails) {
-        return buildToken(userDetails, refreshExpiration, "refresh");
+        return Jwts
+                .builder()
+                .subject(userDetails.getUsername())
+                .id(UUID.randomUUID().toString())
+                .claim("token_type", "refresh")
+                .issuedAt(new Date(System.currentTimeMillis()))
+                .expiration(new Date(System.currentTimeMillis() + refreshExpiration))
+                .signWith(getSecretKey())
+                .compact();
     }
 
     private String buildToken(UserDetails userDetails, long expiration, String tokenType) {
@@ -70,6 +79,14 @@ public class JwtService {
 
     public String extractUsername(String token) {
         return extractClaim(token, Claims::getSubject);
+    }
+
+    public String extractTokenId(String token) {
+        return extractClaim(token, Claims::getId);
+    }
+
+    public Date extractExpiration(String token) {
+        return extractClaim(token, Claims::getExpiration);
     }
 
     public <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {

@@ -16,12 +16,15 @@ import com.uade.entrelibros.backend.config.JwtService;
 import com.uade.entrelibros.backend.entity.Rol;
 import com.uade.entrelibros.backend.entity.dto.UsuarioRequest;
 import com.uade.entrelibros.backend.repository.UsuarioRepository;
+import com.uade.entrelibros.backend.repository.RefreshTokenRepository;
 
 @ExtendWith(MockitoExtension.class)
 class AuthenticationServiceTest {
 
     @Mock
     private UsuarioRepository usuarioRepository;
+    @Mock
+    private RefreshTokenRepository refreshTokenRepository;
     @Mock
     private UsuarioService usuarioService;
     @Mock
