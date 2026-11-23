@@ -68,7 +68,6 @@ public class AuthenticationService {
     @Transactional
     public AuthenticationResponse refresh(RefreshTokenRequest request) {
         try {
-            refreshTokenRepository.eliminarExpirados(Instant.now());
             String refreshToken = request.getRefreshToken();
             String email = jwtService.extractUsername(refreshToken);
             String tokenId = jwtService.extractTokenId(refreshToken);
@@ -102,14 +101,10 @@ public class AuthenticationService {
             String refreshToken = request.getRefreshToken();
             String email = jwtService.extractUsername(refreshToken);
             String tokenId = jwtService.extractTokenId(refreshToken);
-            Usuario usuario = usuarioRepository.findByEmail(email)
-                    .orElseThrow(RefreshTokenInvalidoException::new);
-            if (!jwtService.isRefreshTokenValid(refreshToken, usuario)) {
-                throw new RefreshTokenInvalidoException();
-            }
+            // No exige usuario activo: un usuario dado de baja también tiene que poder revocar su token
             RefreshToken almacenado = refreshTokenRepository.findByTokenId(tokenId)
                     .orElseThrow(RefreshTokenInvalidoException::new);
-            if (!almacenado.getUsuario().getId().equals(usuario.getId())) {
+            if (!almacenado.getUsuario().getEmail().equals(email)) {
                 throw new RefreshTokenInvalidoException();
             }
             almacenado.setRevocado(true);
@@ -130,6 +125,7 @@ public class AuthenticationService {
         String refreshToken = jwtService.generateRefreshToken(usuario);
         Date expiresAt = jwtService.extractExpiration(refreshToken);
         String tokenId = jwtService.extractTokenId(refreshToken);
+        refreshTokenRepository.eliminarExpirados(Instant.now());
         refreshTokenRepository.save(new RefreshToken(usuario, tokenId, expiresAt.toInstant()));
         return AuthenticationResponse.builder()
                 .accessToken(jwtToken)

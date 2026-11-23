@@ -32,6 +32,7 @@ import com.uade.entrelibros.backend.exceptions.UsuarioNoEncontradoException;
 import com.uade.entrelibros.backend.exceptions.YaEsVendedorException;
 import com.uade.entrelibros.backend.repository.CarritoItemRepository;
 import com.uade.entrelibros.backend.repository.LibroRepository;
+import com.uade.entrelibros.backend.repository.RefreshTokenRepository;
 import com.uade.entrelibros.backend.repository.UsuarioRepository;
 
 @Service
@@ -57,6 +58,9 @@ public class UsuarioServiceImpl implements UsuarioService {
 
     @Autowired
     private OrdenService ordenService;
+
+    @Autowired
+    private RefreshTokenRepository refreshTokenRepository;
 
     public Page<Usuario> getUsuarios(PageRequest pageable) {
         return usuarioRepository.findAll(pageable);
@@ -382,6 +386,8 @@ public class UsuarioServiceImpl implements UsuarioService {
         usuario.setContrasenaHash(passwordEncoder.encode(nuevaContrasenia));
         usuario.setCodigoResetPassword(null);
         usuario.setCodigoResetPasswordExpira(null);
+        // Cierra las sesiones abiertas con la contraseña anterior
+        refreshTokenRepository.revocarTodosDe(usuario.getId());
 
         return usuarioRepository.save(usuario);
     }
